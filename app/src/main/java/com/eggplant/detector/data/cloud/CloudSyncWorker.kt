@@ -55,7 +55,14 @@ class CloudSyncWorker(context: Context, parameters: WorkerParameters) : Coroutin
 
     override suspend fun doWork(): Result {
         val client = application.cloudApiClient
-        if (!client.isConfigured && !client.bootstrapConfiguration()) return Result.success()
+        if (!client.isConfigured && !client.bootstrapConfiguration()) {
+            // A transient failure here used to be reported as success, which
+            // made a manual refresh finish without ever attempting catalog,
+            // Global Scans, or outbox work. Let WorkManager apply its normal
+            // exponential backoff while keeping the existing bounded retry
+            // policy used by the rest of this worker.
+            return if (runAttemptCount < MAX_WORKER_ATTEMPTS) Result.retry() else Result.failure()
+        }
         val dao = application.database.cloudDao()
         val events = dao.pendingEvents(Instant.now().toString())
         val loadMoreGlobalFeed = inputData.getBoolean(INPUT_LOAD_MORE_GLOBAL_FEED, false)
