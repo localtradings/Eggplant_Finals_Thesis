@@ -224,7 +224,7 @@ class CloudApiClient(
         val current = tokenVault.load()
         val now = Instant.now().epochSecond
         if (current != null && current.expiresAtEpochSeconds > now + 60) return@synchronized current
-        val session = current?.let(::renewSession) ?: authenticate("/auth/v1/signup", buildJsonObject {})
+        val session = current?.let(::renewSession) ?: authenticate("/auth/v1/signup", anonymousAuthPayload())
         tokenVault.save(session)
         session
     }
@@ -243,7 +243,7 @@ class CloudApiClient(
     } catch (error: CloudApiException) {
         if (error.status != 400 && error.status != 401) throw error
         tokenVault.clear()
-        authenticate("/auth/v1/signup", buildJsonObject {})
+        authenticate("/auth/v1/signup", anonymousAuthPayload())
     }
 
     private fun authenticate(path: String, body: JsonObject): CloudSession {
@@ -286,6 +286,16 @@ internal fun cloudConfigurationFromBootstrap(
         ?: return null
     return base.copy(supabaseUrl = supabaseUrl, publishableKey = publishableKey)
         .takeIf { it.isConfigured }
+}
+
+/**
+ * Supabase's anonymous sign-in endpoint is the signup endpoint with an
+ * anonymous payload. Sending an empty JSON object is treated as a regular
+ * email/password signup by Auth and can fail before the mobile client gets a
+ * session.
+ */
+internal fun anonymousAuthPayload(): JsonObject = buildJsonObject {
+    put("data", buildJsonObject {})
 }
 
 private class TokenVault(context: Context) {

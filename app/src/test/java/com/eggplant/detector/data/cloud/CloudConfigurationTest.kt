@@ -1,6 +1,7 @@
 package com.eggplant.detector.data.cloud
 
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -43,5 +44,12 @@ class CloudConfigurationTest {
             ),
         )
         assertFalse(offline.isConfigured)
+    }
+
+    @Test
+    fun `anonymous auth uses the Supabase anonymous signup payload`() {
+        val payload = anonymousAuthPayload()
+
+        assertTrue(payload["data"]?.jsonObject?.isEmpty() == true)
     }
 }
