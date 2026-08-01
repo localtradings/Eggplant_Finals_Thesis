@@ -95,6 +95,7 @@ fun DetectionResultScreen(
     val cloudAction by viewModel.cloudActionState.collectAsState()
     val outboxEvents by viewModel.syncOutboxEvents.collectAsState()
     val requestDraft by viewModel.diseaseRequestDraft.collectAsState()
+    val cloudConfigured by viewModel.cloudConfiguredState.collectAsState()
     var showShareDialog by remember { mutableStateOf(false) }
     var showRequestDialog by remember { mutableStateOf(false) }
     var requestedName by remember { mutableStateOf("") }
@@ -156,11 +157,18 @@ fun DetectionResultScreen(
                     enabled = saveState !in setOf(SaveState.SAVING, SaveState.SAVED, SaveState.ALREADY_SAVED) && snapshotState != SnapshotState.PREPARING,
                 )
                 if (result?.confidence ?: 0 >= 50 && result?.source != "gallery") {
+                    if (!cloudConfigured) {
+                        Text(
+                            stringResource(R.string.cloud_unavailable_build),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
                     OutlinedButton(
                         onClick = { showShareDialog = true },
                         modifier = Modifier.fillMaxWidth().height(54.dp),
                         shape = RoundedCornerShape(18.dp),
-                        enabled = snapshotState == SnapshotState.READY && cloudAction != CloudActionState.Working && !shareEvent.isInFlight(),
+                        enabled = cloudConfigured && snapshotState == SnapshotState.READY && cloudAction != CloudActionState.Working && !shareEvent.isInFlight(),
                     ) { Text(stringResource(R.string.share_to_global)) }
                 }
                 shareEvent?.let { event ->
@@ -185,7 +193,7 @@ fun DetectionResultScreen(
                         },
                         modifier = Modifier.fillMaxWidth().height(54.dp),
                         shape = RoundedCornerShape(18.dp),
-                        enabled = snapshotState == SnapshotState.READY && cloudAction != CloudActionState.Working,
+                        enabled = cloudConfigured && snapshotState == SnapshotState.READY && cloudAction != CloudActionState.Working,
                     ) { Text(stringResource(R.string.request_this_disease)) }
                 } else {
                     Text(

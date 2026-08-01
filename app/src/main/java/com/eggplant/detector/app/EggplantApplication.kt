@@ -13,8 +13,13 @@ import com.eggplant.detector.detection.ncnn.NcnnDetectionEngine
 import com.eggplant.detector.data.cloud.CloudApiClient
 import com.eggplant.detector.data.cloud.CloudSyncScheduler
 import com.eggplant.detector.data.cloud.NcnnSharePhotoRevalidator
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 class EggplantApplication : Application() {
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     val detectionEngine: NcnnDetectionEngine by lazy { NcnnDetectionEngine(applicationContext) }
     val cloudApiClient: CloudApiClient by lazy { CloudApiClient(applicationContext) }
 
@@ -33,6 +38,7 @@ class EggplantApplication : Application() {
             cloudSync = { CloudSyncScheduler.refresh(this) },
             cloudSyncLoadMore = { CloudSyncScheduler.loadMoreGlobalScans(this) },
             cloudConfigured = { cloudApiClient.isConfigured },
+            cloudConfiguredState = cloudApiClient.configured,
             sharePhotoRevalidator = NcnnSharePhotoRevalidator(detectionEngine),
         )
     }
@@ -40,6 +46,10 @@ class EggplantApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         CloudSyncScheduler.schedule(this)
-        if (cloudApiClient.isConfigured) CloudSyncScheduler.refresh(this)
+        applicationScope.launch {
+            if (cloudApiClient.bootstrapConfiguration()) {
+                CloudSyncScheduler.refresh(this@EggplantApplication)
+            }
+        }
     }
 }

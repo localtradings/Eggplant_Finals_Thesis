@@ -178,8 +178,9 @@ private fun GlobalScansPage(viewModel: EggplantAppViewModel, onGlobalClick: (Glo
     val rankings by viewModel.globalRankings.collectAsState()
     val action by viewModel.cloudActionState.collectAsState()
     val feedState by viewModel.globalFeedState.collectAsState()
+    val cloudConfigured by viewModel.cloudConfiguredState.collectAsState()
     var query by rememberSaveable { mutableStateOf("") }
-    LaunchedEffect(Unit) {
+    LaunchedEffect(cloudConfigured) {
         viewModel.refreshGlobalScans()
     }
     val filtered = scans.filter { query.isBlank() || it.diseaseName.contains(query.trim(), true) }

@@ -40,6 +40,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -52,6 +54,7 @@ class EggplantRepository(
     private val cloudSync: (() -> Unit)? = null,
     private val cloudSyncLoadMore: (() -> Unit)? = null,
     private val cloudConfigured: (() -> Boolean)? = null,
+    private val cloudConfiguredState: StateFlow<Boolean>? = null,
     private val sharePhotoRevalidator: SharePhotoRevalidator? = null,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -72,6 +75,8 @@ class EggplantRepository(
     val settings: Flow<AppSettingsEntity> = database.settingsDao().observe().map {
         it ?: AppSettingsEntity()
     }
+
+    val cloudConfiguration: Flow<Boolean> = cloudConfiguredState ?: flowOf(isCloudConfigured)
 
     val globalScans: Flow<List<GlobalScan>> = combine(
         database.cloudDao().observeGlobalScans(),

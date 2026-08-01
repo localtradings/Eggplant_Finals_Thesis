@@ -67,6 +67,7 @@ fun SettingsScreen(
     val globalSharingEnabled by viewModel.globalSharingEnabled.collectAsState()
     val motionPreference by viewModel.motionPreference.collectAsState()
     val cloudDeletionState by viewModel.cloudDeletionState.collectAsState()
+    val cloudConfigured by viewModel.cloudConfiguredState.collectAsState()
     var showLanguageDialog by remember { mutableStateOf(false) }
     var showThemeDialog by remember { mutableStateOf(false) }
     var showMotionDialog by remember { mutableStateOf(false) }
@@ -122,13 +123,13 @@ fun SettingsScreen(
                 title = stringResource(R.string.global_sharing),
                 description = stringResource(R.string.global_sharing_description),
                 icon = Icons.Outlined.Public,
-                checked = globalSharingEnabled,
+                checked = cloudConfigured && globalSharingEnabled,
                 onCheckedChange = { enabled ->
                     if (enabled) showSharingConsent = true else viewModel.setGlobalSharing(false)
                 },
                 enabledLabel = stringResource(R.string.on),
                 disabledLabel = stringResource(R.string.off),
-                enabled = viewModel.cloudConfigured,
+                enabled = cloudConfigured,
             )
             HorizontalDivider()
             SettingsSwitchRow(
@@ -161,7 +162,7 @@ fun SettingsScreen(
                 disabledLabel = stringResource(R.string.off),
             )
         }
-        if (!viewModel.cloudConfigured) {
+        if (!cloudConfigured) {
             Text(
                 stringResource(R.string.cloud_unavailable_build),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

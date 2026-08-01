@@ -20,16 +20,16 @@ Open the repository in Android Studio and allow Gradle to sync. Command-line ver
 ./gradlew assembleRelease
 ```
 
-The `demo` variant has release-equivalent behavior and is deliberately debug-signed so the thesis APK can be installed directly. It is not a Play Store signing configuration. Cloud-enabled variants require the Supabase publishable key at build time; the key is intentionally not committed.
+The `demo` variant has release-equivalent behavior and is deliberately debug-signed so the thesis APK can be installed directly. It is not a Play Store signing configuration. The app can bootstrap the public Supabase publishable key from the deployed admin API; the key is intentionally not committed to the APK source.
 
-To build a cloud-enabled demo APK, provide the publishable key through Gradle properties or an equivalent CI secret:
+An APK can also bundle the public key through Gradle properties or an equivalent CI secret:
 
 ```sh
 ./gradlew assembleDemo \
   -PEGGPLANT_SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY"
 ```
 
-The production API and Supabase URLs are included as public defaults and can be overridden with `EGGPLANT_API_BASE_URL` and `EGGPLANT_SUPABASE_URL`. If the publishable key is omitted, the app remains offline-only and clearly reports that cloud features are unavailable; do not distribute that build when Global Scans, disease requests, or live catalog updates are required.
+The production API and Supabase URLs are included as public defaults and can be overridden with `EGGPLANT_API_BASE_URL` and `EGGPLANT_SUPABASE_URL`. If both the bundled key and the deployed public bootstrap configuration are unavailable, the app remains offline-only and clearly reports that cloud features are unavailable; do not distribute that build when Global Scans, disease requests, or live catalog updates are required.
 
 ## Included Features
 

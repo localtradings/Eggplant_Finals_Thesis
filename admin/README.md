@@ -9,6 +9,8 @@ Configure these values in Vercel encrypted environment variables. Do not commit 
 - `NEXT_PUBLIC_SUPABASE_URL` — public Supabase project URL.
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` — public publishable key used by browser authentication.
 - `SUPABASE_SECRET_KEY` — server-only secret key used by protected route handlers and the admin data layer.
+
+The mobile app can bootstrap its public Supabase configuration from `/api/mobile/v1/config`. That endpoint returns only the public project URL and publishable key; it never returns `SUPABASE_SECRET_KEY`.
 - `CRON_SECRET` — secret bearer token used by the daily retention/deletion job.
 - `ADMIN_LOGIN_NAME` — optional legacy bootstrap alias for the existing owner account.
 - `ADMIN_LOGIN_EMAIL` — optional legacy bootstrap email for the existing Supabase Auth owner account.

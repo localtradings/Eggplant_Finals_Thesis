@@ -79,12 +79,15 @@ class EggplantAppViewModel(
     private val snapshotStager: (suspend (com.eggplant.detector.detection.api.RgbFrame) -> String?)? = null,
 ) : ViewModel() {
     /**
-     * Cloud configuration is a build-time capability, not user data. Expose
-     * it so settings can explain why optional cloud controls are unavailable
-     * in an offline-only APK instead of silently ignoring the interaction.
+     * Cloud configuration is a runtime capability, not user data. Expose it
+     * so the UI can react when the public configuration is bootstrapped after
+     * the APK starts instead of silently ignoring cloud interactions.
      */
     val cloudConfigured: Boolean
-        get() = repository?.isCloudConfigured == true
+        get() = _cloudConfigured.value
+
+    private val _cloudConfigured = MutableStateFlow(repository?.isCloudConfigured == true)
+    val cloudConfiguredState: StateFlow<Boolean> = _cloudConfigured.asStateFlow()
 
     private val scanSaver = scanSaver ?: repository?.let { localRepository ->
         suspend { result: ScanResult -> localRepository.saveScan(result) }
@@ -169,6 +172,11 @@ class EggplantAppViewModel(
 
     init {
         repository?.let { localRepository ->
+            viewModelScope.launch {
+                localRepository.cloudConfiguration.collect { configured ->
+                    _cloudConfigured.value = configured
+                }
+            }
             viewModelScope.launch {
                 localRepository.history.collect { savedHistory ->
                     _history.value = savedHistory
@@ -507,22 +515,26 @@ class EggplantAppViewModel(
     }
 
     fun refreshGlobalScans() {
-        if (repository?.isCloudConfigured == false) {
+        val localRepository = repository
+        if (localRepository == null) {
             _cloudActionState.value = CloudActionState.Error(cloudMessage("Cloud is unavailable in this build.", "Hindi available ang cloud sa build na ito."))
             return
         }
         _cloudActionState.value = CloudActionState.Working
-        repository?.refreshCloud()
+        // The worker also bootstraps the public configuration. This lets a
+        // user recover after opening the app offline and coming back online.
+        localRepository.refreshCloud()
         _cloudActionState.value = CloudActionState.Queued("Refreshing Global Scans")
     }
 
     fun loadMoreGlobalScans() {
         if (_globalFeedState.value.isLoading || !_globalFeedState.value.hasMore) return
-        if (repository?.isCloudConfigured == false) {
+        val localRepository = repository
+        if (localRepository == null) {
             _cloudActionState.value = CloudActionState.Error(cloudMessage("Cloud is unavailable in this build.", "Hindi available ang cloud sa build na ito."))
             return
         }
-        repository?.loadMoreGlobalScans()
+        localRepository.loadMoreGlobalScans()
     }
 
     fun shareCurrentResult() {

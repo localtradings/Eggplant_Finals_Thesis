@@ -55,7 +55,7 @@ class CloudSyncWorker(context: Context, parameters: WorkerParameters) : Coroutin
 
     override suspend fun doWork(): Result {
         val client = application.cloudApiClient
-        if (!client.isConfigured) return Result.success()
+        if (!client.isConfigured && !client.bootstrapConfiguration()) return Result.success()
         val dao = application.database.cloudDao()
         val events = dao.pendingEvents(Instant.now().toString())
         val loadMoreGlobalFeed = inputData.getBoolean(INPUT_LOAD_MORE_GLOBAL_FEED, false)

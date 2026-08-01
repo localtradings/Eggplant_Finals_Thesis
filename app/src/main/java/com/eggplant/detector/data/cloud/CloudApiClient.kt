@@ -13,13 +13,18 @@ import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -31,7 +36,8 @@ data class CloudConfiguration(
     val supabaseUrl: String,
     val publishableKey: String,
 ) {
-    val isConfigured: Boolean get() = apiBaseUrl.startsWith("https://") && supabaseUrl.startsWith("https://") && publishableKey.isNotBlank()
+    val isConfigured: Boolean
+        get() = isHttpsUrl(apiBaseUrl) && isHttpsUrl(supabaseUrl) && publishableKey.isNotBlank()
 
     companion object {
         fun release() = CloudConfiguration(
@@ -41,6 +47,10 @@ data class CloudConfiguration(
         )
     }
 }
+
+private fun isHttpsUrl(value: String): Boolean = runCatching {
+    value.toHttpUrl().isHttps && value.toHttpUrl().host.isNotBlank()
+}.getOrDefault(false)
 
 data class CloudSession(val accessToken: String, val refreshToken: String, val expiresAtEpochSeconds: Long)
 
@@ -54,14 +64,55 @@ class CloudApiException(val status: Int, val code: String, message: String) : ja
 
 class CloudApiClient(
     context: Context,
-    private val configuration: CloudConfiguration = CloudConfiguration.release(),
+    initialConfiguration: CloudConfiguration = CloudConfiguration.release(),
     private val http: OkHttpClient = OkHttpClient(),
 ) {
+    @Volatile
+    private var configuration: CloudConfiguration = initialConfiguration
     private val tokenVault = TokenVault(context.applicationContext)
     private val json = Json { ignoreUnknownKeys = true }
     private val authLock = Any()
+    private val _isConfigured = MutableStateFlow(initialConfiguration.isConfigured)
 
-    val isConfigured: Boolean get() = configuration.isConfigured
+    val isConfigured: Boolean get() = _isConfigured.value
+    val configured: StateFlow<Boolean> = _isConfigured.asStateFlow()
+
+    /**
+     * Resolve the public Supabase key from the deployed API when it was not
+     * bundled into the APK. The endpoint is intentionally public because the
+     * publishable key is a client key; privileged credentials never enter the
+     * mobile process.
+     */
+    suspend fun bootstrapConfiguration(): Boolean = withContext(Dispatchers.IO) {
+        if (isConfigured) return@withContext true
+        val bootstrapConfiguration = configuration
+        if (!isHttpsUrl(bootstrapConfiguration.apiBaseUrl)) return@withContext false
+        try {
+            val request = Request.Builder()
+                .url(bootstrapConfiguration.apiBaseUrl + "/api/mobile/v1/config")
+                .get()
+                .header("Accept", "application/json")
+                .build()
+            http.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) return@withContext false
+                val responseBody = response.body.string()
+                if (responseBody.length > MAX_BOOTSTRAP_RESPONSE_BYTES) return@withContext false
+                val resolved = cloudConfigurationFromBootstrap(
+                    bootstrapConfiguration,
+                    json.parseToJsonElement(responseBody).jsonObject,
+                ) ?: return@withContext false
+                synchronized(authLock) {
+                    configuration = resolved
+                    _isConfigured.value = true
+                }
+                true
+            }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            false
+        }
+    }
 
     suspend fun get(path: String): JsonObject = requireNotNull(authorizedRequest("GET", path, null).body)
     suspend fun getConditional(path: String, etag: String?): ConditionalCloudResponse =
@@ -70,10 +121,11 @@ class CloudApiClient(
         requireNotNull(authorizedRequest("POST", path, body).body)
 
     suspend fun upload(signedUrl: String, bytes: ByteArray) = withContext(Dispatchers.IO) {
+        val activeConfiguration = configuration
         val url = when {
             signedUrl.startsWith("https://") -> signedUrl
-            signedUrl.startsWith("/") -> configuration.supabaseUrl + signedUrl
-            else -> configuration.supabaseUrl + "/" + signedUrl
+            signedUrl.startsWith("/") -> activeConfiguration.supabaseUrl + signedUrl
+            else -> activeConfiguration.supabaseUrl + "/" + signedUrl
         }
         val request = Request.Builder()
             .url(url)
@@ -87,7 +139,8 @@ class CloudApiClient(
 
     suspend fun download(signedUrl: String, destination: File, maximumBytes: Long) = withContext(Dispatchers.IO) {
         require(maximumBytes > 0)
-        val allowedHost = configuration.supabaseUrl.toHttpUrl().host
+        val activeConfiguration = configuration
+        val allowedHost = activeConfiguration.supabaseUrl.toHttpUrl().host
         val url = signedUrl.toHttpUrl()
         require(url.isHttps && url.host == allowedHost) { "The cloud photo URL is not trusted." }
         destination.parentFile?.mkdirs()
@@ -131,11 +184,12 @@ class CloudApiClient(
         body: JsonObject?,
         ifNoneMatch: String? = null,
     ): ConditionalCloudResponse = withContext(Dispatchers.IO) {
-        check(configuration.isConfigured) { "Cloud is not configured for this build." }
+        val activeConfiguration = configuration
+        check(activeConfiguration.isConfigured) { "Cloud is not configured for this build." }
         var session = ensureSession()
         repeat(2) { attempt ->
             val requestBuilder = Request.Builder()
-                .url(configuration.apiBaseUrl + path)
+                .url(activeConfiguration.apiBaseUrl + path)
                 .header("Authorization", "Bearer ${session.accessToken}")
                 .header("Accept", "application/json")
                 .method(method, body?.toString()?.toRequestBody(JSON_MEDIA_TYPE))
@@ -193,10 +247,11 @@ class CloudApiClient(
     }
 
     private fun authenticate(path: String, body: JsonObject): CloudSession {
+        val activeConfiguration = configuration
         val request = Request.Builder()
-            .url(configuration.supabaseUrl + path)
-            .header("apikey", configuration.publishableKey)
-            .header("Authorization", "Bearer ${configuration.publishableKey}")
+            .url(activeConfiguration.supabaseUrl + path)
+            .header("apikey", activeConfiguration.publishableKey)
+            .header("Authorization", "Bearer ${activeConfiguration.publishableKey}")
             .post(body.toString().toRequestBody(JSON_MEDIA_TYPE))
             .build()
         http.newCall(request).execute().use { response ->
@@ -214,7 +269,23 @@ class CloudApiClient(
     private companion object {
         val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
         val JPEG = "image/jpeg".toMediaType()
+        const val MAX_BOOTSTRAP_RESPONSE_BYTES = 16_384
     }
+}
+
+internal fun cloudConfigurationFromBootstrap(
+    base: CloudConfiguration,
+    body: JsonObject,
+): CloudConfiguration? {
+    val publishableKey = body["publishableKey"]?.jsonPrimitive?.contentOrNull?.trim()
+        ?.takeIf(String::isNotEmpty)
+        ?: return null
+    val supabaseUrl = body["supabaseUrl"]?.jsonPrimitive?.contentOrNull?.trim()
+        ?.trimEnd('/')
+        ?.takeIf(String::isNotEmpty)
+        ?: return null
+    return base.copy(supabaseUrl = supabaseUrl, publishableKey = publishableKey)
+        .takeIf { it.isConfigured }
 }
 
 private class TokenVault(context: Context) {
