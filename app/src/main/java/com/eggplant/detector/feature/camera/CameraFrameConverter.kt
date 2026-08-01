@@ -10,10 +10,9 @@ data class RotatedRgb(
 
 object CameraFrameConverter {
     /**
-     * CameraX names the output format RGBA_8888, but its first analysis plane is
-     * physically packed as alpha, red, green, blue. Keep this conversion next to
-     * the CameraX-specific frame handling so Bitmap RGB paths cannot accidentally
-     * inherit the camera byte order.
+     * CameraX's RGBA_8888 analysis plane is packed as red, green, blue, alpha.
+     * Keep this conversion next to the CameraX-specific frame handling so Bitmap
+     * RGB paths cannot accidentally inherit the camera byte order.
      */
     fun rgbaToRgb(
         rgbaBytes: ByteArray,
@@ -153,7 +152,7 @@ object CameraFrameConverter {
         return token
     }
 
-    private const val CAMERA_X_RED_OFFSET = 1
-    private const val CAMERA_X_GREEN_OFFSET = 2
-    private const val CAMERA_X_BLUE_OFFSET = 3
+    private const val CAMERA_X_RED_OFFSET = 0
+    private const val CAMERA_X_GREEN_OFFSET = 1
+    private const val CAMERA_X_BLUE_OFFSET = 2
 }

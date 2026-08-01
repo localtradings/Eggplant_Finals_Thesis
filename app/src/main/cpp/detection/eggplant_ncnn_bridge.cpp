@@ -19,11 +19,11 @@ namespace {
 constexpr float kNmsThreshold = 0.45f;
 constexpr int kMaxDetections = 100;
 constexpr int kMaximumCpuInferenceThreads = 4;
-// CameraX's OUTPUT_IMAGE_FORMAT_RGBA_8888 is physically packed as A/R/G/B in
-// the first ImageProxy plane. Do not treat its first three bytes as RGB.
-constexpr int kCameraXRedOffset = 1;
-constexpr int kCameraXGreenOffset = 2;
-constexpr int kCameraXBlueOffset = 3;
+// CameraX's OUTPUT_IMAGE_FORMAT_RGBA_8888 is physically packed as R/G/B/A in
+// the first ImageProxy plane. Alpha is the fourth byte and is ignored.
+constexpr int kCameraXRedOffset = 0;
+constexpr int kCameraXGreenOffset = 1;
+constexpr int kCameraXBlueOffset = 2;
 
 struct Proposal {
     int class_index;

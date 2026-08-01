@@ -36,7 +36,7 @@ internal object FrameQualityEvaluator {
             while (x < cropLeft + cropWidth) {
                 val offset = startOffset + y * rowStride + x * 4
                 if (offset + CAMERA_X_BLUE_OFFSET >= source.limit()) break
-                // CameraX RGBA_8888's first plane is physically A/R/G/B.
+                // CameraX RGBA_8888's first plane is physically R/G/B/A.
                 val red = source.get(offset + CAMERA_X_RED_OFFSET).toInt() and 0xff
                 val green = source.get(offset + CAMERA_X_GREEN_OFFSET).toInt() and 0xff
                 val blue = source.get(offset + CAMERA_X_BLUE_OFFSET).toInt() and 0xff
@@ -60,7 +60,7 @@ internal object FrameQualityEvaluator {
         }
     }
 
-    private const val CAMERA_X_RED_OFFSET = 1
-    private const val CAMERA_X_GREEN_OFFSET = 2
-    private const val CAMERA_X_BLUE_OFFSET = 3
+    private const val CAMERA_X_RED_OFFSET = 0
+    private const val CAMERA_X_GREEN_OFFSET = 1
+    private const val CAMERA_X_BLUE_OFFSET = 2
 }

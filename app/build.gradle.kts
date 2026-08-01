@@ -1,3 +1,5 @@
+import org.gradle.api.provider.ProviderFactory
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
@@ -7,6 +9,12 @@ plugins {
 
 fun String.asBuildConfigString(): String = "\"${replace("\\", "\\\\").replace("\"", "\\\"")}\""
 
+private val defaultCloudApiBaseUrl = "https://eggplant-disease-admin.vercel.app"
+private val defaultSupabaseUrl = "https://pxayrbvfezhiupjwmmfr.supabase.co"
+
+fun ProviderFactory.cloudProperty(name: String, defaultValue: String = ""): String =
+    gradleProperty(name).orNull?.trim()?.takeIf(String::isNotEmpty) ?: defaultValue
+
 android {
     namespace = "com.eggplant.detector"
     compileSdk = 36
@@ -15,8 +23,8 @@ android {
         applicationId = "com.eggplant.detector"
         minSdk = 26
         targetSdk = 36
-        versionCode = 9
-        versionName = "1.5.1"
+        versionCode = 10
+        versionName = "1.5.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk {
             abiFilters += listOf("arm64-v8a", "x86_64")
@@ -24,17 +32,17 @@ android {
         buildConfigField(
             "String",
             "CLOUD_API_BASE_URL",
-            (providers.gradleProperty("EGGPLANT_API_BASE_URL").orNull ?: "").asBuildConfigString(),
+            providers.cloudProperty("EGGPLANT_API_BASE_URL", defaultCloudApiBaseUrl).asBuildConfigString(),
         )
         buildConfigField(
             "String",
             "SUPABASE_URL",
-            (providers.gradleProperty("EGGPLANT_SUPABASE_URL").orNull ?: "").asBuildConfigString(),
+            providers.cloudProperty("EGGPLANT_SUPABASE_URL", defaultSupabaseUrl).asBuildConfigString(),
         )
         buildConfigField(
             "String",
             "SUPABASE_PUBLISHABLE_KEY",
-            (providers.gradleProperty("EGGPLANT_SUPABASE_PUBLISHABLE_KEY").orNull ?: "").asBuildConfigString(),
+            providers.cloudProperty("EGGPLANT_SUPABASE_PUBLISHABLE_KEY").asBuildConfigString(),
         )
     }
 

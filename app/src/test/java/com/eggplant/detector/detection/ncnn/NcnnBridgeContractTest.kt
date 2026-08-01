@@ -48,12 +48,12 @@ class NcnnBridgeContractTest {
     }
 
     @Test
-    fun `native direct CameraX preprocessing reads RGB from ARGB byte offsets`() {
+    fun `native direct CameraX preprocessing reads RGB from RGBA byte offsets`() {
         val source = File("src/main/cpp/detection/eggplant_ncnn_bridge.cpp").readText()
 
-        assertTrue(source.contains("kCameraXRedOffset = 1"))
-        assertTrue(source.contains("kCameraXGreenOffset = 2"))
-        assertTrue(source.contains("kCameraXBlueOffset = 3"))
+        assertTrue(source.contains("kCameraXRedOffset = 0"))
+        assertTrue(source.contains("kCameraXGreenOffset = 1"))
+        assertTrue(source.contains("kCameraXBlueOffset = 2"))
         assertTrue(source.contains("target[0] = source[kCameraXRedOffset]"))
         assertTrue(source.contains("target[1] = source[kCameraXGreenOffset]"))
         assertTrue(source.contains("target[2] = source[kCameraXBlueOffset]"))

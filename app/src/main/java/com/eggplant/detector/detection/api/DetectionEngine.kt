@@ -26,9 +26,9 @@ data class RgbFrame(
 /**
  * A borrowed CameraX RGBA analysis frame. The buffer is only valid for the
  * duration of [RgbaDetectionEngine.detectRgba] and must not be retained.
- * CameraX calls the output RGBA_8888, but packs each first-plane pixel as
- * alpha, red, green, blue. The native bridge must therefore read RGB from
- * byte offsets 1, 2, and 3.
+ * CameraX calls the output RGBA_8888 and packs each first-plane pixel as
+ * red, green, blue, alpha. The native bridge must therefore read RGB from
+ * byte offsets 0, 1, and 2.
  */
 data class RgbaFrame(
     val width: Int,

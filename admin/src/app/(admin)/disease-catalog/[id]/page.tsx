@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/auth";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { ArrowLeft, LockKeyhole } from "lucide-react";
 import Link from "next/link";
+import { revalidatePath } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 import { randomUUID } from "node:crypto";
 
@@ -54,6 +55,8 @@ async function saveContent(formData: FormData) {
     p_payload_hash: payloadHash,
   });
   if (error || !["applied", "unchanged"].includes(outcome ?? "")) throw new Error("The bilingual disease content could not be published.");
+  revalidatePath("/disease-catalog");
+  revalidatePath(`/disease-catalog/${id}`);
   redirect(`/disease-catalog?published=${encodeURIComponent(id)}&outcome=${encodeURIComponent(outcome)}`);
 }
 

@@ -608,7 +608,10 @@ object CloudSyncScheduler {
     fun refresh(context: Context) {
         WorkManager.getInstance(context).enqueueUniqueWork(
             "eggplant-cloud-sync-now",
-            ExistingWorkPolicy.APPEND_OR_REPLACE,
+            // A manual refresh is a user-visible action. Replace a stale or
+            // queued refresh so navigation and pull-to-refresh request the
+            // newest catalog/feed data promptly.
+            ExistingWorkPolicy.REPLACE,
             OneTimeWorkRequestBuilder<CloudSyncWorker>().setConstraints(constraints).build(),
         )
     }

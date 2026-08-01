@@ -3,15 +3,23 @@ package com.eggplant.detector.feature.camera
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.nio.ByteBuffer
 
 class CameraFrameConverterTest {
     @Test
+    fun `camera analysis keeps CameraX output rotation enabled`() {
+        val source = java.io.File("src/main/java/com/eggplant/detector/feature/camera/CameraController.kt").readText()
+
+        assertTrue(source.contains("setOutputImageRotationEnabled(true)"))
+    }
+
+    @Test
     fun `rgba rows with padding convert to tightly packed rgb`() {
         val rgba = byteArrayOf(
-            99, 1, 2, 3, 99, 4, 5, 6, 0, 0, 0, 0,
-            99, 7, 8, 9, 99, 10, 11, 12, 0, 0, 0, 0,
+            1, 2, 3, 99, 4, 5, 6, 99, 0, 0, 0, 0,
+            7, 8, 9, 99, 10, 11, 12, 99, 0, 0, 0, 0,
         )
 
         val rgb = CameraFrameConverter.rgbaToRgb(rgba, width = 2, height = 2, rowStride = 12)
@@ -22,8 +30,8 @@ class CameraFrameConverterTest {
     @Test
     fun `camera crop is applied before rotation and inference`() {
         val rgba = byteArrayOf(
-            99, 1, 2, 3, 99, 4, 5, 6, 99, 7, 8, 9,
-            99, 10, 11, 12, 99, 13, 14, 15, 99, 16, 17, 18,
+            1, 2, 3, 99, 4, 5, 6, 99, 7, 8, 9, 99,
+            10, 11, 12, 99, 13, 14, 15, 99, 16, 17, 18, 99,
         )
 
         val rgb = CameraFrameConverter.rgbaToRgb(
@@ -41,9 +49,9 @@ class CameraFrameConverterTest {
     }
 
     @Test
-    fun `CameraX ARGB conversion preserves RGB and ignores alpha`() {
-        val transparentRed = byteArrayOf(0x00, 0x7f, 0x00, 0x00)
-        val opaqueRed = byteArrayOf(0xff.toByte(), 0x7f, 0x00, 0x00)
+    fun `CameraX RGBA conversion preserves RGB and ignores alpha`() {
+        val transparentRed = byteArrayOf(0x7f, 0x00, 0x00, 0x00)
+        val opaqueRed = byteArrayOf(0x7f, 0x00, 0x00, 0xff.toByte())
 
         val transparentRgb = CameraFrameConverter.rgbaToRgb(transparentRed, width = 1, height = 1, rowStride = 4)
         val opaqueRgb = CameraFrameConverter.rgbaToRgb(opaqueRed, width = 1, height = 1, rowStride = 4)
@@ -55,7 +63,7 @@ class CameraFrameConverterTest {
     @Test
     fun `non direct CameraX plane copies without consuming the borrowed buffer`() {
         val plane = ByteBuffer.allocate(8).apply {
-            put(byteArrayOf(0x11, 0x20, 0x40, 0x60, 0x22, 0x80.toByte(), 0x10, 0x30))
+            put(byteArrayOf(0x20, 0x40, 0x60, 0x11, 0x80.toByte(), 0x10, 0x30, 0x22))
             flip()
         }
 
@@ -121,14 +129,14 @@ class CameraFrameConverterTest {
             bright.put(offset + 1, 0xff.toByte())
             bright.put(offset + 2, 0xff.toByte())
             bright.put(offset + 3, 0xff.toByte())
-            transparentMidtone.put(offset, 0)
-            transparentMidtone.put(offset + 1, 120)
-            transparentMidtone.put(offset + 2, 80)
-            transparentMidtone.put(offset + 3, 20)
-            opaqueMidtone.put(offset, 0xff.toByte())
-            opaqueMidtone.put(offset + 1, 120)
-            opaqueMidtone.put(offset + 2, 80)
-            opaqueMidtone.put(offset + 3, 20)
+            transparentMidtone.put(offset, 120)
+            transparentMidtone.put(offset + 1, 80)
+            transparentMidtone.put(offset + 2, 20)
+            transparentMidtone.put(offset + 3, 0)
+            opaqueMidtone.put(offset, 120)
+            opaqueMidtone.put(offset + 1, 80)
+            opaqueMidtone.put(offset + 2, 20)
+            opaqueMidtone.put(offset + 3, 0xff.toByte())
         }
 
         org.junit.Assert.assertNotEquals(

@@ -490,6 +490,9 @@ class CameraController(
             .setResolutionSelector(analysisResolutionSelector)
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
             .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
+            // Preserve the 1.4.3 contract: CameraX delivers the analysis
+            // buffer in display orientation, so downstream code does not
+            // rotate the same frame a second time.
             .setOutputImageRotationEnabled(true)
             .setTargetRotation(displayRotation)
             .build()
@@ -534,7 +537,7 @@ class CameraController(
             lastLiveAnalyzeStartedMillis = now
             val conversionStartedAtNanos = SystemClock.elapsedRealtimeNanos()
             val plane = image.planes.firstOrNull() ?: return
-            val sourceBuffer = plane.buffer.slice()
+            val sourceBuffer = plane.buffer.duplicate().apply { rewind() }.slice()
             val crop = image.cropRect
             val cropWidth = crop.width()
             val cropHeight = crop.height()
