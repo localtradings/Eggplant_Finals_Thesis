@@ -162,6 +162,7 @@
     <string name="share_status_retrying">Sinusubukang muli ang Global share…</string>
     <string name="share_status_completed">Naibahagi sa Global Scans.</string>
     <string name="share_status_failed">Hindi maibahagi ang scan na ito. Subukang muli.</string>
+    <string name="share_status_cloud_unavailable">Hindi available o naka-pause ang cloud publishing. Suriin ang koneksyon o hilingin sa admin na i-enable ang cloud writes, pagkatapos ay i-tap ang Retry.</string>
     <string name="share_status_cancelled">Nakansela ang Global share.</string>
     <string name="request_this_disease">Hilinging idagdag ang sakit na ito</string>
     <string name="requested_disease_name">Pangalan ng hinihiling na sakit</string>

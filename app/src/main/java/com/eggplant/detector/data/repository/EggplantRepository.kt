@@ -22,6 +22,7 @@ import com.eggplant.detector.domain.model.SyncOutboxState
 import com.eggplant.detector.data.cloud.diseaseRequestPayload
 import com.eggplant.detector.data.cloud.globalSharePayload
 import com.eggplant.detector.data.cloud.sharingConsentPayload
+import com.eggplant.detector.data.cloud.shouldRequeueSharingConsent
 import com.eggplant.detector.data.cloud.SharePhotoRevalidator
 import com.eggplant.detector.data.database.entity.DiseaseRequestEntity
 import com.eggplant.detector.data.database.entity.DiseaseRequestPhotoEntity
@@ -395,15 +396,42 @@ class EggplantRepository(
         val event = dao.outboxById(eventId) ?: return false
         if (event.state !in setOf("FAILED", "RETRY")) return false
         val now = Instant.now().toString()
-        dao.upsertOutbox(
-            event.copy(
-                state = "PENDING",
-                attempts = 0,
-                nextAttemptAt = now,
-                lastErrorCode = null,
-                updatedAt = now,
-            ),
-        )
+        val retried = database.withTransaction {
+            val current = dao.outboxById(eventId) ?: return@withTransaction false
+            if (current.state !in setOf("FAILED", "RETRY")) return@withTransaction false
+
+            if (current.eventType == "GLOBAL_SHARE") {
+                val consent = dao.outboxByIdempotencyKey(SHARING_CONSENT_IDEMPOTENCY_KEY)
+                val consentPayload = consent?.let {
+                    runCatching { cacheJson.parseToJsonElement(it.payloadJson).jsonObject }.getOrNull()
+                }
+                consent?.takeIf {
+                    shouldRequeueSharingConsent(current.eventType, it.state, consentPayload)
+                }?.let { consentRow ->
+                    dao.upsertOutbox(
+                        consentRow.copy(
+                            state = "PENDING",
+                            attempts = 0,
+                            nextAttemptAt = now,
+                            lastErrorCode = null,
+                            updatedAt = now,
+                        ),
+                    )
+                }
+            }
+
+            dao.upsertOutbox(
+                current.copy(
+                    state = "PENDING",
+                    attempts = 0,
+                    nextAttemptAt = now,
+                    lastErrorCode = null,
+                    updatedAt = now,
+                ),
+            )
+            true
+        }
+        if (!retried) return false
         cloudSync?.invoke()
         return true
     }

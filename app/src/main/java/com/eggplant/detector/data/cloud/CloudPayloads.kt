@@ -31,6 +31,19 @@ internal fun sharingConsentPayload(enabled: Boolean): JsonObject = buildJsonObje
     if (enabled) put("consentVersion", 1)
 }
 
+/**
+ * A share depends on an enabled consent event being accepted first.  If the
+ * server paused writes while that event was being sent, retrying only the
+ * share would leave it blocked behind a terminal consent failure.
+ */
+internal fun shouldRequeueSharingConsent(
+    eventType: String,
+    consentState: String?,
+    consentPayload: JsonObject?,
+): Boolean = eventType == "GLOBAL_SHARE" &&
+    consentState in setOf("FAILED", "CANCELLED") &&
+    consentPayload?.get("enabled")?.jsonPrimitive?.content == "true"
+
 internal fun diseaseRequestPayload(
     clientRequestId: String,
     requestedName: String?,

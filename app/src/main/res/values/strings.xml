@@ -162,6 +162,7 @@
     <string name="share_status_retrying">Retrying Global share…</string>
     <string name="share_status_completed">Shared to Global Scans.</string>
     <string name="share_status_failed">Could not share this scan. Try again.</string>
+    <string name="share_status_cloud_unavailable">Cloud publishing is unavailable or paused. Check the connection or ask the admin to enable cloud writes, then tap Retry.</string>
     <string name="share_status_cancelled">Global share cancelled.</string>
     <string name="request_this_disease">Request this disease</string>
     <string name="requested_disease_name">Requested disease name</string>

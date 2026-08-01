@@ -4,6 +4,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.jsonArray
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CloudPayloadsTest {
@@ -21,6 +22,35 @@ class CloudPayloadsTest {
 
         assertEquals("false", payload.getValue("enabled").jsonPrimitive.content)
         assertFalse("consentVersion" in payload)
+    }
+
+    @Test
+    fun `retrying a global share requeues terminal enabled consent`() {
+        assertTrue(
+            shouldRequeueSharingConsent(
+                eventType = "GLOBAL_SHARE",
+                consentState = "FAILED",
+                consentPayload = sharingConsentPayload(enabled = true),
+            ),
+        )
+    }
+
+    @Test
+    fun `consent recovery does not requeue disabled or unrelated events`() {
+        assertFalse(
+            shouldRequeueSharingConsent(
+                eventType = "GLOBAL_SHARE",
+                consentState = "CANCELLED",
+                consentPayload = sharingConsentPayload(enabled = false),
+            ),
+        )
+        assertFalse(
+            shouldRequeueSharingConsent(
+                eventType = "DISEASE_REQUEST",
+                consentState = "FAILED",
+                consentPayload = sharingConsentPayload(enabled = true),
+            ),
+        )
     }
 
     @Test

@@ -316,7 +316,10 @@ private fun shareStatusLabel(event: SyncOutboxEvent): String = when (event.state
     SyncOutboxState.UPLOADING -> stringResource(R.string.share_status_uploading)
     SyncOutboxState.RETRY -> stringResource(R.string.share_status_retrying)
     SyncOutboxState.COMPLETED -> stringResource(R.string.share_status_completed)
-    SyncOutboxState.FAILED -> stringResource(R.string.share_status_failed)
+    SyncOutboxState.FAILED -> when (event.lastErrorCode) {
+        "writes_paused", "sharing_consent_failed" -> stringResource(R.string.share_status_cloud_unavailable)
+        else -> stringResource(R.string.share_status_failed)
+    }
     SyncOutboxState.CANCELLED -> stringResource(R.string.share_status_cancelled)
 }
 
