@@ -19,7 +19,7 @@ anonymous_users = 10
 
 [auth.email]
 enable_signup = true
-enable_confirmations = true
+enable_confirmations = false
 double_confirm_changes = true
 secure_password_change = true
 max_frequency = "1m"

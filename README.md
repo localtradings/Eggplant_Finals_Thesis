@@ -40,7 +40,7 @@ The `demo` variant has release-equivalent behavior and is deliberately debug-sig
 
 The Android project has one `app` module, one `MainActivity`, Navigation Compose, CameraX, an application-scoped NCNN detector, a lifecycle-aware camera controller, and an `EggplantRepository` backed by Room. WorkManager drains an idempotent offline outbox only when the network is available. The app contains only the public mobile API URL, Supabase URL, and publishable key; privileged credentials remain server-side.
 
-The `admin/` directory contains a Next.js App Router application deployed at [eggplant-disease-admin.vercel.app](https://eggplant-disease-admin.vercel.app). Protected server routes use Supabase magic-link sessions plus an `admin_members` authorization check. Mobile writes are validated by the server, rate-limited, owner-partitioned, and governed by Supabase RLS. The database and Storage schema lives in reviewed, forward-only migrations under `supabase/migrations/`.
+The `admin/` directory contains a Next.js App Router application deployed at [eggplant-disease-admin.vercel.app](https://eggplant-disease-admin.vercel.app). Protected server routes use Supabase password sessions plus an `admin_members` authorization check. Mobile writes are validated by the server, rate-limited, owner-partitioned, and governed by Supabase RLS. The database and Storage schema lives in reviewed, forward-only migrations under `supabase/migrations/`.
 
 Database rows retain stable disease IDs and grouped detections:
 
