@@ -78,6 +78,14 @@ class EggplantAppViewModel(
     scanSaver: (suspend (ScanResult) -> ScanResult)? = null,
     private val snapshotStager: (suspend (com.eggplant.detector.detection.api.RgbFrame) -> String?)? = null,
 ) : ViewModel() {
+    /**
+     * Cloud configuration is a build-time capability, not user data. Expose
+     * it so settings can explain why optional cloud controls are unavailable
+     * in an offline-only APK instead of silently ignoring the interaction.
+     */
+    val cloudConfigured: Boolean
+        get() = repository?.isCloudConfigured == true
+
     private val scanSaver = scanSaver ?: repository?.let { localRepository ->
         suspend { result: ScanResult -> localRepository.saveScan(result) }
     }

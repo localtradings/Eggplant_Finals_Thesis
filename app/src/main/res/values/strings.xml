@@ -72,6 +72,7 @@
     <string name="motion_reduced">Reduced</string>
     <string name="global_sharing">Global sharing</string>
     <string name="global_sharing_description">Off by default. You choose which eligible camera scans to publish anonymously.</string>
+    <string name="cloud_unavailable_build">Cloud features are unavailable in this APK. Install a cloud-enabled build to use Global Scans, disease requests, and live catalog updates.</string>
     <string name="enable_global_sharing">Enable global sharing?</string>
     <string name="global_sharing_consent" formatted="false">Shared photos become public without your name or profile. Only confirmed in-app camera results at 50% confidence or higher are eligible. You can turn this off and request deletion later.</string>
     <string name="enable">Enable</string>

@@ -73,6 +73,7 @@ fun SettingsSwitchRow(
     onCheckedChange: (Boolean) -> Unit,
     enabledLabel: String,
     disabledLabel: String,
+    enabled: Boolean = true,
 ) {
     val stateLabel = if (checked) enabledLabel else disabledLabel
     Row(
@@ -81,6 +82,7 @@ fun SettingsSwitchRow(
             .toggleable(
                 value = checked,
                 role = Role.Switch,
+                enabled = enabled,
                 onValueChange = onCheckedChange,
             )
             .semantics(mergeDescendants = true) {
@@ -93,22 +95,30 @@ fun SettingsSwitchRow(
             icon,
             contentDescription = null,
             modifier = Modifier.size(24.dp),
-            tint = MaterialTheme.colorScheme.primary,
+            tint = MaterialTheme.colorScheme.primary.copy(alpha = if (enabled) 1f else .45f),
         )
         Spacer(Modifier.size(14.dp))
         Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(3.dp),
         ) {
-            Text(title, style = MaterialTheme.typography.bodyLarge)
+            Text(
+                title,
+                style = MaterialTheme.typography.bodyLarge,
+                color = if (enabled) {
+                    MaterialTheme.colorScheme.onSurface
+                } else {
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = .55f)
+                },
+            )
             Text(
                 description,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (enabled) 1f else .65f),
                 style = MaterialTheme.typography.bodyMedium,
                 maxLines = 2,
             )
         }
         Spacer(Modifier.size(10.dp))
-        Switch(checked = checked, onCheckedChange = null)
+        Switch(checked = checked, onCheckedChange = null, enabled = enabled)
     }
 }

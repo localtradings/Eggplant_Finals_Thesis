@@ -177,15 +177,23 @@ fun DetectionResultScreen(
                 }
             }
             if (result?.outcome == ScanOutcome.NO_MATCH) {
-                OutlinedButton(
-                    onClick = {
-                        viewModel.beginDiseaseRequest()
-                        showRequestDialog = true
-                    },
-                    modifier = Modifier.fillMaxWidth().height(54.dp),
-                    shape = RoundedCornerShape(18.dp),
-                    enabled = snapshotState == SnapshotState.READY && cloudAction != CloudActionState.Working,
-                ) { Text(stringResource(R.string.request_this_disease)) }
+                if (result?.source in setOf("live", "capture")) {
+                    OutlinedButton(
+                        onClick = {
+                            viewModel.beginDiseaseRequest()
+                            showRequestDialog = true
+                        },
+                        modifier = Modifier.fillMaxWidth().height(54.dp),
+                        shape = RoundedCornerShape(18.dp),
+                        enabled = snapshotState == SnapshotState.READY && cloudAction != CloudActionState.Working,
+                    ) { Text(stringResource(R.string.request_this_disease)) }
+                } else {
+                    Text(
+                        stringResource(R.string.request_camera_only_photo),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
             }
             when (val action = cloudAction) {
                 CloudActionState.Idle -> Unit

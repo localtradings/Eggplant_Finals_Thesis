@@ -1,12 +1,12 @@
 package com.eggplant.detector.feature.camera
 
-import android.content.Context
 import android.graphics.Bitmap
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import com.eggplant.detector.feature.camera.CameraAnalysisState
 import com.eggplant.detector.feature.camera.CameraController
 import com.eggplant.detector.detection.api.DetectionBox
@@ -32,12 +32,10 @@ import org.junit.runner.RunWith
 class CameraControllerInstrumentedTest {
     @Test
     fun galleryAnalysisPublishesItsStillSceneToCameraState() {
-        val context = ApplicationProvider.getApplicationContext<Context>()
         val stateLatch = CountDownLatch(1)
         val callbackLatch = CountDownLatch(1)
         var publishedState: CameraAnalysisState? = null
-        val controller = CameraController(
-            context = context,
+        val controller = createController(
             lifecycleOwner = TestLifecycleOwner(),
             engine = PositiveDetectionEngine(),
             onState = { state ->
@@ -58,7 +56,7 @@ class CameraControllerInstrumentedTest {
             assertEquals("leaf-spot", publishedState?.stableDetections?.single()?.modelClass?.diseaseId)
         } finally {
             bitmap.recycle()
-            controller.close()
+            closeController(controller)
         }
     }
 
@@ -73,9 +71,7 @@ class CameraControllerInstrumentedTest {
 
     @Test
     fun galleryHealthyLeafIsConfirmedWhenItsPolicyIsEnabled() {
-        val context = ApplicationProvider.getApplicationContext<Context>()
-        val controller = CameraController(
-            context = context,
+        val controller = createController(
             lifecycleOwner = TestLifecycleOwner(),
             engine = FixedDetectionEngine(classIndex = 2),
             onState = {},
@@ -98,15 +94,13 @@ class CameraControllerInstrumentedTest {
             assertTrue(scene?.stability?.saveEligible == false)
         } finally {
             bitmap.recycle()
-            controller.close()
+            closeController(controller)
         }
     }
 
     @Test
     fun repeatedGalleryAnalysisCompletesSequentially() {
-        val context = ApplicationProvider.getApplicationContext<Context>()
-        val controller = CameraController(
-            context = context,
+        val controller = createController(
             lifecycleOwner = TestLifecycleOwner(),
             engine = PositiveDetectionEngine(),
             onState = {},
@@ -122,16 +116,14 @@ class CameraControllerInstrumentedTest {
             assertEquals("leaf-spot", second.getOrThrow().stability.stableDetections.single().modelClass.diseaseId)
         } finally {
             bitmap.recycle()
-            controller.close()
+            closeController(controller)
         }
     }
 
     @Test
     fun duplicateGalleryAnalysisReturnsControlledFailure() {
-        val context = ApplicationProvider.getApplicationContext<Context>()
         val engine = BlockingDetectionEngine()
-        val controller = CameraController(
-            context = context,
+        val controller = createController(
             lifecycleOwner = TestLifecycleOwner(),
             engine = engine,
             onState = {},
@@ -160,15 +152,13 @@ class CameraControllerInstrumentedTest {
         } finally {
             engine.releaseDetection.countDown()
             bitmap.recycle()
-            controller.close()
+            closeController(controller)
         }
     }
 
     @Test
     fun detectorFailureReturnsControlledStillFailure() {
-        val context = ApplicationProvider.getApplicationContext<Context>()
-        val controller = CameraController(
-            context = context,
+        val controller = createController(
             lifecycleOwner = TestLifecycleOwner(),
             engine = FailingDetectionEngine(),
             onState = {},
@@ -181,15 +171,13 @@ class CameraControllerInstrumentedTest {
             assertTrue(result.exceptionOrNull()?.message?.contains("detector failed") == true)
         } finally {
             bitmap.recycle()
-            controller.close()
+            closeController(controller)
         }
     }
 
     @Test
     fun repeatedLiveStartStopReturnsNoStableDiseaseWithoutSaving() {
-        val context = ApplicationProvider.getApplicationContext<Context>()
-        val controller = CameraController(
-            context = context,
+        val controller = createController(
             lifecycleOwner = TestLifecycleOwner(),
             engine = PositiveDetectionEngine(),
             onState = {},
@@ -200,16 +188,14 @@ class CameraControllerInstrumentedTest {
             controller.startLivePreview()
             assertEquals(LivePreviewOutcome.NoStableDetection, controller.finishLivePreview(allowHealthy = false))
         } finally {
-            controller.close()
+            closeController(controller)
         }
     }
 
     @Test
     fun lifecycleStopCancelsLiveRetentionBeforeAStaleReleaseCanRoute() {
-        val context = ApplicationProvider.getApplicationContext<Context>()
         val owner = TestLifecycleOwner().apply { start() }
-        val controller = CameraController(
-            context = context,
+        val controller = createController(
             lifecycleOwner = owner,
             engine = PositiveDetectionEngine(),
             onState = {},
@@ -224,14 +210,12 @@ class CameraControllerInstrumentedTest {
                 controller.finishLivePreview(allowHealthy = false),
             )
         } finally {
-            controller.close()
+            closeController(controller)
         }
     }
 
     private fun analyzeGallery(classIndex: Int): com.eggplant.detector.feature.camera.CameraScene {
-        val context = ApplicationProvider.getApplicationContext<Context>()
-        val controller = CameraController(
-            context = context,
+        val controller = createController(
             lifecycleOwner = TestLifecycleOwner(),
             engine = FixedDetectionEngine(classIndex),
             onState = {},
@@ -248,7 +232,7 @@ class CameraControllerInstrumentedTest {
             return requireNotNull(scene)
         } finally {
             bitmap.recycle()
-            controller.close()
+            closeController(controller)
         }
     }
 
@@ -263,17 +247,44 @@ class CameraControllerInstrumentedTest {
         return requireNotNull(scene)
     }
 
+    private fun createController(
+        lifecycleOwner: LifecycleOwner,
+        engine: DetectionEngine,
+        onState: (CameraAnalysisState) -> Unit,
+    ): CameraController {
+        var controller: CameraController? = null
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            controller = CameraController(
+                context = ApplicationProvider.getApplicationContext(),
+                lifecycleOwner = lifecycleOwner,
+                engine = engine,
+                onState = onState,
+            )
+        }
+        return requireNotNull(controller)
+    }
+
+    private fun closeController(controller: CameraController) {
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            controller.close()
+        }
+    }
+
     private class TestLifecycleOwner : LifecycleOwner {
         private val registry = LifecycleRegistry(this)
         override val lifecycle: Lifecycle = registry
 
         fun start() {
-            registry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
-            registry.handleLifecycleEvent(Lifecycle.Event.ON_START)
+            InstrumentationRegistry.getInstrumentation().runOnMainSync {
+                registry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
+                registry.handleLifecycleEvent(Lifecycle.Event.ON_START)
+            }
         }
 
         fun stop() {
-            registry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
+            InstrumentationRegistry.getInstrumentation().runOnMainSync {
+                registry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
+            }
         }
     }
 

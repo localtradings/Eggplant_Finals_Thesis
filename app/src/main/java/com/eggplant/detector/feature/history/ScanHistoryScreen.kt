@@ -42,6 +42,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.rememberCoroutineScope
@@ -178,6 +179,9 @@ private fun GlobalScansPage(viewModel: EggplantAppViewModel, onGlobalClick: (Glo
     val action by viewModel.cloudActionState.collectAsState()
     val feedState by viewModel.globalFeedState.collectAsState()
     var query by rememberSaveable { mutableStateOf("") }
+    LaunchedEffect(Unit) {
+        viewModel.refreshGlobalScans()
+    }
     val filtered = scans.filter { query.isBlank() || it.diseaseName.contains(query.trim(), true) }
     PullToRefreshBox(
         isRefreshing = feedState.isLoading,
@@ -191,6 +195,15 @@ private fun GlobalScansPage(viewModel: EggplantAppViewModel, onGlobalClick: (Glo
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             item { SearchBar(query, { query = it }, stringResource(R.string.library_search)) }
+            if (action is CloudActionState.Error) {
+                item {
+                    Text(
+                        (action as CloudActionState.Error).message,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            }
             if (rankings.isNotEmpty()) {
                 item { Text(stringResource(R.string.community_rankings), style = MaterialTheme.typography.titleLarge) }
                 item {

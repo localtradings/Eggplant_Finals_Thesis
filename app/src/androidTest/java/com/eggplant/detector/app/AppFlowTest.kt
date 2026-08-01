@@ -78,7 +78,7 @@ class AppFlowTest {
         composeRule.onNodeWithContentDescription("Navigate to Settings").performClick()
 
         composeRule.onNodeWithText("Personalize your local app experience").assertIsDisplayed()
-        composeRule.onNodeWithText("Detection Status").assertIsDisplayed()
+        composeRule.onNodeWithText("Detection Status").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("Units").assertDoesNotExist()
         composeRule.onNodeWithText("Filipino (Tagalog)").assertDoesNotExist()
         composeRule.onNodeWithText("Export History").assertDoesNotExist()
@@ -108,7 +108,7 @@ class AppFlowTest {
         composeRule.waitForIdle()
 
         composeRule.onNodeWithText("View All", substring = true).performClick()
-        composeRule.onNodeWithText("Review your previous eggplant scans").assertIsDisplayed()
+        composeRule.onNodeWithText("Your saved scans and anonymous community findings").assertIsDisplayed()
     }
 
     @Test
@@ -140,7 +140,7 @@ class AppFlowTest {
         composeRule.onNodeWithContentDescription("Filter diseases").performClick()
         composeRule.onNodeWithText("Filter diseases").assertIsDisplayed()
         composeRule.onAllNodesWithText("Fruit Disease")[2].performClick()
-        composeRule.onNodeWithText("Fruit Rot").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Fruit Rot disease photo").assertIsDisplayed()
     }
 
     @Test
@@ -166,7 +166,7 @@ class AppFlowTest {
 
     @Test
     fun historyStartsWithoutFabricatedSampleScans() {
-        composeRule.onNodeWithContentDescription("Navigate to History").performClick()
+        composeRule.onNodeWithContentDescription("Navigate to Scans").performClick()
         composeRule.onNodeWithText("Sample scans").assertDoesNotExist()
     }
 

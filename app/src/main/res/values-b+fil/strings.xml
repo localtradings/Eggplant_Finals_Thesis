@@ -72,6 +72,7 @@
     <string name="motion_reduced">Bawas na galaw</string>
     <string name="global_sharing">Pandaigdigang pagbabahagi</string>
     <string name="global_sharing_description">Naka-off bilang default. Ikaw ang pipili ng kwalipikadong camera scan na ipo-post nang anonymous.</string>
+    <string name="cloud_unavailable_build">Hindi available ang cloud features sa APK na ito. Mag-install ng cloud-enabled build para magamit ang Global Scans, disease requests, at live catalog updates.</string>
     <string name="enable_global_sharing">I-enable ang global sharing?</string>
     <string name="global_sharing_consent" formatted="false">Magiging pampubliko ang ibinahaging larawan nang walang pangalan o profile. Tanging kumpirmadong in-app camera result na 50% pataas ang kwalipikado. Maaari mo itong i-off at hilinging burahin ang datos.</string>
     <string name="enable">I-enable</string>

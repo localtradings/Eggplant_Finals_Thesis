@@ -128,6 +128,7 @@ fun SettingsScreen(
                 },
                 enabledLabel = stringResource(R.string.on),
                 disabledLabel = stringResource(R.string.off),
+                enabled = viewModel.cloudConfigured,
             )
             HorizontalDivider()
             SettingsSwitchRow(
@@ -158,6 +159,13 @@ fun SettingsScreen(
                 onCheckedChange = viewModel::setDetectHealthyPlant,
                 enabledLabel = stringResource(R.string.on),
                 disabledLabel = stringResource(R.string.off),
+            )
+        }
+        if (!viewModel.cloudConfigured) {
+            Text(
+                stringResource(R.string.cloud_unavailable_build),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall,
             )
         }
         Card(
