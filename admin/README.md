@@ -10,8 +10,9 @@ Configure these values in Vercel encrypted environment variables. Do not commit 
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` — public publishable key used by browser authentication.
 - `SUPABASE_SECRET_KEY` — server-only secret key used by protected route handlers and the admin data layer.
 - `CRON_SECRET` — secret bearer token used by the daily retention/deletion job.
-- `ADMIN_LOGIN_NAME` — server-only login alias, such as `admin`.
-- `ADMIN_LOGIN_EMAIL` — server-only email of the existing Supabase Auth user that owns the admin session.
+- `ADMIN_LOGIN_NAME` — optional legacy bootstrap alias for the existing owner account.
+- `ADMIN_LOGIN_EMAIL` — optional legacy bootstrap email for the existing Supabase Auth owner account.
+- `ADMIN_AUTH_EMAIL_DOMAIN` — optional private domain for username-only accounts; defaults to `admin.invalid` and is never used for email delivery.
 
 The service starts safely with cloud writes disabled in `app_config`. Read APIs and the offline-first Android client continue to work while writes are paused.
 
@@ -33,16 +34,17 @@ Run locally with configured environment variables:
 npm run dev
 ```
 
-The health endpoint is `GET /api/health`. Mobile endpoints require a valid Supabase anonymous-user bearer token. Administrative routes require a password session whose user ID exists in `admin_members`. The login name is only a server-side alias for the configured Supabase Auth email; passwords are verified and stored by Supabase Auth, never by this dashboard.
+The health endpoint is `GET /api/health`. Mobile endpoints require a valid Supabase anonymous-user bearer token. Administrative routes require a password session whose user ID exists in `admin_members`. Username sign-in resolves a server-only Auth identity; passwords are verified and stored by Supabase Auth, never by this dashboard.
 
-## Admin password setup
+## Admin access setup
 
-1. Ensure the configured `ADMIN_LOGIN_EMAIL` already exists in Supabase Auth and has the intended password.
-2. Add that Auth user’s UUID to `public.admin_members` with the required role (`owner`, `admin`, or `reviewer`) using the approved Supabase administration process.
-3. Set `ADMIN_LOGIN_NAME=admin` and `ADMIN_LOGIN_EMAIL` in the deployment’s encrypted environment variables.
-4. To skip email confirmation for this password-based admin flow, disable Supabase Auth’s **Confirm Email** setting for the target project. The versioned local configuration also has confirmations disabled for local development; hosted-project settings must be changed separately.
+The owner can open **Admin access** in the dashboard and create additional users with only a username, password, and role. The server creates a private, auto-confirmed Supabase Auth identity behind the scenes, stores only the Auth UUID and normalized username in `public.admin_members`, and never stores a password. The supported roles created by the UI are `admin` and `reviewer`; the existing `owner` remains the highest-privilege role.
 
-Do not commit a password or place one in `NEXT_PUBLIC_*` configuration. A short shared credential should only be used temporarily in a private, controlled environment; use a unique longer password before public deployment.
+The existing `ADMIN_LOGIN_NAME` and `ADMIN_LOGIN_EMAIL` values remain as a temporary bootstrap path so the current owner can sign in before claiming a username in the dashboard. Once the owner claims a username, future sign-ins resolve through `public.admin_members`.
+
+Do not disable hosted email confirmation globally just to create username-only accounts: the server creates these internal identities with `email_confirm: true` because they are not contact addresses. Supabase’s Auth Admin API must remain server-only and the service key must never reach the browser.
+
+Do not commit a password or place one in `NEXT_PUBLIC_*` configuration. Use a unique password of at least 12 characters; do not use examples such as `admin123` in production.
 
 ## Deployment
 

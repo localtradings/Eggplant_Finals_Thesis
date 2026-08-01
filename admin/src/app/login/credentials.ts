@@ -1,30 +1,19 @@
-const ADMIN_LOGIN_NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
-const ADMIN_LOGIN_EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+import {
+  MAX_ADMIN_PASSWORD_LENGTH,
+  normalizeAdminLoginName,
+} from "../../lib/admin-credentials";
 
-export const MAX_ADMIN_PASSWORD_LENGTH = 128;
-
-export type AdminLoginConfig = {
-  loginName: string;
-  email: string;
-};
+export {
+  ADMIN_LOGIN_NAME_PATTERN,
+  MAX_ADMIN_PASSWORD_LENGTH,
+  normalizeAdminLoginName,
+  readAdminLoginConfig,
+} from "../../lib/admin-credentials";
 
 export type AdminLoginInput = {
   loginName: string;
   password: string;
 };
-
-export function readAdminLoginConfig(
-  environment: Record<string, string | undefined>,
-): AdminLoginConfig | null {
-  const loginName = environment.ADMIN_LOGIN_NAME?.trim() ?? "";
-  const email = environment.ADMIN_LOGIN_EMAIL?.trim() ?? "";
-
-  if (!ADMIN_LOGIN_NAME_PATTERN.test(loginName) || !ADMIN_LOGIN_EMAIL_PATTERN.test(email)) {
-    return null;
-  }
-
-  return { loginName, email };
-}
 
 export function parseAdminLoginFormData(formData: FormData): AdminLoginInput | null {
   const loginNameValue = formData.get("name");
@@ -34,9 +23,9 @@ export function parseAdminLoginFormData(formData: FormData): AdminLoginInput | n
     return null;
   }
 
-  const loginName = loginNameValue.trim();
+  const loginName = normalizeAdminLoginName(loginNameValue);
   if (
-    !ADMIN_LOGIN_NAME_PATTERN.test(loginName) ||
+    !loginName ||
     passwordValue.length === 0 ||
     passwordValue.length > MAX_ADMIN_PASSWORD_LENGTH
   ) {

@@ -8,7 +8,7 @@ import {
 describe("admin login credentials", () => {
   it("parses a valid login without altering the password", () => {
     const formData = new FormData();
-    formData.set("name", "  admin ");
+    formData.set("name", "  ADMIN ");
     formData.set("password", "not-a-real-password");
 
     expect(parseAdminLoginFormData(formData)).toEqual({

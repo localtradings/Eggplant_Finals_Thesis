@@ -9,6 +9,8 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       ? "Invalid admin name or password."
       : error === "not_authorized"
         ? "This account is not authorized for the dashboard."
+        : error === "unavailable"
+          ? "Admin authentication is temporarily unavailable. Try again shortly."
         : error === "callback"
           ? "That sign-in link is invalid or expired."
           : null;

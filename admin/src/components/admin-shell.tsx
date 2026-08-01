@@ -3,11 +3,12 @@ import Link from "next/link";
 import { BookOpen, ClipboardList, Globe2, LayoutDashboard, LogOut, Settings, ShieldCheck } from "lucide-react";
 
 const items = [
-  ["Overview", "/overview", LayoutDashboard],
-  ["Global scans", "/global-scans", Globe2],
-  ["Disease requests", "/disease-requests", ClipboardList],
-  ["Disease catalog", "/disease-catalog", BookOpen],
-  ["Audit & settings", "/settings", Settings],
+  ["Overview", "/overview", LayoutDashboard, false],
+  ["Global scans", "/global-scans", Globe2, false],
+  ["Disease requests", "/disease-requests", ClipboardList, false],
+  ["Disease catalog", "/disease-catalog", BookOpen, false],
+  ["Audit & settings", "/settings", Settings, false],
+  ["Admin access", "/admin-members", ShieldCheck, true],
 ] as const;
 
 export function AdminShell({ children, active, role }: { children: React.ReactNode; active: string; role: string }) {
@@ -19,7 +20,7 @@ export function AdminShell({ children, active, role }: { children: React.ReactNo
           <div><p className="text-xl font-bold tracking-tight">Eggplant</p><p className="text-sm font-semibold text-[#24863c]">Disease Detector</p></div>
         </div>
         <nav className="mt-8 grid grid-cols-2 gap-2 sm:grid-cols-5 lg:grid-cols-1" aria-label="Admin navigation">
-          {items.map(([label, href, Icon]) => {
+          {items.filter(([, , , ownerOnly]) => !ownerOnly || role === "owner").map(([label, href, Icon]) => {
             const selected = active === href;
             return <Link key={href} href={href} aria-current={selected ? "page" : undefined} className={`focus-ring flex min-h-11 items-center gap-3 rounded-xl px-3.5 text-sm font-semibold transition-all ${selected ? "bg-[#512b91] text-white shadow-[0_8px_22px_rgba(81,43,145,.2)]" : "text-[#514e65] hover:bg-[#f1eff7] hover:text-[#2b2341]"}`}><Icon size={19} strokeWidth={1.9}/><span>{label}</span></Link>;
           })}
