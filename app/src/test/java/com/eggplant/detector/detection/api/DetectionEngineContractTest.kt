@@ -68,6 +68,20 @@ class DetectionEngineContractTest {
         )
     }
 
+    @Test
+    fun `direct CameraX frame accepts a plane without final-row padding`() {
+        RgbaFrame(
+            width = 2,
+            height = 2,
+            rowStride = 12,
+            rgbaBytes = ByteBuffer.allocateDirect(20),
+            rotationDegrees = 0,
+            timestampMillis = 0,
+            source = InputSource.LIVE,
+            sceneToken = 1,
+        )
+    }
+
     private fun rgbFrame() = RgbFrame(
         width = 2,
         height = 2,

@@ -599,7 +599,7 @@ class CameraController(
                 fallbackRgb?.let { return it }
                 val rgba = CameraFrameConverter.copyRgbaPlane(
                     sourceBuffer,
-                    plane.rowStride * image.height,
+                    sourceBuffer.remaining(),
                 )
                 val rgb = CameraFrameConverter.rgbaToRgb(
                     rgba,

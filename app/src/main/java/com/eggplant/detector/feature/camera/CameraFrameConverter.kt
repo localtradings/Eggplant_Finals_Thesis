@@ -26,9 +26,9 @@ object CameraFrameConverter {
     ): ByteArray {
         require(width > 0 && height > 0)
         require(rowStride >= width * 4)
-        require(rgbaBytes.size >= rowStride * height)
         require(cropLeft >= 0 && cropTop >= 0 && cropWidth > 0 && cropHeight > 0)
         require(cropLeft + cropWidth <= width && cropTop + cropHeight <= height)
+        require(rgbaBytes.size.toLong() >= requiredRgbaBytes(rowStride, cropLeft, cropTop, cropWidth, cropHeight))
         val rgb = ByteArray(cropWidth * cropHeight * 3)
         var destination = 0
         repeat(cropHeight) { y ->
@@ -122,9 +122,9 @@ object CameraFrameConverter {
     ): Long {
         require(buffer.isDirect)
         require(rowStride >= width * 4)
-        require(buffer.capacity() >= rowStride * height)
         require(cropLeft >= 0 && cropTop >= 0 && cropWidth > 0 && cropHeight > 0)
         require(cropLeft + cropWidth <= width && cropTop + cropHeight <= height)
+        require(buffer.capacity().toLong() >= requiredRgbaBytes(rowStride, cropLeft, cropTop, cropWidth, cropHeight))
         val bytes = buffer.duplicate()
         var token = 0L
         repeat(4) { blockY ->
@@ -152,7 +152,17 @@ object CameraFrameConverter {
         return token
     }
 
+    private fun requiredRgbaBytes(
+        rowStride: Int,
+        cropLeft: Int,
+        cropTop: Int,
+        cropWidth: Int,
+        cropHeight: Int,
+    ): Long = rowStride.toLong() * (cropTop + cropHeight - 1) +
+        (cropLeft + cropWidth).toLong() * CAMERA_X_BYTES_PER_PIXEL
+
     private const val CAMERA_X_RED_OFFSET = 0
     private const val CAMERA_X_GREEN_OFFSET = 1
     private const val CAMERA_X_BLUE_OFFSET = 2
+    private const val CAMERA_X_BYTES_PER_PIXEL = 4
 }

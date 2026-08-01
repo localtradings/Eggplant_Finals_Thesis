@@ -49,14 +49,22 @@ data class RgbaFrame(
         require(rowStride >= width * 4) { "RGBA row stride is too small." }
         require(rgbaBytes.isDirect) { "Camera frame buffer must be direct." }
         require(rgbaBytes.position() == 0) { "Camera frame must start at the plane buffer origin." }
-        require(rgbaBytes.remaining() >= rowStride * height) { "Camera frame buffer is incomplete." }
         require(cropLeft >= 0 && cropTop >= 0 && cropWidth > 0 && cropHeight > 0) {
             "Camera frame crop rectangle is invalid."
         }
         require(cropLeft + cropWidth <= width && cropTop + cropHeight <= height) {
             "Camera frame crop rectangle is outside the buffer."
         }
+        // Image.Plane only guarantees bytes through the last pixel in the
+        // last row; padding after that row may not be mapped into the buffer.
+        val lastPixelEnd = (rowStride.toLong() * (cropTop + cropHeight - 1)) +
+            ((cropLeft + cropWidth).toLong() * RGBA_BYTES_PER_PIXEL)
+        require(rgbaBytes.remaining().toLong() >= lastPixelEnd) { "Camera frame buffer is incomplete." }
         require(rotationDegrees in setOf(0, 90, 180, 270)) { "Unsupported frame rotation." }
+    }
+
+    private companion object {
+        const val RGBA_BYTES_PER_PIXEL = 4
     }
 }
 

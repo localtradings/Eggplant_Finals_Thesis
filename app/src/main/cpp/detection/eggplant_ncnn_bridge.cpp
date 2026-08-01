@@ -390,7 +390,9 @@ Java_com_eggplant_detector_detection_ncnn_NativeNcnnBridge_detectRgba(
     }
     auto* pixels = reinterpret_cast<unsigned char*>(env->GetDirectBufferAddress(rgba_bytes));
     const jlong capacity = env->GetDirectBufferCapacity(rgba_bytes);
-    if (pixels == nullptr || capacity < static_cast<jlong>(row_stride) * height) {
+    const jlong last_pixel_end = static_cast<jlong>(row_stride) * (crop_top + crop_height - 1) +
+        static_cast<jlong>(crop_left + crop_width) * 4;
+    if (pixels == nullptr || capacity < last_pixel_end) {
         return detection_failure(env, "BUFFER_ACCESS_FAILED", "Camera frame is not a complete direct buffer.");
     }
     std::lock_guard<std::mutex> lock(engine->inference_mutex);

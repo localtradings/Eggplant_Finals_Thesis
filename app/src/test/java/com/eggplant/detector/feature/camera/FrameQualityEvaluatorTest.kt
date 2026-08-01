@@ -74,6 +74,24 @@ class FrameQualityEvaluatorTest {
         assertEquals(0, plane.position())
     }
 
+    @Test
+    fun `quality evaluation accepts a plane without final-row padding`() {
+        val plane = ByteBuffer.allocate(12 + 8)
+        repeat(2) { y ->
+            repeat(2) { x ->
+                val offset = y * 12 + x * 4
+                plane.put(offset, 128.toByte())
+                plane.put(offset + 1, 128.toByte())
+                plane.put(offset + 2, 128.toByte())
+                plane.put(offset + 3, 255.toByte())
+            }
+        }
+        plane.position(0)
+        plane.limit(20)
+
+        assertEquals(FrameQualityHint.HOLD_STEADY, FrameQualityEvaluator.evaluateRgba(plane, 2, 2, 12))
+    }
+
     private fun frame(width: Int, height: Int, alpha: Int = 255, value: (Int) -> Int): ByteBuffer =
         ByteBuffer.allocateDirect(width * height * 4).also { buffer ->
             repeat(width * height) { index ->

@@ -19,9 +19,11 @@ internal object FrameQualityEvaluator {
         require(rowStride >= width * 4)
         // Direct buffers use the zero-copy NCNN path, but CameraX/OEM changes
         // must still have a correct Kotlin fallback when the plane is heap-backed.
-        require(buffer.remaining() >= rowStride * height)
         require(cropLeft >= 0 && cropTop >= 0 && cropWidth > 0 && cropHeight > 0)
         require(cropLeft + cropWidth <= width && cropTop + cropHeight <= height)
+        val lastPixelEnd = rowStride.toLong() * (cropTop + cropHeight - 1) +
+            (cropLeft + cropWidth).toLong() * RGBA_BYTES_PER_PIXEL
+        require(buffer.remaining().toLong() >= lastPixelEnd)
         val source = buffer.duplicate()
         val startOffset = source.position()
         var luminanceSum = 0L
@@ -63,4 +65,5 @@ internal object FrameQualityEvaluator {
     private const val CAMERA_X_RED_OFFSET = 0
     private const val CAMERA_X_GREEN_OFFSET = 1
     private const val CAMERA_X_BLUE_OFFSET = 2
+    private const val RGBA_BYTES_PER_PIXEL = 4
 }

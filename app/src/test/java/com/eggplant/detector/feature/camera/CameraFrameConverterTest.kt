@@ -28,6 +28,18 @@ class CameraFrameConverterTest {
     }
 
     @Test
+    fun `rgba buffer may omit padding after the final row`() {
+        val rgba = byteArrayOf(
+            1, 2, 3, 99, 4, 5, 6, 99, 0, 0, 0, 0,
+            7, 8, 9, 99, 10, 11, 12, 99,
+        )
+
+        val rgb = CameraFrameConverter.rgbaToRgb(rgba, width = 2, height = 2, rowStride = 12)
+
+        assertArrayEquals(byteArrayOf(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), rgb)
+    }
+
+    @Test
     fun `camera crop is applied before rotation and inference`() {
         val rgba = byteArrayOf(
             1, 2, 3, 99, 4, 5, 6, 99, 7, 8, 9, 99,
