@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  ADMIN_LOGIN_NAME_HTML_PATTERN,
   buildInternalAdminEmail,
   isAdminPasswordValid,
   normalizeAdminLoginName,
@@ -10,6 +11,7 @@ describe("admin credential helpers", () => {
   it("normalizes supported usernames", () => {
     expect(normalizeAdminLoginName("  Admin_123 ")).toBe("admin_123");
     expect(normalizeAdminLoginName("admin name")).toBeNull();
+    expect(ADMIN_LOGIN_NAME_HTML_PATTERN).toContain("\\-");
   });
 
   it("builds an internal Auth identity without exposing it to the UI", () => {

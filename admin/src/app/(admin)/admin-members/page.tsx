@@ -1,6 +1,7 @@
 import { FormSubmitButton } from "@/components/form-submit-button";
 import { AdminShell } from "@/components/admin-shell";
 import { requireAdmin } from "@/lib/auth";
+import { ADMIN_LOGIN_NAME_HTML_PATTERN } from "@/lib/admin-credentials";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { ShieldCheck, UserPlus } from "lucide-react";
 import { createAdmin, claimMyAdminUsername } from "./actions";
@@ -67,7 +68,7 @@ export default async function AdminMembersPage({
         </div>
         <form action={createAdmin} className="mt-6 grid gap-4 sm:grid-cols-2">
           <label className="grid gap-1.5 text-sm font-semibold">Username
-            <input name="loginName" required maxLength={64} pattern="[A-Za-z0-9][A-Za-z0-9._-]{0,63}" autoComplete="username" className="focus-ring h-11 rounded-xl border border-[#dcd8e4] bg-white px-3 font-normal" placeholder="admin123" />
+            <input name="loginName" required maxLength={64} pattern={ADMIN_LOGIN_NAME_HTML_PATTERN} autoComplete="username" className="focus-ring h-11 rounded-xl border border-[#dcd8e4] bg-white px-3 font-normal" placeholder="admin123" />
             <span className="text-xs font-normal text-[#777286]">{ADMIN_LOGIN_NAME_HELP}</span>
           </label>
           <label className="grid gap-1.5 text-sm font-semibold">Password
@@ -94,7 +95,7 @@ export default async function AdminMembersPage({
         </div>
         <form action={claimMyAdminUsername} className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-end">
           <label className="grid flex-1 gap-1.5 text-sm font-semibold">Your username
-            <input name="loginName" required maxLength={64} pattern="[A-Za-z0-9][A-Za-z0-9._-]{0,63}" autoComplete="username" className="focus-ring h-11 rounded-xl border border-[#dcd8e4] bg-white px-3 font-normal" placeholder="admin123" />
+            <input name="loginName" required maxLength={64} pattern={ADMIN_LOGIN_NAME_HTML_PATTERN} autoComplete="username" className="focus-ring h-11 rounded-xl border border-[#dcd8e4] bg-white px-3 font-normal" placeholder="admin123" />
           </label>
           <FormSubmitButton label="Save username" pendingLabel="Saving username" className="bg-[#278b3d] px-4 text-white" />
         </form>
