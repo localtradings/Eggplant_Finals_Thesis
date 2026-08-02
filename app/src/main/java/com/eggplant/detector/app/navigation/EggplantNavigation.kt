@@ -59,9 +59,19 @@ fun EggplantNavigation(viewModel: EggplantAppViewModel) {
     val homeListState = rememberLazyListState()
     val scope = rememberCoroutineScope()
 
+    fun refreshForTopLevelRoute(route: String) {
+        if (route == Routes.HISTORY) {
+            // Top-level destinations restore their state when revisited, so
+            // Global Scans can remain mounted without rerunning its initial
+            // refresh effect. Refresh when navigation returns to History.
+            viewModel.refreshGlobalScans()
+        }
+    }
+
     fun navigateTopLevel(route: String) {
         if (route == currentRoute) {
             if (route == Routes.HOME) scope.launch { homeListState.scrollToItem(0) }
+            refreshForTopLevelRoute(route)
             return
         }
         if (route == Routes.HOME) {
@@ -75,6 +85,7 @@ fun EggplantNavigation(viewModel: EggplantAppViewModel) {
             scope.launch { homeListState.scrollToItem(0) }
             return
         }
+        refreshForTopLevelRoute(route)
         navController.navigate(route) {
             popUpTo(navController.graph.findStartDestination().id) { saveState = true }
             launchSingleTop = true

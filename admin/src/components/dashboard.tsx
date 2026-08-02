@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowUpRight, ClipboardCheck, Globe2, Leaf, RefreshCw, UsersRound } from "lucide-react";
+import { ArrowUpRight, ClipboardCheck, Globe2, Leaf, UsersRound } from "lucide-react";
 import type { DashboardData } from "@/lib/dashboard-data";
 import { RefreshDashboardButton } from "@/components/refresh-dashboard-button";
 
@@ -23,14 +23,14 @@ export function Dashboard({ data }: { data: DashboardData }) {
     <div className="fade-up mx-auto max-w-[1240px]">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[.16em] text-[#278b3d]">Operations</p>
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[.16em] text-[#278b3d]"><span className="h-2 w-2 rounded-full bg-[#278b3d]"/>Operations</div>
           <h1 className="mt-1 text-3xl font-bold tracking-[-.03em]">Overview</h1>
-          <p className="mt-1 text-sm text-[#6f6b80]">Live operational data from the Eggplant detector.</p>
+          <p className="mt-1 text-sm text-[#6f6b80]">Monitor community activity, moderation load, and content delivery.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <p className="hidden items-center gap-2 rounded-xl border border-[#ded9e8] bg-white px-3 py-2 text-sm text-[#5e596e] sm:flex">
-            <RefreshCw size={16} aria-hidden="true" />
-            Server data
+          <p className="hidden items-center gap-2 rounded-full border border-[#cce6d0] bg-[#f0faf1] px-3 py-2 text-xs font-semibold text-[#247936] sm:flex">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#278b3d]"/>
+            Live data
           </p>
           <RefreshDashboardButton />
         </div>
@@ -41,7 +41,7 @@ export function Dashboard({ data }: { data: DashboardData }) {
         <Metric label="Contributing installs" value={data.installations} icon={UsersRound} />
         <Metric label="Open requests" value={data.openRequests} icon={Leaf} />
       </section>
-      <section className="mt-5 grid gap-3 sm:grid-cols-3" aria-label="System status">
+      <section className="mt-5 grid overflow-hidden rounded-[20px] border border-[#e4e1eb] bg-white sm:grid-cols-3" aria-label="System status">
         <Ops label="Cloud writes" value={data.cloudWritesEnabled ? "Enabled" : "Paused"} />
         <Ops label="Private photo storage" value={formatBytes(data.storageBytes)} />
         <Ops label="Last mobile sync" value={data.lastInstallationSeenAt ? new Date(data.lastInstallationSeenAt).toLocaleString() : "No sync yet"} />
@@ -61,5 +61,5 @@ export function Dashboard({ data }: { data: DashboardData }) {
 }
 
 function Empty({ text }: { text: string }) { return <div className="mt-4 rounded-xl border border-dashed border-[#d9d3e4] bg-[#faf9fc] p-8 text-center text-sm text-[#716c80]">{text}</div>; }
-function Ops({ label, value }: { label: string; value: string }) { return <div className="surface p-4"><p className="text-xs font-semibold uppercase tracking-wide text-[#777286]">{label}</p><p className="mt-1 font-mono text-sm font-semibold text-[#512b91]">{value}</p></div>; }
+function Ops({ label, value }: { label: string; value: string }) { return <div className="border-b border-[#ece9f1] p-4 last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0"><p className="text-xs font-semibold uppercase tracking-wide text-[#777286]">{label}</p><p className="mt-1 truncate font-mono text-sm font-semibold text-[#512b91]">{value}</p></div>; }
 function formatBytes(bytes: number) { if (bytes < 1024) return `${bytes} B`; if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`; return `${(bytes / 1024 / 1024).toFixed(1)} MB`; }
