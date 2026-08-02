@@ -1,6 +1,7 @@
 package com.eggplant.detector.feature.camera
 
 import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
@@ -13,6 +14,22 @@ class CameraFrameConverterTest {
         val source = java.io.File("src/main/java/com/eggplant/detector/feature/camera/CameraController.kt").readText()
 
         assertTrue(source.contains("setOutputImageRotationEnabled(true)"))
+    }
+
+    @Test
+    fun `camera analysis stays on the full frame instead of PreviewView viewport crop`() {
+        val source = java.io.File("src/main/java/com/eggplant/detector/feature/camera/CameraController.kt").readText()
+
+        assertFalse(source.contains("UseCaseGroup"))
+        assertFalse(source.contains("setViewPort"))
+        assertTrue(
+            source.contains(
+                "CameraSelector.DEFAULT_BACK_CAMERA,\n" +
+                    "            preview,\n" +
+                    "            analysis,\n" +
+                    "            capture,",
+            ),
+        )
     }
 
     @Test

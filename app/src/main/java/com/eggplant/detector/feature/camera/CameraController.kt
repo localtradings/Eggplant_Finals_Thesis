@@ -14,7 +14,6 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
-import androidx.camera.core.UseCaseGroup
 import androidx.camera.core.FocusMeteringAction
 import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.core.resolutionselector.ResolutionStrategy
@@ -111,8 +110,7 @@ class CameraController(
                 if (closed) return@addListener
                 runCatching {
                     provider = providerFuture.get()
-                    // PreviewView's ViewPort is only available after layout. Posting the
-                    // bind keeps preview, analysis and capture on one crop contract.
+                    // Bind after layout so PreviewView is ready before the camera starts.
                     previewView.post { if (!closed) bindCamera(previewView) }
                 }.onFailure { error ->
                     emit(state.copy(error = error.message ?: "Camera could not be opened."))
@@ -503,24 +501,16 @@ class CameraController(
             .setResolutionSelector(captureResolutionSelector)
             .build()
         provider?.unbindAll()
-        val viewPort = previewView.viewPort
-        camera = if (viewPort != null) {
-            val group = UseCaseGroup.Builder()
-                .setViewPort(viewPort)
-                .addUseCase(preview)
-                .addUseCase(analysis)
-                .addUseCase(capture)
-                .build()
-            provider?.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, group)
-        } else {
-            provider?.bindToLifecycle(
-                lifecycleOwner,
-                CameraSelector.DEFAULT_BACK_CAMERA,
-                preview,
-                analysis,
-                capture,
-            )
-        }
+        // Keep the analyzer on the full CameraX image. A PreviewView viewport can crop the
+        // analysis stream, which changes the detector input relative to the known-good 1.4.3
+        // camera contract and can cut the plant out of the inference frame.
+        camera = provider?.bindToLifecycle(
+            lifecycleOwner,
+            CameraSelector.DEFAULT_BACK_CAMERA,
+            preview,
+            analysis,
+            capture,
+        )
         previewUseCase = preview
         imageAnalysis = analysis
         imageCapture = capture
