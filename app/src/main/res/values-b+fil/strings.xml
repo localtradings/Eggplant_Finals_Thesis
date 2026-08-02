@@ -108,6 +108,7 @@
     <string name="scan_result">Resulta ng Scan</string>
     <string name="save_history">I-save sa Kasaysayan</string>
     <string name="saving_history">Sine-save…</string>
+    <string name="saving_live_history">Sine-save ang scan sa Kasaysayan…</string>
     <string name="saved_to_history">Naka-save sa Kasaysayan</string>
     <string name="save_history_succeeded">Naka-save sa Kasaysayan. Makikita ang scan na ito sa Aking mga Scan.</string>
     <string name="save_history_already_saved">Nasa Aking mga Scan na ang scan na ito.</string>

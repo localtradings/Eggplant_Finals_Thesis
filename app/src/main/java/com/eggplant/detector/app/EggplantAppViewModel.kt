@@ -548,7 +548,13 @@ class EggplantAppViewModel(
         localRepository.loadMoreGlobalScans()
     }
 
-    fun shareCurrentResult() {
+    /**
+     * Queues a share after the user confirms the publication dialog. That
+     * dialog is also the explicit consent action, so the caller may pass true
+     * to atomically queue consent and the share in the repository transaction.
+     * This avoids racing an asynchronous settings write against the share.
+     */
+    fun shareCurrentResult(allowSharingConsent: Boolean = false) {
         if (_cloudActionState.value == CloudActionState.Working) return
         val localRepository = repository ?: return
         if (!localRepository.isCloudConfigured) {
@@ -560,15 +566,29 @@ class EggplantAppViewModel(
             return
         }
         _cloudActionState.value = CloudActionState.Working
+        val sharingWasEnabled = _globalSharingEnabled.value
+        val sharingEnabledForShare = sharingWasEnabled || allowSharingConsent
+        val previousSettings = persistedSettings
         viewModelScope.launch {
-            runCatching { localRepository.enqueueGlobalShare(result, _globalSharingEnabled.value) }
+            runCatching { localRepository.enqueueGlobalShare(result, sharingEnabledForShare) }
                 .onSuccess { eligibility ->
+                    if (eligibility == ShareEligibility.Eligible && allowSharingConsent && !sharingWasEnabled) {
+                        _globalSharingEnabled.value = true
+                        persistedSettings = previousSettings.copy(
+                            globalSharingEnabled = true,
+                            sharingConsentVersion = 1,
+                            sharingConsentedAt = java.time.Instant.now().toString(),
+                        )
+                        persistSettings()
+                    }
                     _cloudActionState.value = when (eligibility) {
                         ShareEligibility.Eligible -> CloudActionState.Queued("Share queued")
                         is ShareEligibility.Ineligible -> CloudActionState.Error(eligibility.reason.name.lowercase().replace('_', ' '))
                     }
                 }
-                .onFailure { _cloudActionState.value = CloudActionState.Error(it.message ?: "Could not queue share") }
+                .onFailure {
+                    _cloudActionState.value = CloudActionState.Error(it.message ?: "Could not queue share")
+                }
         }
     }
 

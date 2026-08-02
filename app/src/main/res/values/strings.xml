@@ -108,6 +108,7 @@
     <string name="scan_result">Scan Result</string>
     <string name="save_history">Save to History</string>
     <string name="saving_history">Saving…</string>
+    <string name="saving_live_history">Saving scan to History…</string>
     <string name="saved_to_history">Saved to History</string>
     <string name="save_history_succeeded">Saved to History. You can find this scan in My Scans.</string>
     <string name="save_history_already_saved">This scan is already in My Scans.</string>

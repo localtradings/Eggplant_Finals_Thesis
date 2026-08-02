@@ -237,8 +237,7 @@ fun DetectionResultScreen(
             },
             confirmButton = {
                 TextButton(onClick = {
-                    if (!viewModel.globalSharingEnabled.value) viewModel.setGlobalSharing(true)
-                    viewModel.shareCurrentResult()
+                    viewModel.shareCurrentResult(allowSharingConsent = true)
                     showShareDialog = false
                 }) { Text(stringResource(R.string.share_to_global)) }
             },

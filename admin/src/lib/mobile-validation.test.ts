@@ -38,8 +38,14 @@ describe("global-share API validation", () => {
     });
   });
 
+  it("accepts gallery sources for explicit Global Scan sharing", () => {
+    expect(validateShareIntent({ ...validIntent, source: "gallery" })).toEqual({
+      ok: true,
+      value: { ...validIntent, source: "gallery" },
+    });
+  });
+
   it.each([
-    ["gallery sources", { ...validIntent, source: "gallery" }],
     ["sub-threshold confidence", { ...validIntent, confidence: 0.4999 }],
     ["non-finite confidence", { ...validIntent, confidence: Number.NaN }],
     ["oversized uploads", { ...validIntent, contentLength: MAX_UPLOAD_BYTES + 1 }],
@@ -73,6 +79,24 @@ describe("global-share API validation", () => {
         "01890f3d-00d8-7b65-9a77-a79bfe3f8499",
       ),
     ).toEqual({ ok: false });
+  });
+
+  it("accepts a gallery completion for the same owner-bound path", () => {
+    const path = globalSharePath(USER_ID, SCAN_ID, SHA256);
+    expect(
+      validateShareCompletion({ ...validIntent, source: "gallery", path }, USER_ID),
+    ).toEqual({
+      ok: true,
+      value: {
+        clientScanId: SCAN_ID,
+        diseaseId: "leaf-spot",
+        confidence: 0.5,
+        source: "gallery",
+        modelVersion: "eggplant-ncnn-v2",
+        path,
+        expectedSha256: SHA256,
+      },
+    });
   });
 
   it("rejects a completion path that does not contain a complete SHA-256 name", () => {

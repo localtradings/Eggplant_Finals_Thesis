@@ -4,7 +4,7 @@ export const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 export const SHA256_PATTERN = /^[a-f0-9]{64}$/i;
 
-export type ShareSource = "live" | "capture";
+export type ShareSource = "live" | "capture" | "gallery";
 
 export type ShareIntent = {
   clientScanId: string;
@@ -94,7 +94,7 @@ export function validateShareIntent(
     !UUID_PATTERN.test(value.clientScanId) ||
     !diseaseId ||
     !modelVersion ||
-    (source !== "live" && source !== "capture") ||
+    (source !== "live" && source !== "capture" && source !== "gallery") ||
     typeof confidence !== "number" ||
     !Number.isFinite(confidence) ||
     confidence < 0.5 ||
@@ -136,7 +136,7 @@ export function validateShareCompletion(
     !UUID_PATTERN.test(value.clientScanId) ||
     !diseaseId ||
     !modelVersion ||
-    (source !== "live" && source !== "capture") ||
+    (source !== "live" && source !== "capture" && source !== "gallery") ||
     typeof confidence !== "number" ||
     !Number.isFinite(confidence) ||
     confidence < 0.5 ||

@@ -2,7 +2,7 @@
 
 An offline-first Android application for eggplant leaf-or-fruit disease screening with CameraX, a custom YOLO26m NCNN export, and on-device inference. The optional cloud layer adds anonymous Global Scans, private missing-disease requests, and a protected administration dashboard without moving inference off the device.
 
-The center shutter supports a quick still scan and hold-to-detect live assistance. The first accepted live frame can show a provisional result; a second spatially compatible frame confirms it without an artificial confirmation delay. Gallery analysis remains local and is never eligible for Global Scans.
+The center shutter supports a quick still scan and hold-to-detect live assistance. The first accepted live frame can show a provisional result; a second spatially compatible frame confirms it without an artificial confirmation delay. Disease results from live, still capture, and Gallery analysis can be explicitly shared to Global Scans after local validation.
 
 ## Requirements
 
@@ -66,7 +66,7 @@ The current runtime uses a `0.12` base confidence threshold for the exported NCN
 ## Privacy and cloud behavior
 
 - Inference, catalog access, My Scans, and queued work remain available offline.
-- A supported Global Scan requires an explicit Share action, an in-app camera source, at least 50% confidence, and a server-validated JPEG. Public API responses never include an owner identity.
+- A supported Global Scan requires an explicit Share action, a live, still-capture, or Gallery source, at least 50% confidence, and a server-validated JPEG. Public API responses never include an owner identity.
 - Two unique reports automatically quarantine a public scan pending review. Public photos expire after 180 days while anonymous aggregate counts may remain.
 - Missing-disease photos are private to their anonymous owner and administrators. They are not public and are not approved for training.
 - “Delete my shared cloud data” unpublishes contributions immediately and queues scoped object/row deletion.

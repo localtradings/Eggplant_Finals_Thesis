@@ -360,7 +360,7 @@ fun CameraScreen(
         if (cameraState.isStillImageProcessing || liveReleaseFinalizing) {
             StillImageProcessingOverlay(
                 modifier = Modifier.fillMaxSize(),
-                labelRes = if (liveReleaseFinalizing) R.string.saving_history else R.string.analyzing,
+                labelRes = if (liveReleaseFinalizing) R.string.saving_live_history else R.string.analyzing,
             )
         }
     }

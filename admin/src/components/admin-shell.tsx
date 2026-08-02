@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { BookOpen, ClipboardList, Globe2, LayoutDashboard, LogOut, Settings, ShieldCheck } from "lucide-react";
+import { RefreshPageButton } from "@/components/refresh-page-button";
 
 const items = [
   ["Overview", "/overview", LayoutDashboard, false],
@@ -19,7 +20,7 @@ export function AdminShell({ children, active, role }: { children: React.ReactNo
           <Image src="/eggplant-logo.svg" alt="" width={46} height={46} priority />
           <div><p className="text-xl font-bold tracking-tight">Eggplant</p><p className="text-sm font-semibold text-[#8dd49b]">Disease operations</p></div>
         </div>
-        <div className="mt-7 flex items-center gap-2 rounded-xl border border-white/10 bg-white/[.06] px-3 py-2 text-xs font-semibold text-[#d9d1e8]"><span className="h-2 w-2 rounded-full bg-[#70d58a] shadow-[0_0_0_4px_rgba(112,213,138,.12)]"/>Production workspace</div>
+        <div className="mt-7 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/[.06] px-3 py-2 text-xs font-semibold text-[#d9d1e8]"><span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-[#70d58a] shadow-[0_0_0_4px_rgba(112,213,138,.12)]"/>Production workspace</span><RefreshPageButton /></div>
         <nav className="mt-5 flex gap-2 overflow-x-auto pb-1 lg:grid lg:grid-cols-1" aria-label="Admin navigation">
           {items.filter(([, , , ownerOnly]) => !ownerOnly || role === "owner").map(([label, href, Icon]) => {
             const selected = active === href;
