@@ -527,6 +527,11 @@ class EggplantAppViewModel(
         _cloudActionState.value = CloudActionState.Queued("Refreshing Global Scans")
     }
 
+    /** Refresh catalog, request status, and the public feed without changing the selected screen. */
+    fun refreshCloudData() {
+        repository?.refreshCloud()
+    }
+
     fun loadMoreGlobalScans() {
         if (_globalFeedState.value.isLoading || !_globalFeedState.value.hasMore) return
         val localRepository = repository

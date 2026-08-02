@@ -60,11 +60,14 @@ fun EggplantNavigation(viewModel: EggplantAppViewModel) {
     val scope = rememberCoroutineScope()
 
     fun refreshForTopLevelRoute(route: String) {
-        if (route == Routes.HISTORY) {
-            // Top-level destinations restore their state when revisited, so
-            // Global Scans can remain mounted without rerunning its initial
-            // refresh effect. Refresh when navigation returns to History.
-            viewModel.refreshGlobalScans()
+        when (route) {
+            Routes.HISTORY -> {
+                // Top-level destinations restore their state when revisited,
+                // so Global Scans and request status can otherwise remain
+                // mounted without rerunning their initial refresh effect.
+                viewModel.refreshGlobalScans()
+            }
+            Routes.LIBRARY, Routes.SETTINGS -> viewModel.refreshCloudData()
         }
     }
 
@@ -134,6 +137,7 @@ fun EggplantNavigation(viewModel: EggplantAppViewModel) {
                     diseases = catalog,
                     onDiseaseClick = { navController.navigate(Routes.diseaseDetail(it.id)) },
                     onHelp = { navController.navigate(Routes.HELP) },
+                    onRefresh = viewModel::refreshCloudData,
                 )
             }
             composable(Routes.DISEASE_DETAIL) { entry ->

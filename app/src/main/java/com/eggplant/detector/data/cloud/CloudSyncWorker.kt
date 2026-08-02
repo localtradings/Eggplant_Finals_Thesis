@@ -615,10 +615,10 @@ object CloudSyncScheduler {
     fun refresh(context: Context) {
         WorkManager.getInstance(context).enqueueUniqueWork(
             "eggplant-cloud-sync-now",
-            // A manual refresh is a user-visible action. Replace a stale or
-            // queued refresh so navigation and pull-to-refresh request the
-            // newest catalog/feed data promptly.
-            ExistingWorkPolicy.REPLACE,
+            // Keep an active upload/request worker alive. The worker always
+            // reads the latest catalog/feed state when it reaches its refresh
+            // phase, and replacing it here could cancel a user's upload.
+            ExistingWorkPolicy.KEEP,
             OneTimeWorkRequestBuilder<CloudSyncWorker>().setConstraints(constraints).build(),
         )
     }

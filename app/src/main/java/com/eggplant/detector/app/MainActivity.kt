@@ -24,6 +24,11 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContent { EggplantDetectorApp() }
     }
+
+    override fun onStart() {
+        super.onStart()
+        (application as EggplantApplication).repository.refreshCloud()
+    }
 }
 
 @Composable

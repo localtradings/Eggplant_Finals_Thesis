@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.Spa
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -54,6 +55,7 @@ fun DiseaseLibraryScreen(
     diseases: List<Disease>,
     onDiseaseClick: (Disease) -> Unit,
     onHelp: () -> Unit,
+    onRefresh: () -> Unit,
 ) {
     val allLabel = stringResource(R.string.all)
     val leafLabel = stringResource(R.string.leaf_disease)
@@ -78,7 +80,7 @@ fun DiseaseLibraryScreen(
             .semantics { contentDescription = listDescription },
         contentPadding = PaddingValues(start = 16.dp, top = 14.dp, end = 16.dp, bottom = 14.dp),
     ) {
-        item { LibraryHeader(onHelp) }
+        item { LibraryHeader(onHelp, onRefresh) }
         item { Spacer(Modifier.height(8.dp)) }
         item {
             SearchBar(
@@ -153,7 +155,7 @@ fun DiseaseLibraryScreen(
 }
 
 @Composable
-private fun LibraryHeader(onHelp: () -> Unit) {
+private fun LibraryHeader(onHelp: () -> Unit, onRefresh: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth().height(54.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -173,6 +175,14 @@ private fun LibraryHeader(onHelp: () -> Unit) {
                 stringResource(R.string.library_subtitle),
                 style = MaterialTheme.typography.bodyLarge.copy(fontSize = 11.5.sp, lineHeight = 16.sp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        IconButton(onClick = onRefresh, modifier = Modifier.size(48.dp)) {
+            Icon(
+                Icons.Outlined.Refresh,
+                contentDescription = stringResource(R.string.refresh),
+                tint = EggplantPurple,
+                modifier = Modifier.size(22.dp),
             )
         }
         IconButton(onClick = onHelp, modifier = Modifier.size(48.dp)) {
