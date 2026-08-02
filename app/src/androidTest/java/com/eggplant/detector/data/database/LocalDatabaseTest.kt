@@ -18,6 +18,14 @@ import com.eggplant.detector.data.database.entity.NotificationStateEntity
 import com.eggplant.detector.data.database.entity.ScanDetectionEntity
 import com.eggplant.detector.data.database.entity.LegacyScanRecordEntity
 import com.eggplant.detector.data.database.entity.ScanSessionEntity
+import com.eggplant.detector.data.files.ScanSnapshotStore
+import com.eggplant.detector.data.repository.EggplantRepository
+import com.eggplant.detector.detection.api.NormalizedBox
+import com.eggplant.detector.detection.ncnn.ModelMetadata
+import com.eggplant.detector.domain.model.ScanCategory
+import com.eggplant.detector.domain.model.ScanDetectionResult
+import com.eggplant.detector.domain.model.ScanOutcome
+import com.eggplant.detector.domain.model.ScanResult
 import java.time.LocalDateTime
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -118,6 +126,59 @@ class LocalDatabaseTest {
         val session = database.scanSessionDao().observeSessions().first().single()
         assertEquals("session-1", session.session.id)
         assertEquals("leaf-spot", session.detections.single().diseaseId)
+    }
+
+    @Test
+    fun repositoryRepairsPartialCatalogAndKeepsHistoryWhenSnapshotCommitFails() = runBlocking {
+        val seed = DiseaseCatalogSeed.create()
+        val missingDiseaseId = "leaf-spot"
+        database.catalogDao().upsertCatalog(
+            seed.diseases.filterNot { it.id == missingDiseaseId },
+            seed.localizations.filterNot { it.diseaseId == missingDiseaseId },
+            seed.signs.filterNot { it.diseaseId == missingDiseaseId },
+            seed.treatments.filterNot { it.diseaseId == missingDiseaseId },
+            seed.references.filterNot { it.diseaseId == missingDiseaseId },
+        )
+
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val repository = EggplantRepository(database, ScanSnapshotStore(context))
+        repository.ensureCatalog()
+
+        assertEquals(8, database.catalogDao().diseaseCount())
+
+        val detection = ScanDetectionResult(
+            id = "live-save:detection",
+            diseaseId = missingDiseaseId,
+            name = "Leaf Spot",
+            modelClassIndex = 5,
+            modelLabel = ModelMetadata.EGGPLANT_YOLO26M.classFor(5)!!.modelLabel,
+            confidence = 87,
+            bounds = NormalizedBox(.1f, .1f, .8f, .8f),
+        )
+        val committed = repository.saveScan(
+            ScanResult(
+                id = "live-save",
+                name = "Leaf Spot",
+                category = ScanCategory.LEAF_DISEASE,
+                outcome = ScanOutcome.DISEASE,
+                confidence = 87,
+                scannedAt = LocalDateTime.of(2026, 8, 2, 14, 0),
+                signs = emptyList(),
+                treatment = "",
+                diseaseId = missingDiseaseId,
+                source = "live",
+                modelVersion = ModelMetadata.EGGPLANT_YOLO26M.modelVersion,
+                imagePath = "/not-a-staged-snapshot.jpg",
+                detections = listOf(detection),
+                saveMode = "LIVE",
+            ),
+        )
+
+        assertEquals(null, committed.imagePath)
+        val saved = database.scanSessionDao().observeSessions().first().single()
+        assertEquals("live-save", saved.session.id)
+        assertEquals(null, saved.session.imagePath)
+        assertEquals(missingDiseaseId, saved.detections.single().diseaseId)
     }
 
     @Test

@@ -84,3 +84,24 @@ internal class LivePreviewSession {
         bestHealthy = null
     }
 }
+
+/**
+ * Keeps a stable result available if the last analyzer callback and the
+ * shutter-release callback cross at the exact same moment on a device.
+ * Visible-only detections are intentionally excluded so releasing early does
+ * not turn an unconfirmed box into a saved history item.
+ */
+internal fun CameraScene.retainedLiveOutcome(allowHealthy: Boolean): LivePreviewOutcome? {
+    val disease = (stability.confirmedDetections + stability.stableDetections)
+        .filterNot { it.modelClass.isHealthy }
+        .maxByOrNull { it.confidence }
+    if (disease != null) return LivePreviewOutcome.Disease(this, disease)
+
+    if (allowHealthy) {
+        val healthy = stability.confirmedDetections
+            .filter { it.modelClass.isHealthy }
+            .maxByOrNull { it.confidence }
+        if (healthy != null) return LivePreviewOutcome.Healthy(this, healthy)
+    }
+    return null
+}

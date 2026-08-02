@@ -104,6 +104,20 @@ class LivePreviewSessionTest {
         assertSame(disease, (outcome as LivePreviewOutcome.Disease).primary)
     }
 
+    @Test
+    fun `stable latest scene remains saveable when release races analyzer callback`() {
+        val disease = detection(classIndex = 5, confidence = 0.83f)
+        val stableScene = scene(disease).copy(
+            stability = scene(disease).stability.copy(confirmedDetections = emptyList()),
+        )
+
+        val outcome = stableScene.retainedLiveOutcome(allowHealthy = false)
+
+        assertTrue(outcome is LivePreviewOutcome.Disease)
+        assertSame(stableScene, (outcome as LivePreviewOutcome.Disease).scene)
+        assertSame(disease, outcome.primary)
+    }
+
     private fun scene(
         vararg detections: DetectionBox,
         status: DetectionStatus = if (detections.any { !it.modelClass.isHealthy }) {

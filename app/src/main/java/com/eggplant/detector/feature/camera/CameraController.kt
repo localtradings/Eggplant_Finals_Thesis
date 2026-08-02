@@ -200,7 +200,14 @@ class CameraController(
             pauseAnalysis()
             liveToken.set(0L)
             liveStartedAtMillis = 0L
-            livePreviewSession.stop(allowHealthy).also {
+            val retainedScene = latestScene
+            val sessionOutcome = livePreviewSession.stop(allowHealthy)
+            val outcome = if (sessionOutcome == LivePreviewOutcome.NoStableDetection) {
+                retainedScene?.retainedLiveOutcome(allowHealthy) ?: sessionOutcome
+            } else {
+                sessionOutcome
+            }
+            outcome.also {
                 tracker.reset()
                 latestScene = null
                 emit(

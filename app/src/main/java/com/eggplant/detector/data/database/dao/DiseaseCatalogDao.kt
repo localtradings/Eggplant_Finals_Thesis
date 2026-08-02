@@ -36,6 +36,9 @@ interface DiseaseCatalogDao {
     @Query("SELECT COUNT(*) FROM diseases")
     suspend fun diseaseCount(): Int
 
+    @Query("SELECT id FROM diseases WHERE id IN (:ids)")
+    suspend fun diseaseIds(ids: List<String>): List<String>
+
     @Query("DELETE FROM disease_localizations WHERE languageTag = :languageTag")
     suspend fun clearLocalizations(languageTag: String)
 

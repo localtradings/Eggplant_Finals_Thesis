@@ -430,6 +430,13 @@ class EggplantAppViewModel(
         }
         _currentResult.value = result
         _lastScan.value = result
+        val hadReadySnapshot = _snapshotState.value == SnapshotState.READY
+        _snapshotState.value = if (result.imagePath == null) SnapshotState.UNAVAILABLE else SnapshotState.READY
+        if (hadReadySnapshot && result.imagePath == null) {
+            // History is still durable when photo storage is unavailable, but
+            // global sharing must remain disabled until a real photo exists.
+            _resultWarning.value = ResultWarning.SNAPSHOT_UNAVAILABLE
+        }
         _saveState.value = completedState
     }
 

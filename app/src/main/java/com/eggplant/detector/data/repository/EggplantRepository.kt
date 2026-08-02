@@ -165,7 +165,20 @@ class EggplantRepository(
 
     suspend fun saveScan(result: ScanResult): ScanResult {
         ensureCatalog()
-        val committedImage = snapshotStore?.commit(result.imagePath, result.id) ?: result.imagePath
+        // The JPEG is an optional enhancement to a history record. A storage
+        // failure must not discard the detection itself; the result remains
+        // useful in History and can be shared later only if a photo exists.
+        val store = snapshotStore
+        val committedImage = if (store != null && result.imagePath != null) {
+            try {
+                store.commit(result.imagePath, result.id)
+            } catch (_: Exception) {
+                store.discard(result.imagePath)
+                null
+            }
+        } else {
+            result.imagePath
+        }
         val committedResult = result.copy(imagePath = committedImage)
         val (session, detections) = ScanSessionMapper.fromDomain(committedResult)
         try {
@@ -496,22 +509,31 @@ class EggplantRepository(
     suspend fun ensureCatalog() {
         catalogMutex.withLock {
             if (catalogSeeded) return
-            // A synchronized Supabase catalog is authoritative.  Seeding on
-            // every process start used to overwrite published bilingual text
-            // and leave the previous ETag in settings, so the next cloud sync
-            // could incorrectly receive 304 Not Modified.
-            if (!shouldSeedBundledCatalog(database.catalogDao().diseaseCount())) {
-                catalogSeeded = true
-                return
-            }
             val seed = DiseaseCatalogSeed.create()
-            database.catalogDao().upsertCatalog(
-                seed.diseases,
-                seed.localizations,
-                seed.signs,
-                seed.treatments,
-                seed.references,
-            )
+            val catalogDao = database.catalogDao()
+            val existingDiseaseCount = catalogDao.diseaseCount()
+            if (shouldSeedBundledCatalog(existingDiseaseCount)) {
+                // A synchronized Supabase catalog is authoritative. Seeding
+                // only an empty catalog avoids overwriting published
+                // bilingual text and invalidating the stored ETag.
+                catalogDao.upsertCatalog(seed.diseases, seed.localizations, seed.signs, seed.treatments, seed.references)
+            } else {
+                // Older installations can contain a non-empty but incomplete
+                // catalog. Repair only missing bundled technical rows/content;
+                // never replace rows that may have been synchronized from the
+                // admin catalog.
+                val existingIds = catalogDao.diseaseIds(seed.diseases.map { it.id }).toSet()
+                val missingIds = seed.diseases.map { it.id }.filterNot(existingIds::contains).toSet()
+                if (missingIds.isNotEmpty()) {
+                    catalogDao.upsertCatalog(
+                        seed.diseases.filter { it.id in missingIds },
+                        seed.localizations.filter { it.diseaseId in missingIds },
+                        seed.signs.filter { it.diseaseId in missingIds },
+                        seed.treatments.filter { it.diseaseId in missingIds },
+                        seed.references.filter { it.diseaseId in missingIds },
+                    )
+                }
+            }
             catalogSeeded = true
         }
     }
