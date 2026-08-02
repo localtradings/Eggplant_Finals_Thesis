@@ -170,6 +170,18 @@ fun DetectionResultScreen(
                         shape = RoundedCornerShape(18.dp),
                         enabled = cloudConfigured && snapshotState == SnapshotState.READY && cloudAction != CloudActionState.Working && !shareEvent.isInFlight(),
                     ) { Text(stringResource(R.string.share_to_global)) }
+                } else {
+                    Text(
+                        stringResource(
+                            if (result?.source == "gallery") {
+                                R.string.global_share_camera_only
+                            } else {
+                                R.string.global_share_confidence_requirement
+                            },
+                        ),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
                 }
                 shareEvent?.let { event ->
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {

@@ -157,6 +157,8 @@
     <string name="refresh">Refresh</string>
     <string name="last_updated_cached">Showing cached content</string>
     <string name="share_to_global">Share to Global</string>
+    <string name="global_share_camera_only">Global sharing requires a confirmed photo captured with this app’s camera.</string>
+    <string name="global_share_confidence_requirement">Global sharing unlocks for confirmed camera results at 50% confidence or higher.</string>
     <string name="share_status_queued">Global share queued. It will upload when the connection is ready.</string>
     <string name="share_status_uploading">Uploading shared scan…</string>
     <string name="share_status_retrying">Retrying Global share…</string>

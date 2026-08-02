@@ -497,6 +497,14 @@ class EggplantRepository(
     suspend fun ensureCatalog() {
         catalogMutex.withLock {
             if (catalogSeeded) return
+            // A synchronized Supabase catalog is authoritative.  Seeding on
+            // every process start used to overwrite published bilingual text
+            // and leave the previous ETag in settings, so the next cloud sync
+            // could incorrectly receive 304 Not Modified.
+            if (!shouldSeedBundledCatalog(database.catalogDao().diseaseCount())) {
+                catalogSeeded = true
+                return
+            }
             val seed = DiseaseCatalogSeed.create()
             database.catalogDao().upsertCatalog(
                 seed.diseases,
@@ -535,6 +543,8 @@ class EggplantRepository(
         check(isCloudConfigured) { "Cloud is unavailable in this build." }
     }
 }
+
+internal fun shouldSeedBundledCatalog(existingDiseaseCount: Int): Boolean = existingDiseaseCount == 0
 
 private val cacheJson = Json { ignoreUnknownKeys = true }
 
