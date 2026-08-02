@@ -158,7 +158,7 @@
     <string name="last_updated_cached">Ipinapakita ang naka-cache na nilalaman</string>
     <string name="share_to_global">Ibahagi sa Global</string>
     <string name="global_share_camera_only">Kailangan para sa Global sharing ang kumpirmadong larawang kinunan gamit ang camera ng app na ito.</string>
-    <string name="global_share_confidence_requirement">Magagamit ang Global sharing sa kumpirmadong camera result na 50% pataas ang kumpiyansa.</string>
+    <string name="global_share_confidence_requirement" formatted="false">Magagamit ang Global sharing sa kumpirmadong resulta na 50% pataas ang kumpiyansa.</string>
     <string name="share_status_queued">Nakapila ang Global share. Mag-u-upload ito kapag handa ang koneksyon.</string>
     <string name="share_status_uploading">Ina-upload ang shared scan…</string>
     <string name="share_status_retrying">Sinusubukang muli ang Global share…</string>

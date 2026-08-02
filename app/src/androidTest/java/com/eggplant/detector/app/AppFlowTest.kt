@@ -1,5 +1,6 @@
 package com.eggplant.detector.app
 
+import androidx.room.Room
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
@@ -14,6 +15,9 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToIndex
 import androidx.test.platform.app.InstrumentationRegistry
 import com.eggplant.detector.R
+import com.eggplant.detector.data.database.EggplantDatabase
+import com.eggplant.detector.data.files.ScanSnapshotStore
+import com.eggplant.detector.data.repository.EggplantRepository
 import com.eggplant.detector.feature.camera.CameraScene
 import com.eggplant.detector.detection.api.DetectionBox
 import com.eggplant.detector.detection.api.DetectionFrame
@@ -29,6 +33,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import com.eggplant.detector.app.ResultWarning
+import java.io.File
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.runBlocking
 
 class AppFlowTest {
     @get:Rule
@@ -219,6 +227,57 @@ class AppFlowTest {
 
         viewModel.openHistoryResult(viewModel.history.value.single())
         assertEquals("leaf-spot", viewModel.currentResult.value?.diseaseId)
+    }
+
+    @Test
+    fun liveRelease_navigatesOnlyAfterSnapshotAndRoomSaveComplete() = runBlocking {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val database = Room.inMemoryDatabaseBuilder(context, EggplantDatabase::class.java).build()
+        val snapshotStore = ScanSnapshotStore(context)
+        var committedImagePath: String? = null
+        try {
+            val repository = EggplantRepository(database, snapshotStore = snapshotStore)
+            repository.ensureCatalog()
+            val saveCompleted = AtomicBoolean(false)
+            val navigated = AtomicBoolean(false)
+            val releaseSaver = CompletableDeferred<Unit>()
+            val viewModel = EggplantAppViewModel(
+                initialHistory = emptyList(),
+                snapshotStager = { frame -> repository.stageSnapshot(frame) },
+                scanSaver = { result ->
+                    val saved = repository.saveScan(result)
+                    committedImagePath = saved.imagePath
+                    saveCompleted.set(true)
+                    releaseSaver.await()
+                    saved
+                },
+            )
+            val detection = DetectionBox(
+                ModelMetadata.EGGPLANT_YOLO26M.classFor(5)!!,
+                .87f,
+                NormalizedBox(.1f, .1f, .8f, .8f),
+            )
+            val rgb = RgbFrame(2, 2, ByteArray(12), 1, InputSource.LIVE, 1)
+            val scene = CameraScene(
+                rgb,
+                DetectionFrame(listOf(detection), 1, 1, InputSource.LIVE, 1),
+                StabilityResult(DetectionStatus.DISEASE_DETECTED, listOf(detection), listOf(detection), true),
+            )
+
+            viewModel.finalizeLiveDetectionScene(scene, detection) { navigated.set(true) }
+
+            composeRule.waitUntil(10_000) { saveCompleted.get() }
+            assertFalse("Live release must not route before the local save completes", navigated.get())
+            releaseSaver.complete(Unit)
+            composeRule.waitUntil(10_000) { navigated.get() }
+            assertEquals(SaveState.SAVED, viewModel.saveState.value)
+            assertEquals(1, viewModel.history.value.size)
+            assertTrue(File(requireNotNull(committedImagePath)).isFile)
+            assertEquals("LIVE", viewModel.history.value.single().saveMode)
+        } finally {
+            snapshotStore.removeCommitted(committedImagePath)
+            database.close()
+        }
     }
 
     @Test

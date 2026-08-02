@@ -156,7 +156,7 @@ fun DetectionResultScreen(
                     icon = Icons.Outlined.CheckCircle,
                     enabled = saveState !in setOf(SaveState.SAVING, SaveState.SAVED, SaveState.ALREADY_SAVED) && snapshotState != SnapshotState.PREPARING,
                 )
-                if (result?.confidence ?: 0 >= 50 && result?.source != "gallery") {
+                if (result?.confidence ?: 0 >= 50) {
                     if (!cloudConfigured) {
                         Text(
                             stringResource(R.string.cloud_unavailable_build),
@@ -172,13 +172,7 @@ fun DetectionResultScreen(
                     ) { Text(stringResource(R.string.share_to_global)) }
                 } else {
                     Text(
-                        stringResource(
-                            if (result?.source == "gallery") {
-                                R.string.global_share_camera_only
-                            } else {
-                                R.string.global_share_confidence_requirement
-                            },
-                        ),
+                        stringResource(R.string.global_share_confidence_requirement),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.bodySmall,
                     )

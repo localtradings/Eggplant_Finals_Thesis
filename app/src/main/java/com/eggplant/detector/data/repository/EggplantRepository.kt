@@ -188,8 +188,7 @@ class EggplantRepository(
         !sharingEnabled -> ShareEligibility.Ineligible(ShareEligibility.Reason.SHARING_DISABLED)
         result == null || result.outcome != com.eggplant.detector.domain.model.ScanOutcome.DISEASE -> ShareEligibility.Ineligible(ShareEligibility.Reason.UNSUPPORTED_RESULT)
         result.confidence < 50 -> ShareEligibility.Ineligible(ShareEligibility.Reason.LOW_CONFIDENCE)
-        result.source == "gallery" -> ShareEligibility.Ineligible(ShareEligibility.Reason.GALLERY_SOURCE)
-        result.source !in setOf("live", "capture") -> ShareEligibility.Ineligible(ShareEligibility.Reason.NOT_CONFIRMED)
+        !isGlobalShareSource(result.source) -> ShareEligibility.Ineligible(ShareEligibility.Reason.NOT_CONFIRMED)
         result.imagePath == null || !File(result.imagePath).isFile -> ShareEligibility.Ineligible(ShareEligibility.Reason.PHOTO_UNAVAILABLE)
         else -> ShareEligibility.Eligible
     }
@@ -556,6 +555,9 @@ private const val SHARING_CONSENT_IDEMPOTENCY_KEY = "sharing-consent"
 private const val REVALIDATED_SHARE_EVENT_VERSION = 2
 private const val DISEASE_REQUEST_NOTES_MAX_LENGTH = 200
 private val CAMERA_REQUEST_SOURCES = setOf("live", "capture")
+private val GLOBAL_SHARE_SOURCES = setOf("live", "capture", "gallery")
+
+internal fun isGlobalShareSource(source: String): Boolean = source in GLOBAL_SHARE_SOURCES
 
 private fun deletionContributionCount(idsJson: String): Int = runCatching {
     cacheJson.parseToJsonElement(idsJson).jsonArray.size

@@ -262,9 +262,9 @@ class EggplantAppViewModel(
 
     /**
      * Called only when the long-press live session is released with a retained
-     * result. The Result route opens immediately; snapshot staging and the
-     * required local save continue in this ViewModel scope so releasing the
-     * shutter can never make the valid scan disappear or add avoidable latency.
+     * result. The camera remains on its saving overlay until snapshot staging
+     * and the required local save finish, then the Result route opens with a
+     * committed history item and an accurate success or failure state.
      */
     fun finalizeLiveDetectionScene(
         scene: CameraScene,
@@ -302,11 +302,10 @@ class EggplantAppViewModel(
             return
         }
 
-        // Result navigation never waits for JPEG staging or a Room transaction.
-        // The Result screen receives PREPARING/SAVING state rather than a silent
-        // delay, while the retained live result is still committed below.
+        // Keep the camera's saving overlay visible while JPEG staging and the
+        // Room transaction run. Navigating before this completes made the live
+        // release appear to succeed even when the save was still in flight.
         _saveState.value = if (pendingResult.outcome == ScanOutcome.DISEASE) SaveState.SAVING else SaveState.IDLE
-        onReady()
         viewModelScope.launch {
             val imagePath = stageSnapshot?.let { stage ->
                 runCatching { stage(scene.rgbFrame) }
@@ -324,7 +323,7 @@ class EggplantAppViewModel(
             // Healthy live findings can still reach their result screen, but
             // never become a disease-history record.
             if (readyResult.outcome != ScanOutcome.DISEASE) {
-                completeLiveFinalization(finalizationId)
+                completeLiveFinalization(finalizationId, onReady)
                 return@launch
             }
 
@@ -338,7 +337,7 @@ class EggplantAppViewModel(
                     _saveState.value = SaveState.FAILED
                 }
             } finally {
-                completeLiveFinalization(finalizationId)
+                completeLiveFinalization(finalizationId, onReady)
             }
         }
     }
