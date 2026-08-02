@@ -12,6 +12,7 @@ type HealthSchemaChecks = {
   rankings: boolean;
   installations: boolean;
   storageUsage: boolean;
+  mutationContracts: boolean;
 };
 
 const EMPTY_SCHEMA_CHECKS: HealthSchemaChecks = {
@@ -22,6 +23,7 @@ const EMPTY_SCHEMA_CHECKS: HealthSchemaChecks = {
   rankings: false,
   installations: false,
   storageUsage: false,
+  mutationContracts: false,
 };
 
 function allChecksPassed(checks: HealthSchemaChecks) {
@@ -31,7 +33,7 @@ function allChecksPassed(checks: HealthSchemaChecks) {
 async function readSchemaChecks(
   supabase: ReturnType<typeof getAdminClient>,
 ): Promise<HealthSchemaChecks> {
-  const [appConfig, diseaseCatalog, scanContributions, diseaseRequests, rankings, installations, storageUsage] = await Promise.all([
+  const [appConfig, diseaseCatalog, scanContributions, diseaseRequests, rankings, installations, storageUsage, mutationContracts] = await Promise.all([
     supabase.from("app_config").select("id").eq("id", true).maybeSingle(),
     supabase.from("disease_catalog").select("id").limit(1),
     supabase.from("scan_contributions").select("id").limit(1),
@@ -39,6 +41,14 @@ async function readSchemaChecks(
     supabase.from("global_disease_rankings").select("disease_id").limit(1),
     supabase.from("installations").select("owner_id").limit(1),
     supabase.rpc("admin_storage_usage"),
+    Promise.all([
+      supabase.from("disease_catalog").select("content_hash").limit(0),
+      supabase.from("disease_localizations").select("recommended_action").limit(0),
+      supabase.from("disease_request_photos").select("capture_source").limit(0),
+      supabase.from("global_share_intents").select("expected_sha256").limit(0),
+      supabase.from("deletion_requests").select("scope,unpublished_at,updated_at,attempt_count,last_error_code").limit(0),
+      supabase.from("admin_action_receipts").select("id").limit(0),
+    ]),
   ]);
   return {
     appConfig: !appConfig.error && appConfig.data !== null,
@@ -48,6 +58,7 @@ async function readSchemaChecks(
     rankings: !rankings.error,
     installations: !installations.error,
     storageUsage: !storageUsage.error,
+    mutationContracts: mutationContracts.every((query) => !query.error),
   };
 }
 

@@ -55,6 +55,18 @@ class DetectionStabilityTrackerTest {
     }
 
     @Test
+    fun `bounded camera box jitter still confirms the same disease`() {
+        val tracker = DetectionStabilityTracker()
+        val jittered = leafSpot.copy(bounds = NormalizedBox(0.32f, 0.1f, 0.67f, 0.45f))
+
+        tracker.update(frame(0, leafSpot))
+        val result = tracker.update(frame(150, jittered))
+
+        assertEquals(listOf("leaf-spot"), result.stableDetections.mapNotNull { it.modelClass.diseaseId })
+        assertTrue(result.saveEligible)
+    }
+
+    @Test
     fun `healthy stability reports status but is never save eligible`() {
         val tracker = DetectionStabilityTracker()
 

@@ -2,9 +2,11 @@ package com.eggplant.detector.detection.tracking
 
 import com.eggplant.detector.detection.api.DetectionBox
 import com.eggplant.detector.detection.api.DetectionFrame
+import com.eggplant.detector.detection.api.NormalizedBox
 import com.eggplant.detector.detection.api.DetectionStatus
 import com.eggplant.detector.detection.api.StabilityResult
 import com.eggplant.detector.detection.ncnn.ModelMetadata
+import kotlin.math.abs
 
 class DetectionStabilityTracker(
     private val metadata: ModelMetadata = ModelMetadata.EGGPLANT_YOLO26M,
@@ -40,7 +42,7 @@ class DetectionStabilityTracker(
                 .maxByOrNull { it.detection.bounds.intersectionOverUnion(detection.bounds) }
                 ?.takeIf {
                     frame.timestampMillis - it.lastSeenAt <= maximumInterFrameGapMillis &&
-                        it.detection.bounds.intersectionOverUnion(detection.bounds) >= minimumIoU
+                        matchesTrack(it.detection, detection)
                 }
             if (previous == null) {
                 Track(detection, frame.timestampMillis, frame.timestampMillis, frameCount = 1)
@@ -138,7 +140,36 @@ class DetectionStabilityTracker(
         return changed
     }
 
+    /**
+     * Camera frames can move a valid box enough that strict IoU matching
+     * resets the track even though the same class remains in the same area.
+     * Keep the IoU guard for normal matches, with a bounded center/area
+     * fallback for that device-level jitter so release can still confirm the
+     * result without matching a distant detection.
+     */
+    private fun matchesTrack(previous: DetectionBox, current: DetectionBox): Boolean {
+        val previousBounds = previous.bounds
+        val currentBounds = current.bounds
+        if (previousBounds.intersectionOverUnion(currentBounds) >= minimumIoU) return true
+
+        val previousArea = (previousBounds.right - previousBounds.left) * (previousBounds.bottom - previousBounds.top)
+        val currentArea = (currentBounds.right - currentBounds.left) * (currentBounds.bottom - currentBounds.top)
+        if (previousArea <= 0f || currentArea <= 0f) return false
+        val areaRatio = minOf(previousArea, currentArea) / maxOf(previousArea, currentArea)
+        val centerDistance = maxOf(
+            abs(previousBounds.centerX() - currentBounds.centerX()),
+            abs(previousBounds.centerY() - currentBounds.centerY()),
+        )
+        return areaRatio >= MINIMUM_AREA_RATIO_FOR_JITTER && centerDistance <= MAXIMUM_CENTER_DISTANCE_FOR_JITTER
+    }
+
+    private fun NormalizedBox.centerX(): Float = (left + right) / 2f
+
+    private fun NormalizedBox.centerY(): Float = (top + bottom) / 2f
+
     private companion object {
         const val MINIMUM_CHANGED_BLOCKS = 6
+        const val MINIMUM_AREA_RATIO_FOR_JITTER = 0.4f
+        const val MAXIMUM_CENTER_DISTANCE_FOR_JITTER = 0.25f
     }
 }

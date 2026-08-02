@@ -1,5 +1,6 @@
 package com.eggplant.detector.app
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -309,7 +310,10 @@ class EggplantAppViewModel(
         viewModelScope.launch {
             val imagePath = stageSnapshot?.let { stage ->
                 runCatching { stage(scene.rgbFrame) }
-                    .onFailure { _resultWarning.value = ResultWarning.SNAPSHOT_UNAVAILABLE }
+                    .onFailure { error ->
+                        Log.e(LOG_TAG, "live_snapshot_stage_failed", error)
+                        _resultWarning.value = ResultWarning.SNAPSHOT_UNAVAILABLE
+                    }
                     .getOrNull()
             }
             if (liveFinalizationId != finalizationId) {
@@ -331,7 +335,8 @@ class EggplantAppViewModel(
                 val committed = scanSaver?.invoke(readyResult.copy(scannedAt = nowProvider(), saveMode = "LIVE"))
                     ?: readyResult.copy(scannedAt = nowProvider(), saveMode = "LIVE")
                 if (liveFinalizationId == finalizationId) commitSavedResult(committed, SaveState.SAVED)
-            } catch (_: Exception) {
+            } catch (error: Exception) {
+                Log.e(LOG_TAG, "live_history_save_failed", error)
                 if (liveFinalizationId == finalizationId) {
                     repository?.discardSnapshot(imagePath)
                     _saveState.value = SaveState.FAILED
@@ -416,7 +421,8 @@ class EggplantAppViewModel(
             try {
                 commitSavedResult(persist(savedResult), SaveState.SAVED)
                 onComplete(true)
-            } catch (_: Exception) {
+            } catch (error: Exception) {
+                Log.e(LOG_TAG, "history_save_failed", error)
                 _saveState.value = SaveState.FAILED
                 onComplete(false)
             }
@@ -449,7 +455,8 @@ class EggplantAppViewModel(
             val committed = scanSaver?.invoke(autoResult) ?: autoResult
             autoSaveDeduplicator.record(committed, sceneToken)
             commitSavedResult(committed, SaveState.SAVED)
-        } catch (_: Exception) {
+        } catch (error: Exception) {
+            Log.e(LOG_TAG, "auto_history_save_failed", error)
             _saveState.value = SaveState.FAILED
         }
     }
@@ -769,6 +776,7 @@ class EggplantAppViewModel(
     }
 }
 
+private const val LOG_TAG = "EggplantDetection"
 private const val DISEASE_REQUEST_NOTES_MAX_LENGTH = 200
 private val CAMERA_REQUEST_SOURCES = setOf("live", "capture")
 

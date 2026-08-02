@@ -2,7 +2,7 @@ package com.eggplant.detector.feature.camera
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,10 +28,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -40,10 +42,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.onLongClick
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.ui.input.pointer.pointerInput
 import com.eggplant.detector.R
 import com.eggplant.detector.detection.api.DetectionStatus
 import com.eggplant.detector.detection.api.EngineState
@@ -103,18 +107,15 @@ internal fun CameraBottomBar(
     val captureDescription = stringResource(R.string.capture_scan)
     val livePreviewDescription = stringResource(R.string.hold_for_live_preview)
     val shutterCoordinator = remember { ShutterActionCoordinator() }
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
+    val currentOnCapture by rememberUpdatedState(onCapture)
+    val currentOnStartLivePreview by rememberUpdatedState(onStartLivePreview)
+    val currentOnStopLivePreview by rememberUpdatedState(onStopLivePreview)
+    var isPressed by remember { mutableStateOf(false) }
     val shutterScale by animateFloatAsState(
         targetValue = if (isPressed) 0.92f else 1f,
         animationSpec = tween(durationMillis = 120),
         label = "shutterScale",
     )
-    LaunchedEffect(isPressed) {
-        if (shutterCoordinator.onPressedChanged(isPressed) == ShutterAction.STOP_LIVE_PREVIEW) {
-            onStopLivePreview()
-        }
-    }
     Row(
         modifier = modifier.fillMaxWidth().background(Color.Black.copy(alpha = .55f)).padding(horizontal = 22.dp, vertical = 20.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -134,26 +135,49 @@ internal fun CameraBottomBar(
                     scaleY = shutterScale
                 }
                 .border(4.dp, Color.White.copy(alpha = .7f), CircleShape)
-                .combinedClickable(
-                    interactionSource = interactionSource,
-                    indication = null,
-                    enabled = !processing && engineState == EngineState.READY,
-                    role = Role.Button,
-                    onClickLabel = captureDescription,
-                    onLongClickLabel = livePreviewDescription,
-                    onClick = {
+                .pointerInput(processing, engineState) {
+                    if (!processing && engineState == EngineState.READY) {
+                        detectTapGestures(
+                            onPress = {
+                                isPressed = true
+                                tryAwaitRelease()
+                                isPressed = false
+                                if (shutterCoordinator.onPressedChanged(false) == ShutterAction.STOP_LIVE_PREVIEW) {
+                                    currentOnStopLivePreview()
+                                }
+                            },
+                            onTap = {
+                                if (shutterCoordinator.onTap(processing, engineState) == ShutterAction.CAPTURE) {
+                                    currentOnCapture()
+                                }
+                            },
+                            onLongPress = {
+                                if (shutterCoordinator.onLongPress(processing, engineState) == ShutterAction.START_LIVE_PREVIEW) {
+                                    currentOnStartLivePreview()
+                                }
+                            },
+                        )
+                    }
+                }
+                .semantics {
+                    role = Role.Button
+                    contentDescription = captureDescription
+                    onClick(captureDescription) {
                         if (shutterCoordinator.onTap(processing, engineState) == ShutterAction.CAPTURE) {
                             onCapture()
+                            true
+                        } else {
+                            false
                         }
-                    },
-                    onLongClick = {
+                    }
+                    onLongClick(livePreviewDescription) {
                         if (shutterCoordinator.onLongPress(processing, engineState) == ShutterAction.START_LIVE_PREVIEW) {
                             onStartLivePreview()
+                            true
+                        } else {
+                            false
                         }
-                    },
-                )
-                .semantics {
-                    contentDescription = captureDescription
+                    }
                 },
             color = if (livePreviewActive) MaterialTheme.colorScheme.primary else Color.White,
             contentColor = if (livePreviewActive) Color.White else MaterialTheme.colorScheme.primary,
