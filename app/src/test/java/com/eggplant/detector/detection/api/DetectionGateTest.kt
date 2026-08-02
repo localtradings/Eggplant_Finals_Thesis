@@ -25,11 +25,11 @@ class DetectionGateTest {
     }
 
     @Test
-    fun `capture and gallery use 0_15 final disease thresholds`() {
-        val captureLow = DetectionGate.evaluate(detection(classIndex = 5, confidence = 0.149f), InputSource.CAPTURE)
-        val captureValid = DetectionGate.evaluate(detection(classIndex = 5, confidence = 0.15f), InputSource.CAPTURE)
-        val galleryLow = DetectionGate.evaluate(detection(classIndex = 5, confidence = 0.149f), InputSource.GALLERY)
-        val galleryValid = DetectionGate.evaluate(detection(classIndex = 5, confidence = 0.15f), InputSource.GALLERY)
+    fun `capture and gallery use the model floor for disease detection`() {
+        val captureLow = DetectionGate.evaluate(detection(classIndex = 5, confidence = 0.119f), InputSource.CAPTURE)
+        val captureValid = DetectionGate.evaluate(detection(classIndex = 5, confidence = 0.12f), InputSource.CAPTURE)
+        val galleryLow = DetectionGate.evaluate(detection(classIndex = 5, confidence = 0.119f), InputSource.GALLERY)
+        val galleryValid = DetectionGate.evaluate(detection(classIndex = 5, confidence = 0.12f), InputSource.GALLERY)
 
         assertFalse(captureLow.accepted)
         assertTrue(captureValid.accepted)

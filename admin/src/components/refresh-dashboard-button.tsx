@@ -17,7 +17,7 @@ export function RefreshDashboardButton() {
       aria-busy={isPending}
     >
       <RefreshCw size={16} className={isPending ? "animate-spin" : undefined} aria-hidden="true" />
-      {isPending ? "Refreshing" : "Refresh data"}
+      {isPending ? "Refreshing overview" : "Refresh overview"}
     </button>
   );
 }

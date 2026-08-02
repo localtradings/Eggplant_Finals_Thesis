@@ -123,14 +123,13 @@ class CameraController(
                 emit(state.copy(engineState = EngineState.FAILED, error = "Detection model could not be started."))
             },
         ) {
-            val initialized = engine.initialize()
+            val initialized = initializeAndWarmDetector()
             if (closed) return@enqueueAnalysis
             if (initialized != EngineState.READY) {
                 emit(state.copy(engineState = initialized, error = "Detection model could not be loaded."))
                 return@enqueueAnalysis
             }
             emit(state.copy(engineState = EngineState.READY))
-            warmDetectorInBackground()
         }
     }
 
@@ -140,17 +139,21 @@ class CameraController(
         enqueueAnalysis(
             onRejected = { emit(state.copy(engineState = EngineState.FAILED, error = "Detection model could not be started.")) },
         ) {
-            val initialized = engine.initialize()
+            val initialized = initializeAndWarmDetector()
             if (!closed) {
                 emit(state.copy(engineState = initialized, error = if (initialized == EngineState.READY) null else "Detection model could not be loaded."))
-                if (initialized == EngineState.READY) warmDetectorInBackground()
             }
         }
     }
 
-    private fun warmDetectorInBackground() {
-        val warmable = engine as? WarmableDetectionEngine ?: return
-        enqueueAnalysis(onRejected = {}) { warmable.warmUp() }
+    private fun initializeAndWarmDetector(): EngineState {
+        val initialized = engine.initialize()
+        if (initialized != EngineState.READY) return initialized
+        val warmable = engine as? WarmableDetectionEngine ?: return initialized
+        warmable.warmUp().onFailure { error ->
+            if (BuildConfig.DEBUG) Log.w(LOG_TAG, "detector_warmup_failed", error)
+        }
+        return initialized
     }
 
     private fun pauseAnalysis() {

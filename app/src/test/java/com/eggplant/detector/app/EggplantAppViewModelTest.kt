@@ -10,6 +10,7 @@ import com.eggplant.detector.detection.api.NormalizedBox
 import com.eggplant.detector.detection.api.RgbFrame
 import com.eggplant.detector.detection.api.StabilityResult
 import com.eggplant.detector.domain.model.ScanOutcome
+import com.eggplant.detector.domain.model.ShareEligibility
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertFalse
@@ -32,6 +33,17 @@ class EggplantAppViewModelTest {
         viewModel.setDetectHealthyPlant(true)
         assertTrue(viewModel.detectHealthyLeafEnabled.value)
         assertTrue(viewModel.detectHealthyPlantEnabled.value)
+    }
+
+    @Test
+    fun `eligible share leaves lifecycle messaging to the outbox event`() {
+        assertEquals(CloudActionState.Idle, shareActionState(ShareEligibility.Eligible))
+        assertEquals(
+            CloudActionState.Error("photo unavailable"),
+            shareActionState(
+                ShareEligibility.Ineligible(ShareEligibility.Reason.PHOTO_UNAVAILABLE),
+            ),
+        )
     }
 
     @Test

@@ -66,6 +66,16 @@ sealed interface CloudActionState {
     data class Error(val message: String) : CloudActionState
 }
 
+internal fun shareActionState(eligibility: ShareEligibility): CloudActionState = when (eligibility) {
+    // The result screen renders the outbox event itself so it can transition
+    // from queued -> uploading -> published/failed. A second queued action
+    // banner would remain stale after the worker completed.
+    ShareEligibility.Eligible -> CloudActionState.Idle
+    is ShareEligibility.Ineligible -> CloudActionState.Error(
+        eligibility.reason.name.lowercase().replace('_', ' '),
+    )
+}
+
 data class DiseaseRequestDraftState(
     val photoPaths: List<String> = emptyList(),
     val photoSources: List<String> = emptyList(),
@@ -588,10 +598,7 @@ class EggplantAppViewModel(
                         )
                         persistSettings()
                     }
-                    _cloudActionState.value = when (eligibility) {
-                        ShareEligibility.Eligible -> CloudActionState.Queued("Share queued")
-                        is ShareEligibility.Ineligible -> CloudActionState.Error(eligibility.reason.name.lowercase().replace('_', ' '))
-                    }
+                    _cloudActionState.value = shareActionState(eligibility)
                 }
                 .onFailure {
                     _cloudActionState.value = CloudActionState.Error(it.message ?: "Could not queue share")

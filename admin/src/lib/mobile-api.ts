@@ -25,7 +25,7 @@ export function apiError(message: string, status: number, code: string) {
 export async function authorizeMobile(request: Request, write = false) {
   const user = await verifyMobileUser(request);
   if (!user) return { response: apiError("Authentication required.", 401, "unauthorized") } as const;
-  if (write && !(await cloudWritesEnabled())) return { response: apiError("Cloud writes are temporarily paused.", 503, "writes_paused") } as const;
+  if (write && !(await cloudWritesEnabled())) return { response: apiError("Mobile submissions are paused. New scans and requests remain queued on this device.", 503, "writes_paused") } as const;
   const { error } = await getAdminClient()
     .from("installations")
     .upsert(

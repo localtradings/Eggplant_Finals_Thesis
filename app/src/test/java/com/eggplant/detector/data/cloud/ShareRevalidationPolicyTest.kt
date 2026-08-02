@@ -11,7 +11,7 @@ import org.junit.Test
 
 class ShareRevalidationPolicyTest {
     @Test
-    fun `uses the highest capture-gated confidence for the same disease`() {
+    fun `uses the highest confidence for the same disease without a minimum`() {
         val frame = frame(
             detection(5, 0.62f),
             detection(5, 0.55f),
@@ -22,10 +22,11 @@ class ShareRevalidationPolicyTest {
     }
 
     @Test
-    fun `rejects a different disease and same disease below fifty percent`() {
-        assertNull(
+    fun `accepts a matching disease below the former fifty percent gate`() {
+        assertEquals(
+            0.12f,
             ShareRevalidationPolicy.acceptedConfidence(
-                frame(detection(5, 0.49f), detection(9, 0.96f)),
+                frame(detection(5, 0.12f), detection(9, 0.96f)),
                 "leaf-spot",
             ),
         )

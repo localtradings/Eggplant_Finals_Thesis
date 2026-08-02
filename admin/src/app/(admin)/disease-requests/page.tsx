@@ -1,9 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { CheckCircle2, ClipboardList, ImageOff } from "lucide-react";
-import { AdminShell } from "@/components/admin-shell";
+import { CheckCircle2, ImageOff } from "lucide-react";
 import { RequestReviewActions } from "@/components/request-review-actions";
-import { requireAdmin } from "@/lib/auth";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { randomUUID } from "node:crypto";
 import { updateDiseaseRequest } from "./actions";
@@ -29,7 +27,6 @@ function RequestThumbnail({ url, name }: { url?: string; name: string }) {
 }
 
 export default async function DiseaseRequestsPage({ searchParams }: { searchParams: Promise<{ reviewed?: string; outcome?: string }> }) {
-  const admin = await requireAdmin();
   const supabase = getAdminClient();
   const { data = [], error } = await supabase
     .from("disease_requests")
@@ -48,14 +45,13 @@ export default async function DiseaseRequestsPage({ searchParams }: { searchPara
   const outcome = (await searchParams).outcome;
   const reviewSucceeded = reviewed && REQUEST_REVIEW_STATUSES.includes(reviewed as (typeof REQUEST_REVIEW_STATUSES)[number]);
 
-  return <AdminShell active="/disease-requests" role={admin.role}>
-    <div className="fade-up mx-auto max-w-[1240px]">
+  return <div className="fade-up mx-auto max-w-[1240px]">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div><h1 className="text-3xl font-bold tracking-[-.03em]">Disease requests</h1><p className="mt-1 text-sm text-[#6f6b80]">Private no-match requests. Review the real submitted photo before changing status.</p></div>
         {!error && <p className="rounded-xl border border-[#ded9e8] bg-white px-3 py-2 text-sm font-semibold text-[#5e596e]">{requests.length} recent request{requests.length === 1 ? "" : "s"}</p>}
       </header>
       {reviewSucceeded && <p role="status" className="status-banner mt-5 flex items-center gap-2 rounded-xl border border-[#bfe4c5] bg-[#f1fbf2] p-3 text-sm font-semibold text-[#247936]"><CheckCircle2 size={17}/>{outcome === "unchanged" ? "No request changes were needed." : `Request marked ${reviewed.replaceAll("_", " ")}.`}</p>}
-      {error ? <p role="alert" className="mt-6 rounded-xl bg-[#fff0f2] p-4 text-sm text-[#a92f40]">Disease requests are temporarily unavailable.</p> : requests.length === 0 ? <div className="surface mt-6 grid place-items-center p-16 text-center"><ClipboardList size={34} className="text-[#512b91]"/><h2 className="mt-3 text-lg font-bold">No open requests</h2><p className="mt-1 text-sm text-[#6f6b80]">Private no-match reports will appear here.</p></div> : <>
+      {error ? <p role="alert" className="mt-6 rounded-xl bg-[#fff0f2] p-4 text-sm text-[#a92f40]">Disease requests are temporarily unavailable.</p> : requests.length === 0 ? <div className="surface mt-6 grid place-items-center p-10 text-center sm:p-14"><Image src="/disease-requests-empty.webp" alt="Eggplant seedling beside a blank request sheet" width={220} height={220} className="h-36 w-36 object-contain sm:h-44 sm:w-44"/><h2 className="mt-3 text-lg font-bold">No open requests</h2><p className="mt-1 text-sm text-[#6f6b80]">Private no-match reports will appear here.</p></div> : <>
         <section className="mt-6 grid gap-3 md:hidden" aria-label="Disease request cards">
           {requests.map((request) => {
             const photos = ([...(request.disease_request_photos ?? [])] as RequestPhoto[]).sort((a, b) => a.position - b.position);
@@ -74,6 +70,5 @@ export default async function DiseaseRequestsPage({ searchParams }: { searchPara
           })}</tbody></table>
         </section>
       </>}
-    </div>
-  </AdminShell>;
+    </div>;
 }

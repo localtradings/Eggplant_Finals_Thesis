@@ -41,7 +41,7 @@ The production API and Supabase URLs are included as public defaults and can be 
 - On-device Room/SQLite persistence for the catalog, My Scans, cached Global Scans, outbox, missing-disease request status, settings, and notifications
 - Manual local save by default, with deduplicated opt-in auto-save for eligible confirmed disease results
 - Independent, default-off Healthy Leaf and Healthy Plant detection controls
-- Anonymous, explicit, default-off sharing of eligible in-app camera results at 50% confidence or higher
+- Anonymous, explicit, default-off sharing of eligible disease results from live preview, still capture, or Gallery analysis; confidence remains visible as model output but is not a publication gate
 - Private missing-disease requests with one to three real plant photos, explicit photo-rights consent, upload retry, and no training consent
 - No advertisements, payments, user profiles, or cloud inference
 
@@ -66,7 +66,7 @@ The current runtime uses a `0.12` base confidence threshold for the exported NCN
 ## Privacy and cloud behavior
 
 - Inference, catalog access, My Scans, and queued work remain available offline.
-- A supported Global Scan requires an explicit Share action, a live, still-capture, or Gallery source, at least 50% confidence, and a server-validated JPEG. Public API responses never include an owner identity.
+- A supported Global Scan requires an explicit Share action, a live, still-capture, or Gallery source, a detected disease, and a server-validated JPEG. Confidence is retained as model output for transparency but is not used as a client or server publication minimum. Public API responses never include an owner identity.
 - Two unique reports automatically quarantine a public scan pending review. Public photos expire after 180 days while anonymous aggregate counts may remain.
 - Missing-disease photos are private to their anonymous owner and administrators. They are not public and are not approved for training.
 - “Delete my shared cloud data” unpublishes contributions immediately and queues scoped object/row deletion.

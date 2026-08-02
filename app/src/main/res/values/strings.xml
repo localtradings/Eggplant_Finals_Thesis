@@ -74,7 +74,7 @@
     <string name="global_sharing_description">Off by default. You choose which eligible camera scans to publish anonymously.</string>
     <string name="cloud_unavailable_build">Cloud features are unavailable in this APK. Install a cloud-enabled build to use Global Scans, disease requests, and live catalog updates.</string>
     <string name="enable_global_sharing">Enable global sharing?</string>
-    <string name="global_sharing_consent" formatted="false">Shared photos become public without your name or profile. Only confirmed in-app camera results at 50% confidence or higher are eligible. You can turn this off and request deletion later.</string>
+    <string name="global_sharing_consent" formatted="false">Shared photos become public without your name or profile. Disease scans from live camera, captured photos, and gallery photos can be shared after validation. You can turn this off and request deletion later.</string>
     <string name="enable">Enable</string>
     <string name="delete">Delete</string>
     <string name="delete_shared_cloud_data">Delete my shared cloud data</string>
@@ -119,6 +119,7 @@
     <string name="saved_scan_snapshot">Saved scan snapshot</string>
     <string name="open_result_image_viewer">Open enlarged scan image</string>
     <string name="close_result_image_viewer">Close enlarged scan image</string>
+    <string name="close_detection_result">Close detection result</string>
     <string name="show_detection_boxes">Show boxes</string>
     <string name="hide_detection_boxes">Hide boxes</string>
     <string name="confidence_label">Confidence</string>
@@ -159,7 +160,7 @@
     <string name="last_updated_cached">Showing cached content</string>
     <string name="share_to_global">Share to Global</string>
     <string name="global_share_camera_only">Global sharing requires a confirmed photo captured with this app’s camera.</string>
-    <string name="global_share_confidence_requirement" formatted="false">Global sharing unlocks for confirmed results at 50% confidence or higher.</string>
+    <string name="global_share_confidence_requirement" formatted="false">Global sharing is available when a disease is detected and the photo is ready.</string>
     <string name="share_status_queued">Global share queued. It will upload when the connection is ready.</string>
     <string name="share_status_uploading">Uploading shared scan…</string>
     <string name="share_status_retrying">Retrying Global share…</string>

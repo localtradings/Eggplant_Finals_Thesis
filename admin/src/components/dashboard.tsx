@@ -9,7 +9,7 @@ function Metric({ label, value, icon: Icon }: { label: string; value: number; ic
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-medium text-[#6f6b80]">{label}</p>
-          <p className="mt-1 text-3xl font-bold tracking-tight text-[#512b91]">{value.toLocaleString()}</p>
+          <p className="mt-1 text-3xl font-bold tracking-tight text-[#17152b]">{value.toLocaleString()}</p>
         </div>
         <span className="rounded-full bg-[#f0eafb] p-2.5 text-[#512b91]" aria-hidden="true"><Icon size={21} /></span>
       </div>
@@ -23,15 +23,10 @@ export function Dashboard({ data }: { data: DashboardData }) {
     <div className="fade-up mx-auto max-w-[1240px]">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[.16em] text-[#278b3d]"><span className="h-2 w-2 rounded-full bg-[#278b3d]"/>Operations</div>
-          <h1 className="mt-1 text-3xl font-bold tracking-[-.03em]">Overview</h1>
-          <p className="mt-1 text-sm text-[#6f6b80]">Monitor community activity, moderation load, and content delivery.</p>
+          <h1 className="text-3xl font-bold tracking-[-.03em]">Overview</h1>
+          <p className="mt-1 text-sm text-[#6f6b80]">Current activity, sharing, and review workload.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <p className="hidden items-center gap-2 rounded-full border border-[#cce6d0] bg-[#f0faf1] px-3 py-2 text-xs font-semibold text-[#247936] sm:flex">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#278b3d]"/>
-            Live data
-          </p>
           <RefreshDashboardButton />
         </div>
       </header>
@@ -41,15 +36,15 @@ export function Dashboard({ data }: { data: DashboardData }) {
         <Metric label="Contributing installs" value={data.installations} icon={UsersRound} />
         <Metric label="Open requests" value={data.openRequests} icon={Leaf} />
       </section>
-      <section className="mt-5 grid overflow-hidden rounded-[20px] border border-[#e4e1eb] bg-white sm:grid-cols-3" aria-label="System status">
-        <Ops label="Cloud writes" value={data.cloudWritesEnabled ? "Enabled" : "Paused"} />
-        <Ops label="Private photo storage" value={formatBytes(data.storageBytes)} />
-        <Ops label="Last mobile sync" value={data.lastInstallationSeenAt ? new Date(data.lastInstallationSeenAt).toLocaleString() : "No sync yet"} />
+      <section className="mt-5 grid overflow-hidden rounded-[20px] border border-[#e5ddec] bg-[#fffdfd] sm:grid-cols-3" aria-label="System status">
+        <Ops label="Mobile submissions" value={data.cloudWritesEnabled ? "On" : "Paused"} hint="Global scans and disease requests" />
+        <Ops label="Photo storage" value={formatBytes(data.storageBytes)} hint="Private review images" />
+        <Ops label="Last app activity" value={data.lastInstallationSeenAt ? new Date(data.lastInstallationSeenAt).toLocaleString() : "No sync yet"} hint="Most recent mobile activity" />
       </section>
       <div className="mt-5 grid gap-5 xl:grid-cols-[1fr_1.15fr]">
         <section className="surface p-5">
           <div className="flex items-center justify-between gap-4"><h2 className="text-lg font-bold">Disease rankings</h2><Link href="/global-scans" className="text-sm font-semibold text-[#512b91]">View all</Link></div>
-          {data.rankings.length === 0 ? <Empty text="Rankings will appear after users share confirmed scans." /> : <ol className="mt-4 divide-y divide-[#ece9f1]">{data.rankings.map((rank, index) => <li key={rank.diseaseId} className="grid grid-cols-[28px_1fr_auto] items-center gap-3 py-3"><span className="font-mono text-sm font-bold text-[#512b91]">{index + 1}</span><div><p className="text-sm font-semibold">{rank.name}</p><div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[#eceaf0]"><div className="h-full rounded-full bg-[#319548]" style={{ width: `${rank.count / maxRank * 100}%` }} /></div></div><span className="font-mono text-sm text-[#625e72]">{rank.count}</span></li>)}</ol>}
+          {data.rankings.length === 0 ? <Empty text="Rankings will appear after users share confirmed scans." /> : <ol className="mt-4 divide-y divide-[#ece9f1]">{data.rankings.map((rank, index) => <li key={rank.diseaseId} className="grid grid-cols-[28px_1fr_auto] items-center gap-3 py-3"><span className="font-mono text-sm font-bold text-[#17152b]">{index + 1}</span><div><p className="text-sm font-semibold">{rank.name}</p><div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[#eceaf0]"><div className="h-full rounded-full bg-[#319548]" style={{ width: `${rank.count / maxRank * 100}%` }} /></div></div><span className="font-mono text-sm text-[#17152b]">{rank.count}</span></li>)}</ol>}
         </section>
         <section className="surface p-5">
           <div className="flex items-center justify-between gap-4"><h2 className="text-lg font-bold">Recent shared scans</h2><Link href="/global-scans" className="text-sm font-semibold text-[#512b91]">Manage</Link></div>
@@ -61,5 +56,5 @@ export function Dashboard({ data }: { data: DashboardData }) {
 }
 
 function Empty({ text }: { text: string }) { return <div className="mt-4 rounded-xl border border-dashed border-[#d9d3e4] bg-[#faf9fc] p-8 text-center text-sm text-[#716c80]">{text}</div>; }
-function Ops({ label, value }: { label: string; value: string }) { return <div className="border-b border-[#ece9f1] p-4 last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0"><p className="text-xs font-semibold uppercase tracking-wide text-[#777286]">{label}</p><p className="mt-1 truncate font-mono text-sm font-semibold text-[#512b91]">{value}</p></div>; }
+function Ops({ label, value, hint }: { label: string; value: string; hint: string }) { return <div className="border-b border-[#ece9f1] p-4 last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0"><p className="text-xs font-semibold text-[#68687c]">{label}</p><p className="mt-1 truncate font-mono text-sm font-semibold text-[#17152b]">{value}</p><p className="mt-1 truncate text-xs text-[#8a8498]">{hint}</p></div>; }
 function formatBytes(bytes: number) { if (bytes < 1024) return `${bytes} B`; if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`; return `${(bytes / 1024 / 1024).toFixed(1)} MB`; }

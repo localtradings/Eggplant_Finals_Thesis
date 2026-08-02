@@ -18,3 +18,5 @@ __pycache__/
 # pointer and evaluation evidence already tracked under ml/ remain versioned.
 ml/*
 !ml/README.md
+.vercel
+.gstack/

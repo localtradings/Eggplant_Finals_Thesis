@@ -14,7 +14,7 @@ sealed interface ShareEligibility {
     data object Eligible : ShareEligibility
     data class Ineligible(val reason: Reason) : ShareEligibility
 
-    enum class Reason { SHARING_DISABLED, UNSUPPORTED_RESULT, LOW_CONFIDENCE, PHOTO_UNAVAILABLE, NOT_CONFIRMED }
+    enum class Reason { SHARING_DISABLED, UNSUPPORTED_RESULT, PHOTO_UNAVAILABLE, NOT_CONFIRMED }
 }
 
 enum class SyncOutboxState { PENDING, UPLOADING, RETRY, COMPLETED, FAILED, CANCELLED }

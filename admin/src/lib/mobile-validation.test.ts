@@ -31,7 +31,7 @@ describe("global-share API validation", () => {
     sha256: SHA256,
   };
 
-  it("accepts the documented lower confidence boundary and canonical metadata", () => {
+  it("accepts a low but valid confidence and canonical metadata", () => {
     expect(validateShareIntent(validIntent)).toEqual({
       ok: true,
       value: validIntent,
@@ -46,13 +46,22 @@ describe("global-share API validation", () => {
   });
 
   it.each([
-    ["sub-threshold confidence", { ...validIntent, confidence: 0.4999 }],
+    ["negative confidence", { ...validIntent, confidence: -0.0001 }],
     ["non-finite confidence", { ...validIntent, confidence: Number.NaN }],
     ["oversized uploads", { ...validIntent, contentLength: MAX_UPLOAD_BYTES + 1 }],
     ["fractional byte lengths", { ...validIntent, contentLength: 10.5 }],
     ["malformed hashes", { ...validIntent, sha256: "not-a-hash" }],
   ])("rejects %s", (_, candidate) => {
     expect(validateShareIntent(candidate)).toEqual({ ok: false });
+  });
+
+  it("canonicalizes confidence to the database precision without applying a minimum", () => {
+    const result = validateShareIntent({ ...validIntent, confidence: 0.034567 });
+
+    expect(result).toEqual({
+      ok: true,
+      value: { ...validIntent, confidence: 0.0346 },
+    });
   });
 
   it("binds completion to the authenticated owner, local scan, and intent hash", () => {
@@ -79,6 +88,24 @@ describe("global-share API validation", () => {
         "01890f3d-00d8-7b65-9a77-a79bfe3f8499",
       ),
     ).toEqual({ ok: false });
+  });
+
+  it("canonicalizes low-confidence completion metadata to the database precision", () => {
+    const path = globalSharePath(USER_ID, SCAN_ID, SHA256);
+    expect(
+      validateShareCompletion({ ...validIntent, confidence: 0.034567, path }, USER_ID),
+    ).toEqual({
+      ok: true,
+      value: {
+        clientScanId: SCAN_ID,
+        diseaseId: "leaf-spot",
+        confidence: 0.0346,
+        source: "capture",
+        modelVersion: "eggplant-ncnn-v2",
+        path,
+        expectedSha256: SHA256,
+      },
+    });
   });
 
   it("accepts a gallery completion for the same owner-bound path", () => {

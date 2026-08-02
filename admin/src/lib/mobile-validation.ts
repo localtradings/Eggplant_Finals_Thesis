@@ -85,7 +85,7 @@ export function validateShareIntent(
   if (!isRecord(value)) return { ok: false };
   const modelVersion = boundedText(value.modelVersion, 1, 100);
   const diseaseId = boundedText(value.diseaseId, 1, 100);
-  const confidence = value.confidence;
+  const confidence = normalizedShareConfidence(value.confidence);
   const contentLength = value.contentLength;
   const source = value.source;
   const sha256 = value.sha256;
@@ -95,10 +95,7 @@ export function validateShareIntent(
     !diseaseId ||
     !modelVersion ||
     (source !== "live" && source !== "capture" && source !== "gallery") ||
-    typeof confidence !== "number" ||
-    !Number.isFinite(confidence) ||
-    confidence < 0.5 ||
-    confidence > 1 ||
+    confidence == null ||
     typeof contentLength !== "number" ||
     !Number.isSafeInteger(contentLength) ||
     contentLength < 1 ||
@@ -129,7 +126,7 @@ export function validateShareCompletion(
   if (!isRecord(value)) return { ok: false };
   const modelVersion = boundedText(value.modelVersion, 1, 100);
   const diseaseId = boundedText(value.diseaseId, 1, 100);
-  const confidence = value.confidence;
+  const confidence = normalizedShareConfidence(value.confidence);
   const source = value.source;
   if (
     typeof value.clientScanId !== "string" ||
@@ -137,10 +134,7 @@ export function validateShareCompletion(
     !diseaseId ||
     !modelVersion ||
     (source !== "live" && source !== "capture" && source !== "gallery") ||
-    typeof confidence !== "number" ||
-    !Number.isFinite(confidence) ||
-    confidence < 0.5 ||
-    confidence > 1 ||
+    confidence == null ||
     typeof value.path !== "string"
   ) {
     return { ok: false };
@@ -325,4 +319,14 @@ export function isJpeg(bytes: Uint8Array) {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function normalizedShareConfidence(value: unknown): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0 || value > 1) {
+    return null;
+  }
+  // The database stores four decimal places. Canonicalizing at the API
+  // boundary keeps the intent and completion RPC arguments identical even
+  // when a mobile float has a longer binary representation.
+  return Math.round(value * 10_000) / 10_000;
 }

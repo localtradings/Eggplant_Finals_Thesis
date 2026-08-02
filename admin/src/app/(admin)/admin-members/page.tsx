@@ -1,5 +1,4 @@
 import { FormSubmitButton } from "@/components/form-submit-button";
-import { AdminShell } from "@/components/admin-shell";
 import { requireAdmin } from "@/lib/auth";
 import { ADMIN_LOGIN_NAME_HTML_PATTERN } from "@/lib/admin-credentials";
 import { getAdminClient } from "@/lib/supabase/admin";
@@ -46,11 +45,9 @@ export default async function AdminMembersPage({
   const created = query.created === "1";
   const claimed = query.claimed === "1";
 
-  return <AdminShell active="/admin-members" role={admin.role}>
-    <div className="fade-up mx-auto max-w-5xl">
+  return <div className="fade-up mx-auto max-w-5xl">
       <header>
-        <p className="text-xs font-semibold uppercase tracking-[.14em] text-[#278b3d]">Owner only</p>
-        <h1 className="mt-1 text-3xl font-bold tracking-[-.03em]">Admin access</h1>
+        <h1 className="text-3xl font-bold tracking-[-.03em]">Admin access</h1>
         <p className="mt-1 max-w-2xl text-sm leading-6 text-[#6f6b80]">Create dashboard users with a username and password. Supabase keeps the password secure; the internal Auth identity is never shown in this interface.</p>
       </header>
 
@@ -112,6 +109,5 @@ export default async function AdminMembersPage({
           </table>
         </div>
       </section>
-    </div>
-  </AdminShell>;
+    </div>;
 }

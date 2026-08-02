@@ -21,6 +21,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -156,27 +157,19 @@ fun DetectionResultScreen(
                     icon = Icons.Outlined.CheckCircle,
                     enabled = saveState !in setOf(SaveState.SAVING, SaveState.SAVED, SaveState.ALREADY_SAVED) && snapshotState != SnapshotState.PREPARING,
                 )
-                if (result?.confidence ?: 0 >= 50) {
-                    if (!cloudConfigured) {
-                        Text(
-                            stringResource(R.string.cloud_unavailable_build),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                    }
-                    OutlinedButton(
-                        onClick = { showShareDialog = true },
-                        modifier = Modifier.fillMaxWidth().height(54.dp),
-                        shape = RoundedCornerShape(18.dp),
-                        enabled = cloudConfigured && snapshotState == SnapshotState.READY && cloudAction != CloudActionState.Working && !shareEvent.isInFlight(),
-                    ) { Text(stringResource(R.string.share_to_global)) }
-                } else {
+                if (!cloudConfigured) {
                     Text(
-                        stringResource(R.string.global_share_confidence_requirement),
+                        stringResource(R.string.cloud_unavailable_build),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
+                OutlinedButton(
+                    onClick = { showShareDialog = true },
+                    modifier = Modifier.fillMaxWidth().height(54.dp),
+                    shape = RoundedCornerShape(18.dp),
+                    enabled = cloudConfigured && snapshotState == SnapshotState.READY && cloudAction != CloudActionState.Working && !shareEvent.isInFlight(),
+                ) { Text(stringResource(R.string.share_to_global)) }
                 shareEvent?.let { event ->
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(
@@ -363,7 +356,7 @@ fun ResultReport(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.back))
+                Icon(Icons.Outlined.Close, contentDescription = stringResource(R.string.close_detection_result))
             }
             Text(title, style = MaterialTheme.typography.titleLarge)
         }

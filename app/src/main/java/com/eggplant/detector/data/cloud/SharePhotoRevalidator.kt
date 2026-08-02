@@ -55,14 +55,18 @@ class NcnnSharePhotoRevalidator(
 }
 
 internal object ShareRevalidationPolicy {
-    private const val MINIMUM_SHARE_CONFIDENCE = 0.50f
-
     fun acceptedConfidence(frame: DetectionFrame, expectedDiseaseId: String): Float? =
-        DetectionGate.filter(frame.copy(source = InputSource.CAPTURE)).detections
+        frame.detections
             .asSequence()
-            .filter { it.modelClass.diseaseId == expectedDiseaseId }
+            .filter { it.modelClass.diseaseId == expectedDiseaseId && isShareBox(it) }
             .maxOfOrNull { it.confidence }
-            ?.takeIf { it >= MINIMUM_SHARE_CONFIDENCE }
+
+    private fun isShareBox(detection: com.eggplant.detector.detection.api.DetectionBox): Boolean {
+        val bounds = detection.bounds
+        val area = (bounds.right - bounds.left) * (bounds.bottom - bounds.top)
+        val (minimum, maximum) = DetectionGate.areaLimitsFor(InputSource.CAPTURE)
+        return area in minimum..maximum
+    }
 }
 
 private fun decodeSampledBitmap(photo: File): Bitmap {

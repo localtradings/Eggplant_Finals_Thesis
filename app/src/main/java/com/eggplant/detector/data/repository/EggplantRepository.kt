@@ -200,7 +200,6 @@ class EggplantRepository(
     fun shareEligibility(result: ScanResult?, sharingEnabled: Boolean): ShareEligibility = when {
         !sharingEnabled -> ShareEligibility.Ineligible(ShareEligibility.Reason.SHARING_DISABLED)
         result == null || result.outcome != com.eggplant.detector.domain.model.ScanOutcome.DISEASE -> ShareEligibility.Ineligible(ShareEligibility.Reason.UNSUPPORTED_RESULT)
-        result.confidence < 50 -> ShareEligibility.Ineligible(ShareEligibility.Reason.LOW_CONFIDENCE)
         !isGlobalShareSource(result.source) -> ShareEligibility.Ineligible(ShareEligibility.Reason.NOT_CONFIRMED)
         result.imagePath == null || !File(result.imagePath).isFile -> ShareEligibility.Ineligible(ShareEligibility.Reason.PHOTO_UNAVAILABLE)
         else -> ShareEligibility.Eligible

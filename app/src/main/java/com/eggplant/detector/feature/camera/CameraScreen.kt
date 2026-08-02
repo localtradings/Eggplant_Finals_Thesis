@@ -155,7 +155,7 @@ fun CameraScreen(
         if (!cameraState.livePreviewActive) confirmationHapticSent = false
     }
     val confirmedShareDiseaseId = cameraState.confirmedDetections
-        .firstOrNull { it.modelClass.diseaseId != null && it.confidence >= MINIMUM_GLOBAL_SHARE_CONFIDENCE }
+        .firstOrNull { it.modelClass.diseaseId != null }
         ?.modelClass
         ?.diseaseId
     LaunchedEffect(controller, cameraState.livePreviewActive, confirmedShareDiseaseId, liveCaptureRevision) {
@@ -175,8 +175,7 @@ fun CameraScreen(
             if (liveCaptureRevision != revision || liveStillRequestedForDisease != diseaseId) return@capturePhoto
             validatedLiveStill = result.getOrNull()?.takeIf { scene ->
                 scene.detectionFrame.detections.any {
-                    it.modelClass.diseaseId == diseaseId &&
-                        it.confidence >= MINIMUM_GLOBAL_SHARE_CONFIDENCE
+                    it.modelClass.diseaseId == diseaseId
                 }
             }
         }
@@ -218,8 +217,7 @@ fun CameraScreen(
                 val stillPrimary = still?.detectionFrame?.detections?.maxByOrNull { detection ->
                     if (
                         diseaseId != null &&
-                        detection.modelClass.diseaseId == diseaseId &&
-                        detection.confidence >= MINIMUM_GLOBAL_SHARE_CONFIDENCE
+                        detection.modelClass.diseaseId == diseaseId
                     ) {
                         detection.confidence
                     } else {
@@ -227,8 +225,7 @@ fun CameraScreen(
                     }
                 }?.takeIf {
                     diseaseId != null &&
-                        it.modelClass.diseaseId == diseaseId &&
-                        it.confidence >= MINIMUM_GLOBAL_SHARE_CONFIDENCE
+                        it.modelClass.diseaseId == diseaseId
                 }
                 if (still != null && stillPrimary != null) finalizeLiveScene(still, stillPrimary)
                 else finalizeLiveScene(outcome.scene, outcome.primary)
@@ -365,8 +362,6 @@ fun CameraScreen(
         }
     }
 }
-
-private const val MINIMUM_GLOBAL_SHARE_CONFIDENCE = 0.50f
 
 @Composable
 private fun GalleryWithoutCameraPermission(
