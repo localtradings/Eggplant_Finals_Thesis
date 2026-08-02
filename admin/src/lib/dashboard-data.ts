@@ -13,9 +13,12 @@ export type DashboardData = {
   recent: Array<{ id: string; disease: string; confidence: number; publishedAt: string; status: string }>;
 };
 
-export async function getDashboardData(): Promise<DashboardData> {
-  const supabase = getAdminClient();
-  const [reports, scans, installs, requests, rankings, recent, storage, config, lastSeen] = await Promise.all([
+type DashboardQueries = Awaited<ReturnType<typeof readDashboardQueries>>;
+
+async function readDashboardQueries(
+  supabase: ReturnType<typeof getAdminClient>,
+) {
+  return Promise.all([
     supabase.from("scan_contributions").select("id", { count: "exact", head: true }).eq("status", "quarantined"),
     supabase.from("scan_contributions").select("id", { count: "exact", head: true }).in("status", ["published", "expired"]),
     supabase.from("installations").select("owner_id", { count: "exact", head: true }),
@@ -26,6 +29,23 @@ export async function getDashboardData(): Promise<DashboardData> {
     supabase.from("app_config").select("cloud_writes_enabled").eq("id", true).single(),
     supabase.from("installations").select("last_seen_at").order("last_seen_at", { ascending: false }).limit(1).maybeSingle(),
   ]);
+}
+
+function dashboardQueriesFailed(queries: DashboardQueries) {
+  return queries.some((query) => query.error);
+}
+
+export async function getDashboardData(): Promise<DashboardData> {
+  const supabase = getAdminClient();
+  let queries = await readDashboardQueries(supabase);
+  if (dashboardQueriesFailed(queries)) {
+    // Serverless cold starts can lose one pooled request. Retry the full
+    // metrics snapshot once so the Overview does not fail as a whole for a
+    // transient dependency response; persistent failures remain visible.
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    queries = await readDashboardQueries(supabase);
+  }
+  const [reports, scans, installs, requests, rankings, recent, storage, config, lastSeen] = queries;
   const failures = [
     reports.error,
     scans.error,
