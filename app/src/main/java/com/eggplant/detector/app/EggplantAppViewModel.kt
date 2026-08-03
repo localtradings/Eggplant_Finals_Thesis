@@ -281,8 +281,9 @@ class EggplantAppViewModel(
 
     /**
      * Called only when the long-press live session is released with a retained
-     * result. Photo staging and the required local save finish in this
-     * ViewModel scope before the Result route opens with the committed result.
+     * result. The Result route opens immediately with the detected data while
+     * photo staging and the required local save continue in this ViewModel
+     * scope. The result screen observes the save state as it completes.
      */
     fun finalizeLiveDetectionScene(
         scene: CameraScene,
@@ -316,14 +317,15 @@ class EggplantAppViewModel(
             if (pendingResult.outcome == ScanOutcome.DISEASE) {
                 commitSavedResult(pendingResult.copy(scannedAt = nowProvider(), saveMode = "LIVE"), SaveState.SAVED)
             }
-            completeLiveFinalization(finalizationId, onReady)
+            completeLiveFinalization(finalizationId)
+            onReady()
             return
         }
 
-        // Keep the camera's saving overlay visible while JPEG staging and the
-        // Room transaction run. The result route opens only after the retained
-        // result is ready, so navigation cannot race the live finalization.
+        // Open the result immediately. JPEG staging and the Room transaction
+        // continue below so a slow local save cannot block the live release.
         _saveState.value = if (pendingResult.outcome == ScanOutcome.DISEASE) SaveState.SAVING else SaveState.IDLE
+        onReady()
         viewModelScope.launch {
             val imagePath = stageSnapshot?.let { stage ->
                 runCatching { stage(scene.rgbFrame) }
@@ -344,7 +346,7 @@ class EggplantAppViewModel(
             // Healthy live findings can still reach their result screen, but
             // never become a disease-history record.
             if (readyResult.outcome != ScanOutcome.DISEASE) {
-                completeLiveFinalization(finalizationId, onReady)
+                completeLiveFinalization(finalizationId)
                 return@launch
             }
 
@@ -359,7 +361,7 @@ class EggplantAppViewModel(
                     _saveState.value = SaveState.FAILED
                 }
             } finally {
-                completeLiveFinalization(finalizationId, onReady)
+                completeLiveFinalization(finalizationId)
             }
         }
     }

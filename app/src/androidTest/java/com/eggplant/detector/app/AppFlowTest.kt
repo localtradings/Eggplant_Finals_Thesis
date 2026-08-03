@@ -238,7 +238,7 @@ class AppFlowTest {
     }
 
     @Test
-    fun liveRelease_navigatesOnlyAfterSnapshotAndRoomSaveComplete() = runBlocking {
+    fun liveRelease_opensResultWhileSnapshotAndRoomSaveContinue() = runBlocking {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val database = Room.inMemoryDatabaseBuilder(context, EggplantDatabase::class.java).build()
         val snapshotStore = ScanSnapshotStore(context)
@@ -248,10 +248,11 @@ class AppFlowTest {
             repository.ensureCatalog()
             val saveCompleted = AtomicBoolean(false)
             val navigated = AtomicBoolean(false)
+            val snapshotReady = CompletableDeferred<String?>()
             val releaseSaver = CompletableDeferred<Unit>()
             val viewModel = EggplantAppViewModel(
                 initialHistory = emptyList(),
-                snapshotStager = { frame -> repository.stageSnapshot(frame) },
+                snapshotStager = { snapshotReady.await() },
                 scanSaver = { result ->
                     val saved = repository.saveScan(result)
                     committedImagePath = saved.imagePath
@@ -274,10 +275,14 @@ class AppFlowTest {
 
             viewModel.finalizeLiveDetectionScene(scene, detection) { navigated.set(true) }
 
+            assertTrue("Live release must open the result immediately", navigated.get())
+            assertFalse("Snapshot work must continue after navigation", saveCompleted.get())
+            snapshotReady.complete(repository.stageSnapshot(rgb))
             composeRule.waitUntil(10_000) { saveCompleted.get() }
-            assertFalse("Live release must not route before the local save completes", navigated.get())
             releaseSaver.complete(Unit)
-            composeRule.waitUntil(10_000) { navigated.get() }
+            composeRule.waitUntil(10_000) {
+                viewModel.saveState.value == SaveState.SAVED && viewModel.history.value.size == 1
+            }
             assertEquals(SaveState.SAVED, viewModel.saveState.value)
             assertEquals("LIVE", viewModel.currentResult.value?.saveMode)
             assertEquals(1, viewModel.history.value.size)

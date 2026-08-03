@@ -78,7 +78,7 @@ class EggplantAppViewModelTest {
     }
 
     @Test
-    fun `confirmed live release persists the retained disease before opening result`() {
+    fun `confirmed live release opens result and persists the retained disease`() {
         val viewModel = EggplantAppViewModel(initialHistory = emptyList())
         val (scene, primary) = diseaseScene(1, InputSource.LIVE)
         var navigated = false

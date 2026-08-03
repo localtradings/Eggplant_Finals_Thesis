@@ -44,6 +44,7 @@
     <string name="disease_library_list">Listahan ng sakit sa aklatan</string>
     <string name="open_disease_details">Buksan ang detalye ng %1$s</string>
     <string name="open_history_details">Buksan ang detalye sa kasaysayan ng %1$s</string>
+    <string name="saved_scan_photo">Naka-save na larawan ng scan</string>
     <string name="open_help">Buksan ang tulong at FAQ</string>
     <string name="no_diseases">Walang nahanap na sakit</string>
     <string name="try_search">Subukan ang ibang paghahanap o salaan.</string>

@@ -44,6 +44,7 @@
     <string name="disease_library_list">Disease library list</string>
     <string name="open_disease_details">Open %1$s details</string>
     <string name="open_history_details">Open %1$s history details</string>
+    <string name="saved_scan_photo">Saved scan photo</string>
     <string name="open_help">Open help and FAQ</string>
     <string name="no_diseases">No diseases found</string>
     <string name="try_search">Try another search or filter.</string>
