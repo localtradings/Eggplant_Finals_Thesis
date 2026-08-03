@@ -139,6 +139,9 @@
     <string name="my_scans">My Scans</string>
     <string name="global_scans">Global Scans</string>
     <string name="community_rankings">Community rankings</string>
+    <string name="community_rankings_subtitle">Most shared disease findings</string>
+    <string name="community_ranking_count">%1$d shared scans</string>
+    <string name="community_ranking_art_description">Trophy for community rankings</string>
     <string name="global_scans_empty">No community scans are cached yet.</string>
     <string name="global_scans_not_loaded">Global Scans have not been loaded yet.</string>
     <string name="global_scans_refresh_failed">Could not refresh Global Scans. Showing any safely cached scans.</string>
@@ -147,6 +150,7 @@
     <string name="shared_eggplant_photo">Shared eggplant leaf or fruit photo</string>
     <string name="global_scan_confidence_published">%1$d%% confidence • %2$s</string>
     <string name="global_scan_image_variant">Image variant</string>
+    <string name="global_scan_detail_title">Global scan</string>
     <string name="global_scan_annotated">Annotated</string>
     <string name="global_scan_original">Original</string>
     <string name="ai_screening_label">AI screening</string>

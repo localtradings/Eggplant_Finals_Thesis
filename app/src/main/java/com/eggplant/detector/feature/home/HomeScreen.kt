@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -255,33 +254,19 @@ private fun QuickActions(
         QuickActionItem(stringResource(R.string.care_guide), stringResource(R.string.care_guide_body), Icons.Outlined.Spa, onCareGuide, LeafGreenSoft, LeafGreen),
         QuickActionItem(stringResource(R.string.offline_use), stringResource(R.string.offline_use_body), Icons.Outlined.CloudDownload, onOfflineUse, EggplantLavender, EggplantPurple),
     )
-    BoxWithConstraints(Modifier.fillMaxWidth()) {
-        val compact = maxWidth < 420.dp
-        Card(
-            modifier = Modifier.fillMaxWidth().then(if (compact) Modifier.wrapContentHeight() else Modifier.height(154.dp)),
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+    Card(
+        modifier = Modifier.fillMaxWidth().height(154.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (compact) {
-                Column(Modifier.fillMaxWidth().padding(vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    actions.chunked(2).forEach { rowActions ->
-                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            rowActions.forEach { action -> QuickAction(action, Modifier.weight(1f)) }
-                            if (rowActions.size == 1) Spacer(Modifier.weight(1f))
-                        }
-                    }
-                }
-            } else {
-                Row(
-                    modifier = Modifier.fillMaxSize().padding(vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    actions.forEachIndexed { index, action ->
-                        if (index > 0) ActionDivider()
-                        QuickAction(action, Modifier.weight(1f))
-                    }
-                }
+            actions.forEachIndexed { index, action ->
+                if (index > 0) ActionDivider()
+                QuickAction(action, Modifier.weight(1f))
             }
         }
     }

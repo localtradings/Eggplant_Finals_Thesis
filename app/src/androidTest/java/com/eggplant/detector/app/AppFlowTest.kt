@@ -238,7 +238,7 @@ class AppFlowTest {
     }
 
     @Test
-    fun liveRelease_opensResultWhileSnapshotAndRoomSaveContinue() = runBlocking {
+    fun liveRelease_navigatesOnlyAfterSnapshotAndRoomSaveComplete() = runBlocking {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val database = Room.inMemoryDatabaseBuilder(context, EggplantDatabase::class.java).build()
         val snapshotStore = ScanSnapshotStore(context)
@@ -274,11 +274,12 @@ class AppFlowTest {
 
             viewModel.finalizeLiveDetectionScene(scene, detection) { navigated.set(true) }
 
-            assertTrue("Live release must open the result immediately", navigated.get())
             composeRule.waitUntil(10_000) { saveCompleted.get() }
+            assertFalse("Live release must not route before the local save completes", navigated.get())
             releaseSaver.complete(Unit)
             composeRule.waitUntil(10_000) { navigated.get() }
             assertEquals(SaveState.SAVED, viewModel.saveState.value)
+            assertEquals("LIVE", viewModel.currentResult.value?.saveMode)
             assertEquals(1, viewModel.history.value.size)
             assertTrue(File(requireNotNull(committedImagePath)).isFile)
             assertEquals("LIVE", viewModel.history.value.single().saveMode)

@@ -13,7 +13,11 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -28,6 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -107,11 +112,28 @@ fun GlobalScanDetailPager(
     LaunchedEffect(state.settledPage) { ids.getOrNull(state.settledPage)?.let { selectedId = it } }
     ResponsiveContent {
         Column(Modifier.fillMaxSize()) {
-            Text(stringResource(R.string.item_position, state.currentPage + 1, scans.size), Modifier.padding(horizontal = 20.dp, vertical = 8.dp), style = MaterialTheme.typography.labelLarge)
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.back))
+                }
+                Text(
+                    stringResource(R.string.global_scan_detail_title),
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    stringResource(R.string.item_position, state.currentPage + 1, scans.size),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             HorizontalPager(state, Modifier.weight(1f), key = { scans[it].id }) { page ->
                 GlobalScanDetail(
                     scans[page],
-                    onBack,
                     onReport,
                     reportStatus.takeIf { scans[page].id == reportStatusScanId },
                     reportStatusIsError,
@@ -138,7 +160,7 @@ private fun DetailControls(page: Int, total: Int, previous: () -> Unit, next: ()
 }
 
 @Composable
-private fun GlobalScanDetail(scan: GlobalScan, onBack: () -> Unit, onReport: (String) -> Unit, reportStatus: String?, reportStatusIsError: Boolean, reportEventId: String?, onRetryReport: ((String) -> Unit)?) {
+private fun GlobalScanDetail(scan: GlobalScan, onReport: (String) -> Unit, reportStatus: String?, reportStatusIsError: Boolean, reportEventId: String?, onRetryReport: ((String) -> Unit)?) {
     var showReport by remember(scan.id) { mutableStateOf(false) }
     var showAnnotated by rememberSaveable(scan.id, scan.annotatedPhotoPath) {
         mutableStateOf(scan.annotatedPhotoPath != null)
@@ -150,7 +172,6 @@ private fun GlobalScanDetail(scan: GlobalScan, onBack: () -> Unit, onReport: (St
         }
     }.value
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        OutlinedButton(onClick = onBack) { Text(stringResource(R.string.back)) }
         if (scan.annotatedPhotoPath != null) {
             Text(stringResource(R.string.global_scan_image_variant), style = MaterialTheme.typography.labelLarge)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {

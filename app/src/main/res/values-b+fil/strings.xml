@@ -139,6 +139,9 @@
     <string name="my_scans">Aking mga Scan</string>
     <string name="global_scans">Global Scans</string>
     <string name="community_rankings">Ranggo ng komunidad</string>
+    <string name="community_rankings_subtitle">Pinakamaraming ibinahaging tuklas ng sakit</string>
+    <string name="community_ranking_count">%1$d ibinahaging scan</string>
+    <string name="community_ranking_art_description">Trophy para sa ranggo ng komunidad</string>
     <string name="global_scans_empty">Wala pang naka-cache na community scan.</string>
     <string name="global_scans_not_loaded">Hindi pa na-load ang Global Scans.</string>
     <string name="global_scans_refresh_failed">Hindi na-refresh ang Global Scans. Ipinapakita ang ligtas na naka-cache na scan.</string>
@@ -147,6 +150,7 @@
     <string name="shared_eggplant_photo">Ibinahaging larawan ng dahon o bunga ng talong</string>
     <string name="global_scan_confidence_published">%1$d%% kumpiyansa • %2$s</string>
     <string name="global_scan_image_variant">Uri ng larawan</string>
+    <string name="global_scan_detail_title">Global scan</string>
     <string name="global_scan_annotated">May annotation</string>
     <string name="global_scan_original">Orihinal</string>
     <string name="ai_screening_label">AI screening</string>

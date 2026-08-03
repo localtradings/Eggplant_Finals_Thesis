@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -52,8 +53,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.eggplant.detector.R
 import com.eggplant.detector.app.CloudActionState
@@ -65,6 +68,7 @@ import com.eggplant.detector.core.ui.components.ResponsiveContent
 import com.eggplant.detector.core.ui.components.SearchBar
 import com.eggplant.detector.core.ui.motion.LocalEggplantMotion
 import com.eggplant.detector.domain.model.GlobalScan
+import com.eggplant.detector.domain.model.GlobalRanking
 import com.eggplant.detector.domain.model.ScanCategory
 import com.eggplant.detector.domain.model.ScanResult
 import com.eggplant.detector.data.cloud.SafeJpeg
@@ -232,16 +236,7 @@ private fun GlobalScansPage(viewModel: EggplantAppViewModel, onGlobalClick: (Glo
                 }
             }
             if (rankings.isNotEmpty()) {
-                item { Text(stringResource(R.string.community_rankings), style = MaterialTheme.typography.titleLarge) }
-                item {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        rankings.take(3).forEachIndexed { index, ranking ->
-                            Card(Modifier.weight(1f), shape = RoundedCornerShape(16.dp)) {
-                                Column(Modifier.padding(12.dp)) { Text("#${index + 1}", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold); Text(ranking.diseaseName, maxLines = 1); Text("${ranking.scanCount}", fontWeight = FontWeight.Bold) }
-                            }
-                        }
-                    }
-                }
+                item { CommunityRankingCard(rankings) }
             }
             item {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -250,7 +245,16 @@ private fun GlobalScansPage(viewModel: EggplantAppViewModel, onGlobalClick: (Glo
                 }
             }
             when {
-                scans.isEmpty() && feedState.isLoading -> items(3) { GlobalSkeleton() }
+                scans.isEmpty() && feedState.isLoading -> items(3) {
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.Top,
+                    ) {
+                        GlobalSkeleton(Modifier.weight(1f))
+                        GlobalSkeleton(Modifier.weight(1f))
+                    }
+                }
                 filtered.isEmpty() -> item {
                     Column(Modifier.fillMaxWidth().padding(vertical = 48.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(if (scans.isEmpty()) Icons.Outlined.CloudOff else Icons.Outlined.Public, null, tint = MaterialTheme.colorScheme.primary)
@@ -258,7 +262,18 @@ private fun GlobalScansPage(viewModel: EggplantAppViewModel, onGlobalClick: (Glo
                         Button(onClick = viewModel::refreshGlobalScans, modifier = Modifier.padding(top = 12.dp)) { Text(stringResource(R.string.refresh)) }
                     }
                 }
-                else -> items(filtered, key = { "global-${it.id}" }) { scan -> GlobalScanCard(scan) { onGlobalClick(scan) } }
+                else -> items(filtered.chunked(2), key = { row -> "global-row-${row.first().id}" }) { row ->
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.Top,
+                    ) {
+                        row.forEach { scan ->
+                            GlobalScanCard(scan, { onGlobalClick(scan) }, Modifier.weight(1f))
+                        }
+                        if (row.size == 1) Spacer(Modifier.weight(1f))
+                    }
+                }
             }
             if (feedState.lastErrorCode != null) {
                 item {
@@ -293,29 +308,93 @@ private fun GlobalScansPage(viewModel: EggplantAppViewModel, onGlobalClick: (Glo
 }
 
 @Composable
-private fun GlobalScanCard(scan: GlobalScan, onClick: () -> Unit) {
+private fun CommunityRankingCard(rankings: List<GlobalRanking>) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .42f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
+        Row(
+            Modifier.fillMaxWidth().padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(
+                Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(stringResource(R.string.community_rankings), style = MaterialTheme.typography.titleLarge)
+                Text(
+                    stringResource(R.string.community_rankings_subtitle),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                rankings.take(3).forEachIndexed { index, ranking ->
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            "#${index + 1}",
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                ranking.diseaseName,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            Text(
+                                stringResource(R.string.community_ranking_count, ranking.scanCount),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+            }
+            Image(
+                painter = painterResource(R.drawable.community_ranking_trophy),
+                contentDescription = stringResource(R.string.community_ranking_art_description),
+                modifier = Modifier.fillMaxWidth(.32f).aspectRatio(1f),
+                contentScale = ContentScale.Fit,
+            )
+        }
+    }
+}
+
+@Composable
+private fun GlobalScanCard(scan: GlobalScan, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val bitmap by produceState<android.graphics.Bitmap?>(null, scan.photoPath) {
         value = withContext(Dispatchers.IO) {
             scan.photoPath?.let(::File)?.let { SafeJpeg.decodeSampled(it, 640) }
         }
     }
-    Card(onClick = onClick, shape = RoundedCornerShape(22.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+    Card(onClick = onClick, modifier = modifier, shape = RoundedCornerShape(22.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
         val image = bitmap
         if (image != null) Image(image.asImageBitmap(), stringResource(R.string.shared_eggplant_photo), Modifier.fillMaxWidth().aspectRatio(16 / 10f), contentScale = ContentScale.Crop)
         else Box(Modifier.fillMaxWidth().aspectRatio(16 / 10f).background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) { Icon(Icons.Outlined.Public, null) }
         Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-            Column { Text(scan.diseaseName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold); Text(scan.publishedAt.take(10), color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            Column(Modifier.weight(1f)) {
+                Text(scan.diseaseName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(scan.publishedAt.take(10), color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+            }
             Text("${scan.confidence}%", color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Bold)
         }
     }
 }
 
 @Composable
-private fun GlobalSkeleton() {
+private fun GlobalSkeleton(modifier: Modifier = Modifier) {
     val motion = LocalEggplantMotion.current
     val alpha = if (motion.spatialMovement) rememberInfiniteTransition(label = "globalSkeleton").animateFloat(.45f, .85f, infiniteRepeatable(tween(850), RepeatMode.Reverse), label = "alpha").value else .6f
-    Column(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = alpha), RoundedCornerShape(22.dp)).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Box(Modifier.fillMaxWidth().height(150.dp).background(MaterialTheme.colorScheme.outline.copy(alpha = .16f), RoundedCornerShape(16.dp)))
+    Column(modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = alpha), RoundedCornerShape(22.dp)).padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Box(Modifier.fillMaxWidth().aspectRatio(16 / 10f).background(MaterialTheme.colorScheme.outline.copy(alpha = .16f), RoundedCornerShape(16.dp)))
         Box(Modifier.fillMaxWidth(.55f).height(20.dp).background(MaterialTheme.colorScheme.outline.copy(alpha = .16f), RoundedCornerShape(8.dp)))
     }
 }
