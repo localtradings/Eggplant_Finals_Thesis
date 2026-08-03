@@ -223,11 +223,13 @@ class EggplantRepository(
             }
 
             val store = requireNotNull(snapshotStore) { "Cloud photo storage is unavailable." }
+            val outboxId = "${result.id}-${UUID.randomUUID()}"
             val stagedPhoto = store.copyForOutbox(
                 requireNotNull(result.imagePath),
                 "global",
-                "${result.id}-${UUID.randomUUID()}",
+                outboxId,
             )
+            var annotatedPhoto: String? = null
             val revalidatedConfidence = try {
                 requireNotNull(sharePhotoRevalidator) { "Share-photo validation is unavailable." }
                     .revalidate(stagedPhoto, result.diseaseId)
@@ -240,16 +242,23 @@ class EggplantRepository(
                 return@withLock ShareEligibility.Ineligible(ShareEligibility.Reason.NOT_CONFIRMED)
             }
 
-            val now = Instant.now().toString()
-            val payload = globalSharePayload(
-                result.id,
-                result.diseaseId,
-                revalidatedConfidence,
-                result.source,
-                result.modelVersion,
-                stagedPhoto,
-            )
             try {
+                annotatedPhoto = store.createAnnotatedForOutbox(
+                    sourcePath = stagedPhoto,
+                    result = result,
+                    publishedConfidence = revalidatedConfidence,
+                    id = outboxId,
+                )
+                val now = Instant.now().toString()
+                val payload = globalSharePayload(
+                    result.id,
+                    result.diseaseId,
+                    revalidatedConfidence,
+                    result.source,
+                    result.modelVersion,
+                    stagedPhoto,
+                    requireNotNull(annotatedPhoto),
+                )
                 database.withTransaction {
                     queueSharingConsent(enabled = true, now = now)
                     dao.upsertOutbox(
@@ -268,10 +277,13 @@ class EggplantRepository(
                     )
                 }
             } catch (error: Throwable) {
+                store.removeOutboxPhoto(annotatedPhoto)
                 store.removeOutboxPhoto(stagedPhoto)
                 throw error
             }
-            existing?.photoPathOrNull()?.takeIf { it != stagedPhoto }?.let(store::removeOutboxPhoto)
+            existing?.photoPathsOrEmpty()
+                ?.filter { it != stagedPhoto && it != annotatedPhoto }
+                ?.forEach(store::removeOutboxPhoto)
             cloudSync?.invoke()
             ShareEligibility.Eligible
         }
@@ -286,7 +298,7 @@ class EggplantRepository(
             queueSharingConsent(enabled, now)
         }
         if (!enabled) {
-            pendingShares.mapNotNull(SyncOutboxEntity::photoPathOrNull)
+            pendingShares.flatMap(SyncOutboxEntity::photoPathsOrEmpty)
                 .forEach { snapshotStore?.removeOutboxPhoto(it) }
         }
         cloudSync?.invoke()
@@ -392,7 +404,7 @@ class EggplantRepository(
     suspend fun cancelPendingShares() = sharingMutex.withLock {
         val pending = database.cloudDao().pendingShareEvents()
         database.cloudDao().cancelPendingShares(Instant.now().toString())
-        pending.mapNotNull(SyncOutboxEntity::photoPathOrNull)
+        pending.flatMap(SyncOutboxEntity::photoPathsOrEmpty)
             .forEach { snapshotStore?.removeOutboxPhoto(it) }
     }
 
@@ -568,12 +580,16 @@ internal fun shouldSeedBundledCatalog(existingDiseaseCount: Int): Boolean = exis
 
 private val cacheJson = Json { ignoreUnknownKeys = true }
 
-private fun SyncOutboxEntity.photoPathOrNull(): String? = runCatching {
-    cacheJson.parseToJsonElement(payloadJson).jsonObject["photoPath"]?.jsonPrimitive?.content
-}.getOrNull()
+private fun SyncOutboxEntity.photoPathsOrEmpty(): List<String> = runCatching {
+    val payload = cacheJson.parseToJsonElement(payloadJson).jsonObject
+    listOfNotNull(
+        payload["photoPath"]?.jsonPrimitive?.content,
+        payload["annotatedPhotoPath"]?.jsonPrimitive?.content,
+    )
+}.getOrDefault(emptyList())
 
 private const val SHARING_CONSENT_IDEMPOTENCY_KEY = "sharing-consent"
-private const val REVALIDATED_SHARE_EVENT_VERSION = 2
+private const val REVALIDATED_SHARE_EVENT_VERSION = 3
 private const val DISEASE_REQUEST_NOTES_MAX_LENGTH = 200
 private val CAMERA_REQUEST_SOURCES = setOf("live", "capture")
 private val GLOBAL_SHARE_SOURCES = setOf("live", "capture", "gallery")
@@ -594,6 +610,7 @@ private fun com.eggplant.detector.data.database.entity.GlobalScanCacheEntity.toD
         diseaseName = content?.get("name")?.jsonPrimitive?.content ?: disease?.name ?: diseaseId,
         confidence = (confidence * 100).toInt().coerceIn(0, 100),
         photoPath = cachedPhotoPath,
+        annotatedPhotoPath = annotatedCachedPhotoPath,
         publishedAt = publishedAt,
         symptoms = payload["signs"]?.jsonArray?.map { it.jsonPrimitive.content } ?: disease?.signs.orEmpty(),
         causes = content?.get("causes")?.jsonPrimitive?.content ?: disease?.causes.orEmpty(),

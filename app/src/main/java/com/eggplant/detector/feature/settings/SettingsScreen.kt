@@ -47,6 +47,7 @@ import com.eggplant.detector.R
 import com.eggplant.detector.app.ThemePreference
 import com.eggplant.detector.core.ui.components.SettingsRow
 import com.eggplant.detector.core.ui.components.SettingsSwitchRow
+import com.eggplant.detector.core.ui.components.ResponsiveContent
 import com.eggplant.detector.domain.model.MotionPreference
 import com.eggplant.detector.domain.model.CloudDeletionState
 
@@ -87,14 +88,15 @@ fun SettingsScreen(
         MotionPreference.FULL to stringResource(R.string.motion_full),
         MotionPreference.REDUCED to stringResource(R.string.motion_reduced),
     )
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .verticalScroll(rememberScrollState())
-            .padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
+    ResponsiveContent {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .verticalScroll(rememberScrollState())
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             androidx.compose.material3.Icon(
                 Icons.Outlined.Settings,
@@ -196,6 +198,7 @@ fun SettingsScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.bodyMedium,
         )
+        }
     }
 
     if (showLanguageDialog) {

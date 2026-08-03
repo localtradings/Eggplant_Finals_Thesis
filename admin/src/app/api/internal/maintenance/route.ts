@@ -50,7 +50,7 @@ export async function GET(request: Request) {
   const now = new Date().toISOString();
   const { data: expiring, error: expirationReadError } = await supabase
     .from("scan_contributions")
-    .select("id,photo_path")
+    .select("id,photo_path,annotated_photo_path")
     .eq("status", "published")
     .lte("expires_at", now)
     .order("expires_at")
@@ -66,9 +66,12 @@ export async function GET(request: Request) {
   let expirationStatusUpdateFailed = false;
   let expiredScansUnpublished = 0;
   if (expired.length > 0) {
+    const expiredPhotoPaths = expired.flatMap((row) =>
+      [row.photo_path, row.annotated_photo_path].filter((path): path is string => Boolean(path)),
+    );
     const { error } = await supabase.storage
       .from("eggplant-scans")
-      .remove(expired.map((row) => row.photo_path));
+      .remove(expiredPhotoPaths);
     expiredPhotoCleanupFailed = Boolean(error);
     if (!error) {
       const expiredIds = expired.map((row) => row.id);
@@ -86,7 +89,7 @@ export async function GET(request: Request) {
   const completedIntentCutoff = new Date(Date.now() - 181 * 24 * 60 * 60 * 1_000).toISOString();
   const { data: staleIntents = [], error: intentReadError } = await supabase
     .from("global_share_intents")
-    .select("id,photo_path,status")
+    .select("id,photo_path,annotated_photo_path,status")
     .or(`and(status.eq.pending,created_at.lt.${pendingIntentCutoff}),and(status.eq.completed,created_at.lt.${completedIntentCutoff})`)
     .limit(200);
   if (intentReadError) {
@@ -98,9 +101,12 @@ export async function GET(request: Request) {
   const pendingIntents = (staleIntents ?? []).filter((intent) => intent.status !== "completed");
   let intentCleanupFailed = false;
   if (pendingIntents.length > 0) {
+    const pendingIntentPaths = pendingIntents.flatMap((intent) =>
+      [intent.photo_path, intent.annotated_photo_path].filter((path): path is string => Boolean(path)),
+    );
     const { error } = await supabase.storage
       .from("eggplant-scans")
-      .remove(pendingIntents.map((intent) => intent.photo_path));
+      .remove(pendingIntentPaths);
     intentCleanupFailed = Boolean(error);
   }
   const removableIntentIds = (staleIntents ?? [])
@@ -149,7 +155,7 @@ export async function GET(request: Request) {
     // query by owner here: the owner may have opted back into sharing since.
     const { data: targets, error: targetReadError } = await supabase
       .from("deletion_request_targets")
-      .select("resource_type,resource_id,photo_path")
+      .select("resource_type,resource_id,photo_path,annotated_photo_path")
       .eq("deletion_request_id", deletion.id);
     if (targetReadError) {
       await markDeletionFailed(deletion.id);
@@ -165,7 +171,8 @@ export async function GET(request: Request) {
       .map((target) => target.resource_id);
     const paths = [...new Set([
       ...targetRows.map((target) => target.photo_path),
-    ])];
+      ...targetRows.map((target) => target.annotated_photo_path),
+    ].filter((path): path is string => Boolean(path)))];
     if (paths.length > 0) {
       const { error } = await supabase.storage
         .from("eggplant-scans")

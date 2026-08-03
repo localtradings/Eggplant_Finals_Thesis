@@ -1,6 +1,7 @@
 type SkeletonKind =
   | "overview"
   | "requests"
+  | "reports"
   | "catalog"
   | "scans"
   | "scan-detail"
@@ -92,6 +93,10 @@ function RequestsWorkspace() {
   );
 }
 
+function ReportsWorkspace() {
+  return <div className="mt-6 grid gap-3">{Array.from({ length: 6 }, (_, index) => <div className="surface min-w-0 p-4 sm:p-5" key={index}><div className="flex min-w-0 flex-col gap-4 sm:flex-row"><Bar className="h-24 w-full shrink-0 sm:w-32"/><div className="min-w-0 flex-1"><Bar className="h-3 w-28"/><Bar className="mt-3 h-6 w-2/5 max-w-full"/><Bar className="mt-4 h-4 w-full"/><Bar className="mt-2 h-4 w-3/4"/><Bar className="mt-4 h-8 w-32"/></div></div></div>)}</div>;
+}
+
 function CatalogWorkspace() {
   return (
     <>
@@ -131,10 +136,11 @@ export function AdminPageSkeleton({ kind = "overview" }: { kind?: SkeletonKind }
   const isDetail = kind.includes("detail");
   return (
     <div aria-busy="true" aria-label="Loading admin workspace" className="mx-auto max-w-[1240px]">
-      {isDetail ? <Bar className="h-4 w-28" /> : <PageHeader action={kind === "overview" || kind === "scans" || kind === "requests"} />}
+      {kind === "scan-detail" ? <div className="flex flex-wrap items-center justify-between gap-3"><Bar className="h-4 w-28" /><div className="flex gap-2"><Bar className="h-10 w-28" /><Bar className="h-10 w-24" /></div></div> : isDetail ? <Bar className="h-4 w-28" /> : <PageHeader action={kind === "overview" || kind === "scans" || kind === "requests"} />}
       {kind === "overview" && <OverviewWorkspace />}
       {kind === "scans" && <ScansWorkspace />}
       {kind === "requests" && <RequestsWorkspace />}
+      {kind === "reports" && <ReportsWorkspace />}
       {kind === "catalog" && <CatalogWorkspace />}
       {kind === "scan-detail" && <DetailWorkspace kind="scan-detail" />}
       {kind === "request-detail" && <DetailWorkspace kind="request-detail" />}

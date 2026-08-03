@@ -14,6 +14,8 @@ export type ShareIntent = {
   modelVersion: string;
   contentLength: number;
   sha256: string;
+  annotatedContentLength?: number;
+  annotatedSha256?: string;
 };
 
 export type ShareCompletion = {
@@ -23,6 +25,7 @@ export type ShareCompletion = {
   source: ShareSource;
   modelVersion: string;
   path: string;
+  annotatedPath?: string;
 };
 
 export type DiseaseRequestInput = {
@@ -89,6 +92,9 @@ export function validateShareIntent(
   const contentLength = value.contentLength;
   const source = value.source;
   const sha256 = value.sha256;
+  const annotatedContentLength = value.annotatedContentLength;
+  const annotatedSha256 = value.annotatedSha256;
+  const hasAnnotatedImage = annotatedContentLength !== undefined || annotatedSha256 !== undefined;
   if (
     typeof value.clientScanId !== "string" ||
     !UUID_PATTERN.test(value.clientScanId) ||
@@ -101,7 +107,14 @@ export function validateShareIntent(
     contentLength < 1 ||
     contentLength > maximumBytes ||
     typeof sha256 !== "string" ||
-    !SHA256_PATTERN.test(sha256)
+    !SHA256_PATTERN.test(sha256) ||
+    (hasAnnotatedImage &&
+      (typeof annotatedContentLength !== "number" ||
+        !Number.isSafeInteger(annotatedContentLength) ||
+        annotatedContentLength < 1 ||
+        annotatedContentLength > maximumBytes ||
+        typeof annotatedSha256 !== "string" ||
+        !SHA256_PATTERN.test(annotatedSha256)))
   ) {
     return { ok: false };
   }
@@ -115,6 +128,12 @@ export function validateShareIntent(
       modelVersion,
       contentLength,
       sha256: sha256.toLowerCase(),
+      ...(hasAnnotatedImage
+        ? {
+            annotatedContentLength: Number(annotatedContentLength),
+            annotatedSha256: String(annotatedSha256).toLowerCase(),
+          }
+        : {}),
     },
   };
 }
@@ -122,7 +141,7 @@ export function validateShareIntent(
 export function validateShareCompletion(
   value: unknown,
   ownerId: string,
-): ValidationResult<ShareCompletion & { expectedSha256: string }> {
+): ValidationResult<ShareCompletion & { expectedSha256: string; annotatedExpectedSha256?: string }> {
   if (!isRecord(value)) return { ok: false };
   const modelVersion = boundedText(value.modelVersion, 1, 100);
   const diseaseId = boundedText(value.diseaseId, 1, 100);
@@ -146,6 +165,16 @@ export function validateShareCompletion(
     ? filename.slice(0, -4)
     : "";
   if (!SHA256_PATTERN.test(expectedSha256)) return { ok: false };
+  const annotatedPath = value.annotatedPath;
+  let annotatedExpectedSha256: string | undefined;
+  if (annotatedPath !== undefined) {
+    if (typeof annotatedPath !== "string" || !annotatedPath.startsWith(prefix)) return { ok: false };
+    const annotatedFilename = annotatedPath.slice(prefix.length);
+    annotatedExpectedSha256 = annotatedFilename.startsWith("annotated-") && annotatedFilename.endsWith(".jpg")
+      ? annotatedFilename.slice("annotated-".length, -".jpg".length)
+      : "";
+    if (!SHA256_PATTERN.test(annotatedExpectedSha256)) return { ok: false };
+  }
   return {
     ok: true,
     value: {
@@ -156,6 +185,12 @@ export function validateShareCompletion(
       modelVersion,
       path: value.path,
       expectedSha256: expectedSha256.toLowerCase(),
+      ...(annotatedPath !== undefined
+        ? {
+            annotatedPath,
+            annotatedExpectedSha256: annotatedExpectedSha256!.toLowerCase(),
+          }
+        : {}),
     },
   };
 }
@@ -166,6 +201,14 @@ export function globalSharePath(
   sha256: string,
 ) {
   return `global/${ownerId}/${clientScanId}/${sha256.toLowerCase()}.jpg`;
+}
+
+export function globalAnnotatedSharePath(
+  ownerId: string,
+  clientScanId: string,
+  sha256: string,
+) {
+  return `global/${ownerId}/${clientScanId}/annotated-${sha256.toLowerCase()}.jpg`;
 }
 
 export function validateDiseaseRequest(

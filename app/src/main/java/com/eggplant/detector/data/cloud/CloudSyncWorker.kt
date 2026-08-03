@@ -195,22 +195,41 @@ class CloudSyncWorker(context: Context, parameters: WorkerParameters) : Coroutin
     ): Boolean {
         val photo = File(payload.getValue("photoPath").jsonPrimitive.content)
         check(photo.isFile && photo.length() in 1..8_388_608) { "Share photo is unavailable or too large." }
+        val annotatedPhoto = payload["annotatedPhotoPath"]?.jsonPrimitive?.contentOrNull
+            ?.takeIf(String::isNotBlank)
+            ?.let(::File)
+        check(annotatedPhoto == null || annotatedPhoto.isFile && annotatedPhoto.length() in 1..8_388_608) {
+            "Annotated share photo is unavailable or too large."
+        }
         if (!isCurrentEvent(event, "UPLOADING")) return false
         val sha256 = photo.sha256()
+        val annotatedSha256 = annotatedPhoto?.sha256()
         val metadata = buildJsonObject {
             listOf("clientScanId", "diseaseId", "confidence", "source", "modelVersion").forEach { key -> put(key, payload.getValue(key)) }
             put("contentLength", photo.length())
             put("sha256", sha256)
+            annotatedPhoto?.let {
+                put("annotatedContentLength", it.length())
+                put("annotatedSha256", requireNotNull(annotatedSha256))
+            }
         }
         val intent = client.post("/api/mobile/v1/global-shares/intents", metadata)
         if (intent["alreadyPublished"]?.jsonPrimitive?.content == "true") return true
         val photoBytes = withContext(Dispatchers.IO) { photo.readBytes() }
         if (!isCurrentEvent(event, "UPLOADING")) return false
         client.upload(intent.getValue("signedUrl").jsonPrimitive.content, photoBytes)
+        if (annotatedPhoto != null) {
+            if (!isCurrentEvent(event, "UPLOADING")) return false
+            client.upload(
+                intent.getValue("annotatedSignedUrl").jsonPrimitive.content,
+                withContext(Dispatchers.IO) { annotatedPhoto.readBytes() },
+            )
+        }
         if (!isCurrentEvent(event, "UPLOADING")) return false
         client.post("/api/mobile/v1/global-shares/complete", buildJsonObject {
             listOf("clientScanId", "diseaseId", "confidence", "source", "modelVersion").forEach { key -> put(key, payload.getValue(key)) }
             put("path", intent.getValue("path"))
+            intent["annotatedPath"]?.let { put("annotatedPath", it) }
         })
         return true
     }
@@ -496,15 +515,10 @@ class CloudSyncWorker(context: Context, parameters: WorkerParameters) : Coroutin
             val item = element.jsonObject
             val id = UUID.fromString(item.getValue("id").jsonPrimitive.content).toString()
             val photoPath = item.optionalText("photoUrl")?.let { url ->
-                val destination = File(cacheRoot, "$id.jpg")
-                val previous = destination.takeIf(SafeJpeg::validate)?.absolutePath
-                runCatching {
-                    val temporary = File(cacheRoot, "$id.tmp")
-                    client.download(url, temporary, MAXIMUM_JPEG_BYTES)
-                    check(SafeJpeg.validate(temporary)) { "Community photo is not a safe JPEG." }
-                    moveReplacing(temporary, destination)
-                    destination.absolutePath
-                }.getOrElse { previous }
+                cacheGlobalPhoto(client, url, File(cacheRoot, "$id.jpg"))
+            }
+            val annotatedPhotoPath = item.optionalText("annotatedPhotoUrl")?.let { url ->
+                cacheGlobalPhoto(client, url, File(cacheRoot, "$id-annotated.jpg"))
             }
             GlobalScanCacheEntity(
                 id = id,
@@ -513,6 +527,7 @@ class CloudSyncWorker(context: Context, parameters: WorkerParameters) : Coroutin
                 source = item.getValue("source").jsonPrimitive.content,
                 modelVersion = item.getValue("model_version").jsonPrimitive.content,
                 cachedPhotoPath = photoPath,
+                annotatedCachedPhotoPath = annotatedPhotoPath,
                 publishedAt = item.getValue("published_at").jsonPrimitive.content,
                 expiresAt = item["expires_at"]?.jsonPrimitive?.content ?: Instant.now().plusSeconds(15_552_000).toString(),
                 contentJson = item.toString(),
@@ -543,11 +558,24 @@ class CloudSyncWorker(context: Context, parameters: WorkerParameters) : Coroutin
             application.database.settingsDao().upsert(settings.copy(lastGlobalSyncAt = now))
         }
         if (!loadMore) {
-            val retained = scans.mapNotNull { it.cachedPhotoPath?.let(::File)?.name }.toSet()
+            val retained = scans.flatMap { scan ->
+                listOfNotNull(scan.cachedPhotoPath, scan.annotatedCachedPhotoPath)
+            }.map { File(it).name }.toSet()
             cacheRoot.listFiles().orEmpty().forEach { file ->
                 if ((file.extension == "jpg" && file.name !in retained) || file.extension == "tmp") file.delete()
             }
         }
+    }
+
+    private suspend fun cacheGlobalPhoto(client: CloudApiClient, url: String, destination: File): String? {
+        val previous = destination.takeIf(SafeJpeg::validate)?.absolutePath
+        return runCatching {
+            val temporary = File(destination.parentFile, "${destination.nameWithoutExtension}.tmp")
+            client.download(url, temporary, MAXIMUM_JPEG_BYTES)
+            check(SafeJpeg.validate(temporary)) { "Community photo is not a safe JPEG." }
+            moveReplacing(temporary, destination)
+            destination.absolutePath
+        }.getOrElse { previous }
     }
 
     private suspend fun refreshDeletionStatus(client: CloudApiClient) {
@@ -594,7 +622,9 @@ class CloudSyncWorker(context: Context, parameters: WorkerParameters) : Coroutin
             if (state == "COMPLETED" && affectedIds.isNotEmpty()) {
                 val rows = application.database.cloudDao().globalScansByIds(affectedIds)
                 application.database.cloudDao().deleteGlobalScans(affectedIds)
-                removedPhotoPaths = rows.mapNotNull(GlobalScanCacheEntity::cachedPhotoPath)
+                removedPhotoPaths = rows.flatMap { row ->
+                    listOfNotNull(row.cachedPhotoPath, row.annotatedCachedPhotoPath)
+                }
             }
         }
         removedPhotoPaths.forEach { path -> runCatching { File(path).delete() } }

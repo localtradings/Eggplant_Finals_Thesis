@@ -61,6 +61,7 @@ import com.eggplant.detector.app.EggplantAppViewModel
 import com.eggplant.detector.core.ui.components.DiseaseArtwork
 import com.eggplant.detector.core.ui.components.FilterChips
 import com.eggplant.detector.core.ui.components.HistoryCard
+import com.eggplant.detector.core.ui.components.ResponsiveContent
 import com.eggplant.detector.core.ui.components.SearchBar
 import com.eggplant.detector.core.ui.motion.LocalEggplantMotion
 import com.eggplant.detector.domain.model.GlobalScan
@@ -71,6 +72,7 @@ import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.Locale
 
 @Composable
 fun ScanHistoryScreen(
@@ -82,22 +84,24 @@ fun ScanHistoryScreen(
     val pagerState = rememberPagerState { 2 }
     val scope = rememberCoroutineScope()
     val tabs = listOf(stringResource(R.string.my_scans), stringResource(R.string.global_scans))
-    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 10.dp)) {
-            Text(stringResource(R.string.history_title), style = MaterialTheme.typography.headlineMedium)
-            Text(stringResource(R.string.history_subtitle), color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        PrimaryTabRow(selectedTabIndex = pagerState.currentPage) {
-            tabs.forEachIndexed { index, title ->
-                Tab(
-                    selected = pagerState.currentPage == index,
-                    onClick = { scope.launch { if (motion.spatialMovement) pagerState.animateScrollToPage(index) else pagerState.scrollToPage(index) } },
-                    text = { Text(title, fontWeight = if (pagerState.currentPage == index) FontWeight.Bold else FontWeight.Medium) },
-                )
+    ResponsiveContent {
+        Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+            Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 10.dp)) {
+                Text(stringResource(R.string.history_title), style = MaterialTheme.typography.headlineMedium)
+                Text(stringResource(R.string.history_subtitle), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-        }
-        HorizontalPager(state = pagerState, modifier = Modifier.weight(1f), key = { it }) { page ->
-            if (page == 0) MyScansPage(viewModel, onResultClick) else GlobalScansPage(viewModel, onGlobalClick)
+            PrimaryTabRow(selectedTabIndex = pagerState.currentPage) {
+                tabs.forEachIndexed { index, title ->
+                    Tab(
+                        selected = pagerState.currentPage == index,
+                        onClick = { scope.launch { if (motion.spatialMovement) pagerState.animateScrollToPage(index) else pagerState.scrollToPage(index) } },
+                        text = { Text(title, fontWeight = if (pagerState.currentPage == index) FontWeight.Bold else FontWeight.Medium) },
+                    )
+                }
+            }
+            HorizontalPager(state = pagerState, modifier = Modifier.weight(1f), key = { it }) { page ->
+                if (page == 0) MyScansPage(viewModel, onResultClick) else GlobalScansPage(viewModel, onGlobalClick)
+            }
         }
     }
 }
@@ -141,7 +145,7 @@ private fun MyScansPage(viewModel: EggplantAppViewModel, onResultClick: (ScanRes
                                 Text(request.requestedName ?: stringResource(R.string.request_name_not_provided), fontWeight = FontWeight.Bold)
                                 Text(request.notes.orEmpty(), color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
                             }
-                            Text(request.status.replace('_', ' '), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+                            Text(requestStatusLabel(request.status), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
                         }
                         if (request.status in setOf("QUEUED", "UPLOADING", "RETRY")) {
                             LinearProgressIndicator(
@@ -169,6 +173,28 @@ private fun MyScansPage(viewModel: EggplantAppViewModel, onResultClick: (ScanRes
             }
         }
     }
+}
+
+@Composable
+private fun requestStatusLabel(status: String): String = when (status.uppercase(Locale.ROOT)) {
+    "QUEUED" -> localized("Waiting to send", "Naghihintay ipadala")
+    "UPLOADING" -> localized("Sending photos", "Ipinapadala ang mga larawan")
+    "RETRY" -> localized("Will try again", "Susubukan ulit")
+    "FAILED" -> localized("Could not send", "Hindi naipadala")
+    "CANCELLED" -> localized("Cancelled", "Nakansela")
+    "SUBMITTED" -> localized("Sent for review", "Naipasa para suriin")
+    "UNDER_REVIEW" -> localized("Being reviewed", "Sinusuri")
+    "NEEDS_INFORMATION" -> localized("Needs more details", "Kailangan ng dagdag na detalye")
+    "PLANNED" -> localized("Planned", "Nakaplano")
+    "NOT_SUPPORTED" -> localized("Not supported", "Hindi suportado")
+    "CLOSED" -> localized("Closed", "Sarado")
+    else -> status.replace('_', ' ').lowercase(Locale.ROOT).replaceFirstChar { it.titlecase(Locale.ROOT) }
+}
+
+@Composable
+private fun localized(english: String, filipino: String): String {
+    val language = androidx.compose.ui.platform.LocalConfiguration.current.locales[0].language
+    return if (language in setOf("fil", "tl")) filipino else english
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

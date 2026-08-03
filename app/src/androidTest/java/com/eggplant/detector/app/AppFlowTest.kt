@@ -115,6 +115,7 @@ class AppFlowTest {
         composeRule.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
         composeRule.waitForIdle()
 
+        composeRule.onNodeWithContentDescription("Home content").performScrollToIndex(3)
         composeRule.onNodeWithText("View All", substring = true).performClick()
         composeRule.onNodeWithText("Your saved scans and anonymous community findings").assertIsDisplayed()
     }
@@ -138,8 +139,10 @@ class AppFlowTest {
         composeRule.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithText("Care Guide").performClick()
-        composeRule.onNodeWithText("Clean the lens").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Home content").performScrollToIndex(2)
+        composeRule.onNodeWithContentDescription("Care Guide").assertIsDisplayed().performClick()
+        scrollInformationToFirstSection(R.string.scan_quality_tips)
+        composeRule.onNodeWithText("Clean the lens").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -147,7 +150,7 @@ class AppFlowTest {
         composeRule.onNodeWithContentDescription("Navigate to Library").performClick()
         composeRule.onNodeWithContentDescription("Filter diseases").performClick()
         composeRule.onNodeWithText("Filter diseases").assertIsDisplayed()
-        composeRule.onAllNodesWithText("Fruit Disease")[2].performClick()
+        composeRule.onNodeWithContentDescription("Choose Fruit Disease filter").performClick()
         composeRule.onNodeWithContentDescription("Fruit Rot disease photo").assertIsDisplayed()
     }
 
@@ -180,19 +183,24 @@ class AppFlowTest {
 
     @Test
     fun supportActionsOpenCompletePages() {
-        composeRule.onNodeWithText("Care Guide").performClick()
-        composeRule.onNodeWithText("Clean the lens").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Home content").performScrollToIndex(2)
+        composeRule.onNodeWithContentDescription("Care Guide").assertIsDisplayed().performClick()
+        scrollInformationToFirstSection(R.string.scan_quality_tips)
+        composeRule.onNodeWithText("Clean the lens").performScrollTo().assertIsDisplayed()
         composeRule.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
         composeRule.waitForIdle()
 
+        composeRule.onNodeWithContentDescription("Home content").performScrollToIndex(2)
         composeRule.onNodeWithText("Offline Use").performClick()
-        composeRule.onNodeWithText("What works offline").assertIsDisplayed()
+        scrollInformationToFirstSection(R.string.offline_use)
+        composeRule.onNodeWithText("What works offline").performScrollTo().assertIsDisplayed()
         composeRule.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
         composeRule.waitForIdle()
 
         composeRule.onNodeWithContentDescription("Navigate to Library").performClick()
         composeRule.onNodeWithContentDescription("Open help and FAQ").performClick()
-        composeRule.onNodeWithText("Does the app need Internet?").assertIsDisplayed()
+        scrollInformationToFirstSection(R.string.help_faq)
+        composeRule.onNodeWithText("Does the app need Internet?").performScrollTo().assertIsDisplayed()
         composeRule.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
         composeRule.waitForIdle()
 
@@ -230,7 +238,7 @@ class AppFlowTest {
     }
 
     @Test
-    fun liveRelease_navigatesOnlyAfterSnapshotAndRoomSaveComplete() = runBlocking {
+    fun liveRelease_opensResultWhileSnapshotAndRoomSaveContinue() = runBlocking {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val database = Room.inMemoryDatabaseBuilder(context, EggplantDatabase::class.java).build()
         val snapshotStore = ScanSnapshotStore(context)
@@ -266,8 +274,8 @@ class AppFlowTest {
 
             viewModel.finalizeLiveDetectionScene(scene, detection) { navigated.set(true) }
 
+            assertTrue("Live release must open the result immediately", navigated.get())
             composeRule.waitUntil(10_000) { saveCompleted.get() }
-            assertFalse("Live release must not route before the local save completes", navigated.get())
             releaseSaver.complete(Unit)
             composeRule.waitUntil(10_000) { navigated.get() }
             assertEquals(SaveState.SAVED, viewModel.saveState.value)
@@ -347,4 +355,12 @@ class AppFlowTest {
             .executeShellCommand("pm grant com.eggplant.detector android.permission.CAMERA")
             .close()
     }
+
+    private fun scrollInformationToFirstSection(titleResId: Int) {
+        val title = InstrumentationRegistry.getInstrumentation().targetContext.getString(titleResId)
+        composeRule.waitUntil(5_000) {
+            composeRule.onAllNodesWithText(title).fetchSemanticsNodes().isNotEmpty()
+        }
+    }
+
 }

@@ -38,6 +38,7 @@ data class GlobalScanCacheEntity(
     val source: String,
     val modelVersion: String,
     val cachedPhotoPath: String?,
+    val annotatedCachedPhotoPath: String?,
     val publishedAt: String,
     val expiresAt: String,
     val contentJson: String,

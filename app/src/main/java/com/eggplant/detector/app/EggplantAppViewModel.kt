@@ -66,6 +66,11 @@ sealed interface CloudActionState {
     data class Error(val message: String) : CloudActionState
 }
 
+data class ReportActionState(
+    val scanId: String,
+    val state: CloudActionState,
+)
+
 internal fun shareActionState(eligibility: ShareEligibility): CloudActionState = when (eligibility) {
     // The result screen renders the outbox event itself so it can transition
     // from queued -> uploading -> published/failed. A second queued action
@@ -167,6 +172,9 @@ class EggplantAppViewModel(
 
     private val _cloudActionState = MutableStateFlow<CloudActionState>(CloudActionState.Idle)
     val cloudActionState: StateFlow<CloudActionState> = _cloudActionState.asStateFlow()
+
+    private val _reportActionState = MutableStateFlow<ReportActionState?>(null)
+    val reportActionState: StateFlow<ReportActionState?> = _reportActionState.asStateFlow()
 
     private val _cloudDeletionState = MutableStateFlow<CloudDeletionState>(CloudDeletionState.Idle)
     val cloudDeletionState: StateFlow<CloudDeletionState> = _cloudDeletionState.asStateFlow()
@@ -273,9 +281,9 @@ class EggplantAppViewModel(
 
     /**
      * Called only when the long-press live session is released with a retained
-     * result. The camera remains on its saving overlay until snapshot staging
-     * and the required local save finish, then the Result route opens with a
-     * committed history item and an accurate success or failure state.
+     * result. The Result route opens immediately with the detected data while
+     * photo staging and the required local save continue in this ViewModel
+     * scope. The result screen observes the save state as it completes.
      */
     fun finalizeLiveDetectionScene(
         scene: CameraScene,
@@ -309,14 +317,16 @@ class EggplantAppViewModel(
             if (pendingResult.outcome == ScanOutcome.DISEASE) {
                 commitSavedResult(pendingResult.copy(scannedAt = nowProvider(), saveMode = "LIVE"), SaveState.SAVED)
             }
-            completeLiveFinalization(finalizationId, onReady)
+            completeLiveFinalization(finalizationId)
+            onReady()
             return
         }
 
-        // Keep the camera's saving overlay visible while JPEG staging and the
-        // Room transaction run. Navigating before this completes made the live
-        // release appear to succeed even when the save was still in flight.
+        // Open the result immediately. JPEG staging and the Room transaction
+        // continue below so a slow local save cannot make the result appear
+        // missing after the user releases the shutter.
         _saveState.value = if (pendingResult.outcome == ScanOutcome.DISEASE) SaveState.SAVING else SaveState.IDLE
+        onReady()
         viewModelScope.launch {
             val imagePath = stageSnapshot?.let { stage ->
                 runCatching { stage(scene.rgbFrame) }
@@ -337,7 +347,7 @@ class EggplantAppViewModel(
             // Healthy live findings can still reach their result screen, but
             // never become a disease-history record.
             if (readyResult.outcome != ScanOutcome.DISEASE) {
-                completeLiveFinalization(finalizationId, onReady)
+                completeLiveFinalization(finalizationId)
                 return@launch
             }
 
@@ -352,7 +362,7 @@ class EggplantAppViewModel(
                     _saveState.value = SaveState.FAILED
                 }
             } finally {
-                completeLiveFinalization(finalizationId, onReady)
+                completeLiveFinalization(finalizationId)
             }
         }
     }
@@ -707,16 +717,32 @@ class EggplantAppViewModel(
     fun clearCloudActionState() { _cloudActionState.value = CloudActionState.Idle }
 
     fun reportGlobalScan(scanId: String) {
-        val localRepository = repository ?: return
+        val localRepository = repository ?: run {
+            val state = CloudActionState.Error(cloudMessage("Reporting is unavailable in this build.", "Hindi available ang pag-report sa build na ito."))
+            _cloudActionState.value = state
+            _reportActionState.value = ReportActionState(scanId, state)
+            return
+        }
         if (!localRepository.isCloudConfigured) {
-            _cloudActionState.value = CloudActionState.Error(cloudMessage("Cloud is unavailable in this build.", "Hindi available ang cloud sa build na ito."))
+            val state = CloudActionState.Error(cloudMessage("Cloud is unavailable in this build.", "Hindi available ang cloud sa build na ito."))
+            _cloudActionState.value = state
+            _reportActionState.value = ReportActionState(scanId, state)
             return
         }
         _cloudActionState.value = CloudActionState.Working
+        _reportActionState.value = ReportActionState(scanId, CloudActionState.Working)
         viewModelScope.launch {
             runCatching { localRepository.enqueueContentReport(scanId, "incorrect_result") }
-                .onSuccess { _cloudActionState.value = CloudActionState.Queued("Report queued") }
-                .onFailure { _cloudActionState.value = CloudActionState.Error(it.message ?: "Could not report scan") }
+                .onSuccess {
+                    val state = CloudActionState.Queued("Report saved. It will send when you’re online.")
+                    _cloudActionState.value = state
+                    _reportActionState.value = ReportActionState(scanId, state)
+                }
+                .onFailure {
+                    val state = CloudActionState.Error(it.message ?: "Could not report scan")
+                    _cloudActionState.value = state
+                    _reportActionState.value = ReportActionState(scanId, state)
+                }
         }
     }
 

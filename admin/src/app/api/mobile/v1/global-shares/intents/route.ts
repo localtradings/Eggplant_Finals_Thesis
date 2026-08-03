@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { apiError, authorizeMobile, mobileRateSubject, parseJson } from "@/lib/mobile-api";
 import {
+  globalAnnotatedSharePath,
   globalSharePath,
   validateShareIntent,
 } from "@/lib/mobile-validation";
@@ -41,13 +42,16 @@ export async function POST(request: Request) {
     body.clientScanId,
     body.sha256,
   );
+  const annotatedPath = body.annotatedSha256
+    ? globalAnnotatedSharePath(auth.user.id, body.clientScanId, body.annotatedSha256)
+    : null;
   let rateSubject: string;
   try {
     rateSubject = mobileRateSubject(request);
   } catch {
     return apiError("Share protection is temporarily unavailable.", 503, "rate_limit_unavailable");
   }
-  const { data: reserved, error: reserveError } = await supabase.rpc("reserve_global_share_intent", {
+  const reservationParameters = {
     p_owner_id: auth.user.id,
     p_client_scan_id: body.clientScanId,
     p_disease_id: body.diseaseId,
@@ -57,7 +61,29 @@ export async function POST(request: Request) {
     p_photo_path: path,
     p_expected_sha256: body.sha256,
     p_rate_subject: rateSubject,
-  });
+    ...(annotatedPath
+      ? {
+          p_annotated_photo_path: annotatedPath,
+          p_annotated_expected_sha256: body.annotatedSha256,
+        }
+      : {}),
+  };
+  const { data: reserved, error: reserveError } = await supabase.rpc(
+    annotatedPath ? "reserve_global_share_intent_v2" : "reserve_global_share_intent",
+    annotatedPath
+      ? reservationParameters
+      : {
+          p_owner_id: auth.user.id,
+          p_client_scan_id: body.clientScanId,
+          p_disease_id: body.diseaseId,
+          p_confidence: body.confidence,
+          p_source: body.source,
+          p_model_version: body.modelVersion,
+          p_photo_path: path,
+          p_expected_sha256: body.sha256,
+          p_rate_subject: rateSubject,
+        },
+  );
   const reservation = reserved?.[0];
   if (reserveError || !reservation) {
     return apiError("Could not reserve this share.", 500, "share_reservation_failed");
@@ -79,10 +105,11 @@ export async function POST(request: Request) {
     );
   }
   if (reservation.outcome === "completed") {
-    return NextResponse.json({ path, alreadyPublished: true });
+    return NextResponse.json({ path, annotatedPath, alreadyPublished: true });
   }
   const bucket = supabase.storage.from("eggplant-scans");
-  const { error: cleanupError } = await bucket.remove([path]);
+  const paths = [path, annotatedPath].filter((value): value is string => Boolean(value));
+  const { error: cleanupError } = await bucket.remove(paths);
   if (cleanupError) {
     return apiError(
       "Could not safely renew the photo upload.",
@@ -90,10 +117,13 @@ export async function POST(request: Request) {
       "upload_cleanup_failed",
     );
   }
-  const { data, error } = await bucket.createSignedUploadUrl(path, {
-    upsert: false,
-  });
-  if (error || !data) {
+  const [signedRaw, signedAnnotated] = await Promise.all([
+    bucket.createSignedUploadUrl(path, { upsert: false }),
+    annotatedPath
+      ? bucket.createSignedUploadUrl(annotatedPath, { upsert: false })
+      : Promise.resolve({ data: null, error: null }),
+  ]);
+  if (signedRaw.error || !signedRaw.data || signedAnnotated.error || (annotatedPath && !signedAnnotated.data)) {
     return apiError(
       "Could not prepare photo upload.",
       500,
@@ -102,8 +132,11 @@ export async function POST(request: Request) {
   }
   return NextResponse.json({
     path,
-    token: data.token,
-    signedUrl: data.signedUrl,
+    token: signedRaw.data.token,
+    signedUrl: signedRaw.data.signedUrl,
+    annotatedPath,
+    annotatedToken: signedAnnotated.data?.token ?? null,
+    annotatedSignedUrl: signedAnnotated.data?.signedUrl ?? null,
     expiresInSeconds: 7_200,
   });
 }

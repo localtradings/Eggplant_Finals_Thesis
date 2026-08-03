@@ -21,13 +21,16 @@ export async function POST(request: Request) {
   }
   const body = validation.value;
   const supabase = getAdminClient();
-  const [{ data: disease, error: diseaseError }, validPhoto] = await Promise.all([
+  const [{ data: disease, error: diseaseError }, validPhoto, validAnnotatedPhoto] = await Promise.all([
     supabase
       .from("disease_catalog")
       .select("id")
       .eq("id", body.diseaseId)
       .maybeSingle(),
     verifyStoredJpeg(body.path, body.expectedSha256),
+    body.annotatedPath
+      ? verifyStoredJpeg(body.annotatedPath, body.annotatedExpectedSha256 ?? "")
+      : Promise.resolve(true),
   ]);
   if (diseaseError) {
     return apiError(
@@ -43,14 +46,14 @@ export async function POST(request: Request) {
       "unsupported_disease",
     );
   }
-  if (!validPhoto) {
+  if (!validPhoto || !validAnnotatedPhoto) {
     return apiError(
       "The uploaded JPEG is missing, invalid, or does not match the share intent.",
       422,
       "invalid_uploaded_photo",
     );
   }
-  const { data, error } = await supabase.rpc("create_scan_contribution_with_quota", {
+  const contributionParameters = {
     p_owner_id: auth.user.id,
     p_client_scan_id: body.clientScanId,
     p_disease_id: body.diseaseId,
@@ -58,7 +61,14 @@ export async function POST(request: Request) {
     p_source: body.source,
     p_model_version: body.modelVersion,
     p_photo_path: body.path,
-  });
+    ...(body.annotatedPath
+      ? { p_annotated_photo_path: body.annotatedPath }
+      : {}),
+  };
+  const { data, error } = await supabase.rpc(
+    body.annotatedPath ? "create_scan_contribution_with_quota_v2" : "create_scan_contribution_with_quota",
+    contributionParameters,
+  );
   const result = data?.[0];
   if (error || !result) {
     return apiError("Could not publish this scan.", 422, "publish_failed");

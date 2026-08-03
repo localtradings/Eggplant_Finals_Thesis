@@ -17,6 +17,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.eggplant.detector.app.CloudActionState
 import com.eggplant.detector.app.EggplantAppViewModel
 import com.eggplant.detector.feature.camera.CameraScreen
 import com.eggplant.detector.feature.history.ScanHistoryDetailsScreen
@@ -35,6 +36,8 @@ import com.eggplant.detector.feature.information.ScanTipsScreen
 import com.eggplant.detector.feature.notifications.NotificationsScreen
 import com.eggplant.detector.feature.result.DetectionResultScreen
 import com.eggplant.detector.feature.settings.SettingsScreen
+import com.eggplant.detector.domain.model.SyncOutboxEvent
+import com.eggplant.detector.domain.model.SyncOutboxState
 import kotlinx.coroutines.launch
 import androidx.compose.ui.res.stringResource
 import com.eggplant.detector.R
@@ -53,6 +56,8 @@ fun EggplantNavigation(viewModel: EggplantAppViewModel) {
     val catalog by viewModel.catalog.collectAsState()
     val currentResult by viewModel.currentResult.collectAsState()
     val globalScans by viewModel.globalScans.collectAsState()
+    val reportAction by viewModel.reportActionState.collectAsState()
+    val outboxEvents by viewModel.syncOutboxEvents.collectAsState()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
     val showBottomBar = currentRoute in bottomRoutes
@@ -192,7 +197,25 @@ fun EggplantNavigation(viewModel: EggplantAppViewModel) {
             }
             composable(Routes.GLOBAL_SCAN_DETAIL) { entry ->
                 val id = entry.arguments?.getString("scanId")
-                GlobalScanDetailPager(globalScans, id, navController::popBackStack, viewModel::reportGlobalScan)
+                val reportEvent = id?.let { scanId -> outboxEvents.firstOrNull { event -> event.idempotencyKey == "report:$scanId" } }
+                val eventStatus = reportEvent?.let(::reportOutboxStatus)
+                val directReportStatus = reportAction
+                    ?.takeIf { action -> action.scanId == id }
+                    ?.state
+                    ?.let(::reportActionStatus)
+                val reportStatusScanId = reportEvent?.idempotencyKey?.removePrefix("report:")
+                    ?: reportAction?.scanId?.takeIf { it == id }
+                GlobalScanDetailPager(
+                    globalScans,
+                    id,
+                    navController::popBackStack,
+                    viewModel::reportGlobalScan,
+                    eventStatus?.first ?: directReportStatus?.first,
+                    eventStatus?.second ?: directReportStatus?.second ?: false,
+                    reportStatusScanId,
+                    reportEvent?.id,
+                    viewModel::retryOutboxEvent,
+                )
             }
             composable(Routes.SETTINGS) {
                 SettingsScreen(
@@ -214,4 +237,31 @@ fun EggplantNavigation(viewModel: EggplantAppViewModel) {
             composable(Routes.OFFLINE_STATUS) { OfflineStatusScreen(onBack = navController::popBackStack) }
         }
     }
+}
+
+private fun reportActionStatus(state: CloudActionState): Pair<String, Boolean>? = when (state) {
+    CloudActionState.Idle -> null
+    CloudActionState.Working -> "Sending report…" to false
+    is CloudActionState.Queued -> state.message to false
+    is CloudActionState.Error -> state.message to true
+}
+
+private fun reportOutboxStatus(event: SyncOutboxEvent): Pair<String, Boolean> = when (event.state) {
+    SyncOutboxState.PENDING -> "Report saved. It will send when you’re online." to false
+    SyncOutboxState.UPLOADING -> "Sending report…" to false
+    SyncOutboxState.RETRY -> "Report will be sent again when the connection is ready." to false
+    SyncOutboxState.COMPLETED -> "Report sent for review." to false
+    SyncOutboxState.FAILED -> reportFailureStatus(event.lastErrorCode)
+    SyncOutboxState.CANCELLED -> "Report was cancelled." to true
+}
+
+internal fun reportFailureStatus(errorCode: String?): Pair<String, Boolean> = when (errorCode) {
+    "self_report" -> "You cannot report a scan that you shared yourself." to true
+    "scan_not_found" -> "This shared scan is no longer available." to true
+    "report_duplicate_network", "duplicate" -> "This scan has already been reported from this network." to true
+    "report_limit" -> "The daily report limit has been reached." to true
+    "writes_paused" -> "Reports are paused right now. Try again later." to true
+    "rate_limit_unavailable" -> "Report protection is temporarily unavailable. Try again later." to true
+    "unauthorized", "anonymous_auth_failed" -> "Cloud sign-in failed. Check the connection and try again." to true
+    else -> "Report could not be sent. Try again." to true
 }

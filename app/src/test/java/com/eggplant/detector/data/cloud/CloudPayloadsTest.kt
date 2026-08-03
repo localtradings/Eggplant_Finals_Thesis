@@ -25,6 +25,22 @@ class CloudPayloadsTest {
     }
 
     @Test
+    fun `global share payload keeps raw and annotated local photos together`() {
+        val payload = globalSharePayload(
+            clientScanId = "scan-1",
+            diseaseId = "leaf-spot",
+            confidence = 0.87f,
+            source = "live",
+            modelVersion = "model",
+            photoPath = "/private/raw.jpg",
+            annotatedPhotoPath = "/private/annotated.jpg",
+        )
+
+        assertEquals("/private/raw.jpg", payload.getValue("photoPath").jsonPrimitive.content)
+        assertEquals("/private/annotated.jpg", payload.getValue("annotatedPhotoPath").jsonPrimitive.content)
+    }
+
+    @Test
     fun `retrying a global share requeues terminal enabled consent`() {
         assertTrue(
             shouldRequeueSharingConsent(

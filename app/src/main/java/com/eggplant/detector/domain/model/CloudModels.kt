@@ -36,6 +36,7 @@ data class GlobalScan(
     val diseaseName: String,
     val confidence: Int,
     val photoPath: String?,
+    val annotatedPhotoPath: String? = null,
     val publishedAt: String,
     val symptoms: List<String>,
     val causes: String,

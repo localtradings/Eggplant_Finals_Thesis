@@ -4,13 +4,16 @@ import {
   UUID_PATTERN,
   validateContentReport,
 } from "@/lib/mobile-validation";
+import { reportFailureForOutcome } from "@/lib/report-outcome";
 import { getAdminClient } from "@/lib/supabase/admin";
 
 export async function POST(
   request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
-  const auth = await authorizeMobile(request, true);
+  // Reporting is a safety/moderation path. Keep it available even when the
+  // owner pauses ordinary mobile submissions such as new shares or requests.
+  const auth = await authorizeMobile(request, false);
   if ("response" in auth) return auth.response;
   const { id } = await context.params;
   const validation = validateContentReport(await parseJson<unknown>(request));
@@ -37,10 +40,8 @@ export async function POST(
   if (error || typeof outcome !== "string") {
     return apiError("Could not submit the report.", 500, "report_failed");
   }
-  if (outcome === "unavailable") return apiError("This Global Scan is no longer available.", 404, "scan_not_found");
-  if (outcome === "self_report") return apiError("You cannot report your own shared scan.", 400, "self_report");
-  if (outcome === "quota") return apiError("Daily report limit reached.", 429, "report_limit");
-  if (outcome === "rate_duplicate") return apiError("This network has already reported this scan.", 409, "report_duplicate_network");
+  const failure = reportFailureForOutcome(outcome);
+  if (failure) return apiError(failure.message, failure.status, failure.code);
   return NextResponse.json(
     { accepted: outcome === "accepted", duplicate: outcome === "duplicate" },
     { status: outcome === "accepted" ? 202 : 200 },

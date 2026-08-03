@@ -29,6 +29,7 @@ import com.eggplant.detector.app.EggplantAppViewModel
 import androidx.annotation.StringRes
 import androidx.compose.ui.res.stringResource
 import com.eggplant.detector.R
+import com.eggplant.detector.core.ui.components.ResponsiveContent
 
 private data class LocalNotice(val key: String, @param:StringRes val title: Int, @param:StringRes val body: Int)
 
@@ -42,11 +43,12 @@ private val notices = listOf(
 @Composable
 fun NotificationsScreen(viewModel: EggplantAppViewModel, onBack: () -> Unit) {
     val readKeys by viewModel.readNotificationKeys.collectAsState()
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
+    ResponsiveContent {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onBack) {
@@ -75,6 +77,7 @@ fun NotificationsScreen(viewModel: EggplantAppViewModel, onBack: () -> Unit) {
                     Text(stringResource(if (isRead) R.string.read else R.string.new_notice), color = MaterialTheme.colorScheme.primary)
                 }
             }
+        }
         }
     }
 }

@@ -23,7 +23,7 @@ export async function GET(request: Request) {
   let query = supabase
     .from("scan_contributions")
     .select(
-      "id,disease_id,confidence,source,model_version,photo_path,published_at",
+      "id,disease_id,confidence,source,model_version,photo_path,annotated_photo_path,published_at",
     )
     .eq("status", "published")
     .gt("expires_at", new Date().toISOString())
@@ -46,6 +46,9 @@ export async function GET(request: Request) {
   }
   const rows = data ?? [];
   const page = rows.slice(0, limit);
+  const annotatedPaths = page
+    .map((entry) => entry.annotated_photo_path)
+    .filter((path): path is string => Boolean(path));
   const diseaseIds = [...new Set(page.map((entry) => entry.disease_id))];
   const filterIds = diseaseIds.length ? diseaseIds : ["__none__"];
   const [
@@ -54,6 +57,7 @@ export async function GET(request: Request) {
     referencesResult,
     rankingsResult,
     signedResult,
+    signedAnnotatedResult,
   ] = await Promise.all([
     supabase
       .from("disease_localizations")
@@ -86,13 +90,22 @@ export async function GET(request: Request) {
             300,
           )
       : Promise.resolve({ data: [], error: null }),
+    annotatedPaths.length
+      ? supabase.storage
+          .from("eggplant-scans")
+          .createSignedUrls(
+            annotatedPaths,
+            300,
+          )
+      : Promise.resolve({ data: [], error: null }),
   ]);
   if (
     contentResult.error ||
     signsResult.error ||
     referencesResult.error ||
     rankingsResult.error ||
-    signedResult.error
+    signedResult.error ||
+    signedAnnotatedResult.error
   ) {
     return apiError(
       "Could not load complete Global Scan content.",
@@ -104,6 +117,9 @@ export async function GET(request: Request) {
   const diseaseSigns = signsResult.data ?? [];
   const diseaseReferences = referencesResult.data ?? [];
   const signedPhotos = signedResult.data ?? [];
+  const signedAnnotatedByPath = new Map(
+    annotatedPaths.map((path, index) => [path, signedAnnotatedResult.data?.[index]?.signedUrl ?? null]),
+  );
   const rankingRows = rankingsResult.data ?? [];
   const contentMap = new Map(
     localizedContent.map((entry) => [entry.disease_id, entry]),
@@ -119,6 +135,9 @@ export async function GET(request: Request) {
       model_version: entry.model_version,
       published_at: entry.published_at,
       photoUrl: signedPhotos[index]?.signedUrl ?? null,
+      annotatedPhotoUrl: entry.annotated_photo_path
+        ? signedAnnotatedByPath.get(entry.annotated_photo_path) ?? null
+        : null,
       content: contentMap.get(entry.disease_id) ?? null,
       signs: diseaseSigns
         .filter((sign) => sign.disease_id === entry.disease_id)

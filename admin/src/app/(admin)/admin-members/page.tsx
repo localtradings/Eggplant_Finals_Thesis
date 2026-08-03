@@ -2,6 +2,7 @@ import { FormSubmitButton } from "@/components/form-submit-button";
 import { requireAdmin } from "@/lib/auth";
 import { ADMIN_LOGIN_NAME_HTML_PATTERN } from "@/lib/admin-credentials";
 import { getAdminClient } from "@/lib/supabase/admin";
+import { adminRoleLabel } from "@/lib/admin-copy";
 import { ShieldCheck, UserPlus } from "lucide-react";
 import { createAdmin, claimMyAdminUsername } from "./actions";
 import {
@@ -74,7 +75,7 @@ export default async function AdminMembersPage({
           </label>
           <label className="grid gap-1.5 text-sm font-semibold sm:col-span-2">Role
             <select name="role" defaultValue="admin" className="focus-ring h-11 rounded-xl border border-[#dcd8e4] bg-white px-3 font-normal sm:max-w-sm">
-              <option value="admin">Admin — catalog and operations</option>
+              <option value="admin">Admin — catalog and review</option>
               <option value="reviewer">Reviewer — moderation and requests</option>
             </select>
           </label>
@@ -104,7 +105,7 @@ export default async function AdminMembersPage({
           <table className="w-full min-w-[38rem] text-left text-sm">
             <thead className="bg-[#fbfbfd] text-xs uppercase tracking-[.1em] text-[#777286]"><tr><th className="px-6 py-3 font-semibold">Username</th><th className="px-6 py-3 font-semibold">Role</th><th className="px-6 py-3 font-semibold">Added</th></tr></thead>
             <tbody className="divide-y divide-[#ece9f1]">
-              {(members ?? []).map((member) => <tr key={member.user_id}><td className="safe-long-content px-6 py-4 font-semibold">{member.login_name ?? "Legacy configured owner"}</td><td className="px-6 py-4 capitalize">{member.role}</td><td className="px-6 py-4 text-[#777286]">{formatDate(member.created_at)}</td></tr>)}
+              {(members ?? []).map((member) => <tr key={member.user_id}><td className="safe-long-content px-6 py-4 font-semibold">{member.login_name ?? "Legacy configured owner"}</td><td className="px-6 py-4">{adminRoleLabel(member.role)}</td><td className="px-6 py-4 text-[#777286]">{formatDate(member.created_at)}</td></tr>)}
             </tbody>
           </table>
         </div>

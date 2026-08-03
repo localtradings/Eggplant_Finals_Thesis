@@ -2,9 +2,10 @@ import Link from "next/link";
 import { ArrowUpRight, ClipboardCheck, Globe2, Leaf, UsersRound } from "lucide-react";
 import type { DashboardData } from "@/lib/dashboard-data";
 import { RefreshDashboardButton } from "@/components/refresh-dashboard-button";
+import { scanStatusLabel, scanStatusTone } from "@/lib/admin-copy";
 
-function Metric({ label, value, icon: Icon }: { label: string; value: number; icon: typeof Globe2 }) {
-  return (
+function Metric({ label, value, icon: Icon, href }: { label: string; value: number; icon: typeof Globe2; href?: string }) {
+  const content = (
     <div className="min-w-0 border-b border-[#ebe8f0] p-5 last:border-0 sm:border-b-0 sm:border-r">
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -15,6 +16,7 @@ function Metric({ label, value, icon: Icon }: { label: string; value: number; ic
       </div>
     </div>
   );
+  return href ? <Link href={href} className="focus-ring block rounded-[20px] transition-colors hover:bg-[#faf8fd]">{content}</Link> : content;
 }
 
 export function Dashboard({ data }: { data: DashboardData }) {
@@ -24,14 +26,14 @@ export function Dashboard({ data }: { data: DashboardData }) {
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-[-.03em]">Overview</h1>
-          <p className="mt-1 text-sm text-[#6f6b80]">Current activity, sharing, and review workload.</p>
+          <p className="mt-1 text-sm text-[#6f6b80]">Shared scans, requests, and reports in one place.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <RefreshDashboardButton />
         </div>
       </header>
       <section className="surface mt-6 grid sm:grid-cols-2 xl:grid-cols-4" aria-label="Operational metrics">
-        <Metric label="Quarantined reports" value={data.pendingReports} icon={ClipboardCheck} />
+        <Metric label="Reports received" value={data.reportsReceived} icon={ClipboardCheck} href="/reports" />
         <Metric label="Shared scans" value={data.sharedScans} icon={Globe2} />
         <Metric label="Contributing installs" value={data.installations} icon={UsersRound} />
         <Metric label="Open requests" value={data.openRequests} icon={Leaf} />
@@ -48,7 +50,7 @@ export function Dashboard({ data }: { data: DashboardData }) {
         </section>
         <section className="surface p-5">
           <div className="flex items-center justify-between gap-4"><h2 className="text-lg font-bold">Recent shared scans</h2><Link href="/global-scans" className="text-sm font-semibold text-[#512b91]">Manage</Link></div>
-          {data.recent.length === 0 ? <Empty text="No community photos have been shared yet." /> : <div className="mt-4 overflow-x-auto"><table className="w-full text-left text-sm"><thead className="text-xs uppercase tracking-wide text-[#797487]"><tr><th className="pb-3">Disease</th><th className="pb-3">Confidence</th><th className="pb-3">Status</th><th className="pb-3"><span className="sr-only">Open</span></th></tr></thead><tbody className="divide-y divide-[#ece9f1]">{data.recent.map((scan) => <tr key={scan.id}><td className="py-3 font-semibold">{scan.disease}</td><td className="py-3 font-mono text-[#27883d]">{scan.confidence}%</td><td className="py-3"><span className={`rounded-full px-2 py-1 text-xs font-semibold ${scan.status === "published" ? "bg-[#e9f6eb] text-[#247936]" : "bg-[#fff0dd] text-[#995a06]"}`}>{scan.status}</span></td><td><Link href={`/global-scans/${scan.id}`} aria-label={`Review ${scan.disease}`} className="text-[#512b91]"><ArrowUpRight size={17} aria-hidden="true" /></Link></td></tr>)}</tbody></table></div>}
+          {data.recent.length === 0 ? <Empty text="No community photos have been shared yet." /> : <div className="mt-4 overflow-x-auto"><table className="w-full text-left text-sm"><thead className="text-xs uppercase tracking-wide text-[#797487]"><tr><th className="pb-3">Disease</th><th className="pb-3">Confidence</th><th className="pb-3">Status</th><th className="pb-3"><span className="sr-only">Open</span></th></tr></thead><tbody className="divide-y divide-[#ece9f1]">{data.recent.map((scan) => <tr key={scan.id}><td className="py-3 font-semibold">{scan.disease}</td><td className="py-3 font-mono text-[#27883d]">{scan.confidence}%</td><td className="py-3"><span className={`rounded-full px-2 py-1 text-xs font-semibold ${scanStatusTone(scan.status)}`}>{scanStatusLabel(scan.status)}</span></td><td><Link href={`/global-scans/${scan.id}`} aria-label={`Review ${scan.disease}`} className="text-[#512b91]"><ArrowUpRight size={17} aria-hidden="true" /></Link></td></tr>)}</tbody></table></div>}
         </section>
       </div>
     </div>

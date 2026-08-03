@@ -14,6 +14,7 @@ import com.eggplant.detector.data.database.migration.MIGRATION_1_TO_2
 import com.eggplant.detector.data.database.migration.MIGRATION_2_TO_3
 import com.eggplant.detector.data.database.migration.MIGRATION_3_TO_4
 import com.eggplant.detector.data.database.migration.MIGRATION_4_TO_5
+import com.eggplant.detector.data.database.migration.MIGRATION_5_TO_6
 import com.eggplant.detector.data.database.entity.NotificationStateEntity
 import com.eggplant.detector.data.database.entity.ScanDetectionEntity
 import com.eggplant.detector.data.database.entity.LegacyScanRecordEntity
@@ -322,6 +323,19 @@ class LocalDatabaseTest {
             migrated.query("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name IN ('global_feed_state','cloud_deletion_state')").use { cursor ->
                 assertTrue(cursor.moveToFirst())
                 assertEquals(2, cursor.getInt(0))
+            }
+        }
+    }
+
+    @Test
+    fun migrationFiveToSixAddsAnOptionalAnnotatedGlobalScanPath() {
+        val databaseName = "migration-5-6"
+        migrationHelper.createDatabase(databaseName, 5).apply { close() }
+
+        migrationHelper.runMigrationsAndValidate(databaseName, 6, true, MIGRATION_5_TO_6).use { migrated ->
+            migrated.query("SELECT COUNT(*) FROM pragma_table_info('global_scan_cache') WHERE name = 'annotatedCachedPhotoPath'").use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals(1, cursor.getInt(0))
             }
         }
     }
