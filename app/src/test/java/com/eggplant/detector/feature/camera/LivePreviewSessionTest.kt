@@ -118,6 +118,18 @@ class LivePreviewSessionTest {
         assertSame(disease, outcome.primary)
     }
 
+    @Test
+    fun `release can open the latest visible disease when confirmation has not arrived yet`() {
+        val disease = detection(classIndex = 5, confidence = 0.83f)
+        val visibleOnlyScene = scene(disease, stableDiseases = emptyList()).copy(
+            stability = scene(disease, stableDiseases = emptyList()).stability.copy(
+                confirmedDetections = emptyList(),
+            ),
+        )
+
+        assertSame(disease, visibleOnlyScene.liveReleaseDiseaseCandidate())
+    }
+
     private fun scene(
         vararg detections: DetectionBox,
         status: DetectionStatus = if (detections.any { !it.modelClass.isHealthy }) {

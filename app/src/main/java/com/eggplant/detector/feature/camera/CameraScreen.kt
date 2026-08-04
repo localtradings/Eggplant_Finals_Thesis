@@ -209,7 +209,7 @@ fun CameraScreen(
         }
     }
 
-    fun handleLiveRelease(outcome: LivePreviewOutcome) {
+    fun handleLiveRelease(outcome: LivePreviewOutcome, releaseScene: CameraScene?) {
         when (outcome) {
             is LivePreviewOutcome.Disease -> {
                 val diseaseId = outcome.primary.modelClass.diseaseId
@@ -232,7 +232,15 @@ fun CameraScreen(
             }
             is LivePreviewOutcome.Healthy -> openScene(outcome.scene, outcome.primary)
             LivePreviewOutcome.NoStableDetection -> {
-                cameraState = cameraState.copy(error = noStableDisease)
+                val fallbackDisease = releaseScene?.liveReleaseDiseaseCandidate()
+                if (releaseScene != null && fallbackDisease != null) {
+                    // This is deliberately the result-only fallback. A frame
+                    // that has not reached temporal stability must not enter
+                    // the existing automatic live-history save path.
+                    openScene(releaseScene, fallbackDisease)
+                } else {
+                    cameraState = cameraState.copy(error = noStableDisease)
+                }
             }
         }
     }
@@ -344,10 +352,12 @@ fun CameraScreen(
                 controller?.startLivePreview()
             },
             onStopLivePreview = {
-                val outcome = controller?.finishLivePreview(
+                val activeController = controller
+                val releaseScene = activeController?.currentScene()
+                val outcome = activeController?.finishLivePreview(
                     allowHealthy = detectHealthyLeafEnabled || detectHealthyPlantEnabled,
                 ) ?: LivePreviewOutcome.NoStableDetection
-                handleLiveRelease(outcome)
+                handleLiveRelease(outcome, releaseScene)
                 liveCaptureRevision += 1
                 liveStillRequestedForDisease = null
                 validatedLiveStill = null
