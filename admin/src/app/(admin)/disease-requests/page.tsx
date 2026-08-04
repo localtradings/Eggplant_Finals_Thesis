@@ -3,6 +3,7 @@ import Link from "next/link";
 import { CheckCircle2, ImageOff } from "lucide-react";
 import { RequestReviewActions } from "@/components/request-review-actions";
 import { getAdminClient } from "@/lib/supabase/admin";
+import { requestStatusLabel } from "@/lib/admin-copy";
 import { randomUUID } from "node:crypto";
 import { updateDiseaseRequest } from "./actions";
 import { REQUEST_REVIEW_STATUSES } from "./constants";
@@ -17,7 +18,7 @@ function StatusPill({ status }: { status: string }) {
     : status === "not_supported" || status === "closed"
       ? "bg-[#fff0f2] text-[#a92f40]"
       : "bg-[#f0eafa] text-[#512b91]";
-  return <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${tone}`}>{status.replaceAll("_", " ")}</span>;
+  return <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${tone}`}>{requestStatusLabel(status)}</span>;
 }
 
 function RequestThumbnail({ url, name }: { url?: string; name: string }) {
@@ -50,7 +51,7 @@ export default async function DiseaseRequestsPage({ searchParams }: { searchPara
         <div><h1 className="text-3xl font-bold tracking-[-.03em]">Disease requests</h1><p className="mt-1 text-sm text-[#6f6b80]">Private no-match requests. Review the real submitted photo before changing status.</p></div>
         {!error && <p className="rounded-xl border border-[#ded9e8] bg-white px-3 py-2 text-sm font-semibold text-[#5e596e]">{requests.length} recent request{requests.length === 1 ? "" : "s"}</p>}
       </header>
-      {reviewSucceeded && <p role="status" className="status-banner mt-5 flex items-center gap-2 rounded-xl border border-[#bfe4c5] bg-[#f1fbf2] p-3 text-sm font-semibold text-[#247936]"><CheckCircle2 size={17}/>{outcome === "unchanged" ? "No request changes were needed." : `Request marked ${reviewed.replaceAll("_", " ")}.`}</p>}
+      {reviewSucceeded && <p role="status" className="status-banner mt-5 flex items-center gap-2 rounded-xl border border-[#bfe4c5] bg-[#f1fbf2] p-3 text-sm font-semibold text-[#247936]"><CheckCircle2 size={17}/>{outcome === "unchanged" ? "No request changes were needed." : `Request marked ${requestStatusLabel(reviewed)}.`}</p>}
       {error ? <p role="alert" className="mt-6 rounded-xl bg-[#fff0f2] p-4 text-sm text-[#a92f40]">Disease requests are temporarily unavailable.</p> : requests.length === 0 ? <div className="surface mt-6 grid place-items-center p-10 text-center sm:p-14"><Image src="/disease-requests-empty.webp" alt="Eggplant seedling beside a blank request sheet" width={220} height={220} className="h-36 w-36 object-contain sm:h-44 sm:w-44"/><h2 className="mt-3 text-lg font-bold">No open requests</h2><p className="mt-1 text-sm text-[#6f6b80]">Private no-match reports will appear here.</p></div> : <>
         <section className="mt-6 grid gap-3 md:hidden" aria-label="Disease request cards">
           {requests.map((request) => {

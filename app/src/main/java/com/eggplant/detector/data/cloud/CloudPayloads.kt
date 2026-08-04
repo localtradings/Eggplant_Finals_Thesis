@@ -17,6 +17,7 @@ internal fun globalSharePayload(
     source: String,
     modelVersion: String,
     photoPath: String,
+    annotatedPhotoPath: String,
 ): JsonObject = buildJsonObject {
     put("clientScanId", clientScanId)
     put("diseaseId", diseaseId)
@@ -24,6 +25,7 @@ internal fun globalSharePayload(
     put("source", source)
     put("modelVersion", modelVersion)
     put("photoPath", photoPath)
+    put("annotatedPhotoPath", annotatedPhotoPath)
 }
 
 internal fun sharingConsentPayload(enabled: Boolean): JsonObject = buildJsonObject {

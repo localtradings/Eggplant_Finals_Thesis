@@ -1,16 +1,39 @@
 # Eggplant Disease Detector
 
-An offline-first Android application for eggplant leaf-or-fruit disease screening with CameraX, a custom YOLO26m NCNN export, and on-device inference. The optional cloud layer adds anonymous Global Scans, private missing-disease requests, and a protected administration dashboard without moving inference off the device.
+Eggplant Disease Detector is an Android app that helps identify common eggplant diseases from photos. The app analyzes images on the phone, so basic scanning works without an internet connection.
 
-The center shutter supports a quick still scan and hold-to-detect live assistance. The first accepted live frame can show a provisional result; a second spatially compatible frame confirms it without an artificial confirmation delay. Disease results from live, still capture, and Gallery analysis can be explicitly shared to Global Scans after local validation.
+## For app users
 
-## Requirements
+- Take a photo of an eggplant leaf or fruit and view the detected disease.
+- Hold the camera button for live detection. The app shows the live detection while you hold the button and opens the result screen as soon as you release it.
+- Choose a photo from your Gallery and scan it.
+- Save disease results in **My Scans** and view them later.
+- Share a disease result to **Global Scans** when you choose to share it.
+- Send a private request when the app cannot identify a disease.
+- Browse the disease guide, care tips, settings, notifications, and privacy information.
+- Use English or Filipino (Tagalog), and choose light, dark, or system colors.
+
+Basic scanning, the disease guide, and My Scans work offline. Global Scans, disease requests, and other online features need an internet connection.
+
+## Download the demo APK
+
+[Download the latest demo APK from GitHub Releases](https://github.com/localtradings/Eggplant_Finals_Thesis/releases/latest)
+
+The demo APK is made for testing and thesis demonstrations. It is debug-signed and is not a Google Play Store release. Android may ask you to allow installation from the browser or file manager.
+
+## For developers
+
+### Requirements
 
 - Android Studio with JDK 17 or newer
 - Android SDK 36
-- Android 8.0 (API 26) or newer device or emulator
+- Android 8.0 (API 26) or newer
 
-Open the repository in Android Studio and allow Gradle to sync. Command-line verification:
+Open the project in Android Studio and allow Gradle to finish syncing.
+
+### Build and test
+
+Run these commands from the project folder:
 
 ```sh
 ./gradlew testDebugUnitTest
@@ -20,63 +43,45 @@ Open the repository in Android Studio and allow Gradle to sync. Command-line ver
 ./gradlew assembleRelease
 ```
 
-The `demo` variant has release-equivalent behavior and is deliberately debug-signed so the thesis APK can be installed directly. It is not a Play Store signing configuration. The app can bootstrap the public Supabase publishable key from the deployed admin API; the key is intentionally not committed to the APK source.
+The `demo` build is the release-style version used for testing. It is debug-signed so it can be installed directly on a test phone. It is not configured for Play Store publishing.
 
-An APK can also bundle the public key through Gradle properties or an equivalent CI secret:
+### Optional online setup
+
+The app can use the deployed admin API and Supabase for Global Scans, disease requests, and catalog updates. These services are optional; the app remains usable offline when they are unavailable.
+
+The public service URLs are already included. They can be changed with these Gradle properties:
 
 ```sh
 ./gradlew assembleDemo \
+  -PEGGPLANT_API_BASE_URL="https://example.com" \
+  -PEGGPLANT_SUPABASE_URL="https://example.supabase.co" \
   -PEGGPLANT_SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY"
 ```
 
-The production API and Supabase URLs are included as public defaults and can be overridden with `EGGPLANT_API_BASE_URL` and `EGGPLANT_SUPABASE_URL`. If both the bundled key and the deployed public bootstrap configuration are unavailable, the app remains offline-only and clearly reports that cloud features are unavailable; do not distribute that build when Global Scans, disease requests, or live catalog updates are required.
+Never put a private or service-role key in the Android app. Private keys must stay on the server.
 
-## Included Features
+## How the app works
 
-- Home, swipeable disease Library, Camera/Gallery workflow, Result, Scans, Settings, notifications, Scan Quality Tips, Data & Privacy, Help & FAQ, About, and Offline Status
-- Six leaf-disease and two fruit-disease references with stable disease IDs
-- English and Filipino (Tagalog) application localization
-- System default, light, and dark themes
-- System, Full, and Reduced motion preferences with accessible Compose transitions and micro-interactions
-- On-device Room/SQLite persistence for the catalog, My Scans, cached Global Scans, outbox, missing-disease request status, settings, and notifications
-- Manual local save by default, with deduplicated opt-in auto-save for eligible confirmed disease results
-- Independent, default-off Healthy Leaf and Healthy Plant detection controls
-- Anonymous, explicit, default-off sharing of eligible disease results from live preview, still capture, or Gallery analysis; confidence remains visible as model output but is not a publication gate
-- Private missing-disease requests with one to three real plant photos, explicit photo-rights consent, upload retry, and no training consent
-- No advertisements, payments, user profiles, or cloud inference
+- The disease model runs on the phone. Images do not need to be sent to a server for detection.
+- Room stores the disease guide, My Scans, settings, notifications, and queued online actions on the device.
+- WorkManager sends queued online actions when the connection is available.
+- The optional admin website is deployed at [eggplant-disease-admin.vercel.app](https://eggplant-disease-admin.vercel.app).
+- The admin website manages Global Scans, disease requests, disease information, and administrator access.
 
-## Architecture
+## Privacy and sharing
 
-The Android project has one `app` module, one `MainActivity`, Navigation Compose, CameraX, an application-scoped NCNN detector, a lifecycle-aware camera controller, and an `EggplantRepository` backed by Room. WorkManager drains an idempotent offline outbox only when the network is available. The app contains only the public mobile API URL, Supabase URL, and publishable key; privileged credentials remain server-side.
+- Scanning and My Scans stay on the device unless you choose an online action.
+- A scan is sent to Global Scans only after the user explicitly chooses **Share**.
+- Global Scans do not show the user's identity.
+- Missing-disease request photos are private to the requester and administrators.
+- Public photos expire after 180 days. Reports can temporarily hide a scan while it is reviewed.
+- The **Delete my shared cloud data** action removes the user's shared contributions.
+- The app has no advertisements, payments, or user profiles.
 
-The `admin/` directory contains a Next.js App Router application deployed at [eggplant-disease-admin.vercel.app](https://eggplant-disease-admin.vercel.app). Protected server routes use Supabase password sessions plus an `admin_members` authorization check. Mobile writes are validated by the server, rate-limited, owner-partitioned, and governed by Supabase RLS. The database and Storage schema lives in reviewed, forward-only migrations under `supabase/migrations/`.
+## Testing limits
 
-Database rows retain stable disease IDs and grouped detections:
-
-- disease ID
-- confidence
-- scan source
-- timestamp
-- model version
-
-The packaged FP16 NCNN model is checksum-verified once per installed model version and warmed in the background. Live preview uses latest-frame backpressure, direct RGBA buffer preprocessing, bounded CPU inference, provisional first-frame boxes, two-frame confirmation, and a short visual hold to reduce flicker. Native failures are typed failures rather than healthy/no-match results.
-
-The current runtime uses a `0.12` base confidence threshold for the exported NCNN score distribution, keeps Gallery/capture no-match states visible on the Result screen, uses a preferred 1024×768 live-analysis and still-capture stream, caps Gallery decode to a 1024 px long edge, preprocesses frames for the approved 768×768 model input, and defaults to bounded CPU inference for consistent mobile behavior.
-
-## Privacy and cloud behavior
-
-- Inference, catalog access, My Scans, and queued work remain available offline.
-- A supported Global Scan requires an explicit Share action, a live, still-capture, or Gallery source, a detected disease, and a server-validated JPEG. Confidence is retained as model output for transparency but is not used as a client or server publication minimum. Public API responses never include an owner identity.
-- Two unique reports automatically quarantine a public scan pending review. Public photos expire after 180 days while anonymous aggregate counts may remain.
-- Missing-disease photos are private to their anonymous owner and administrators. They are not public and are not approved for training.
-- “Delete my shared cloud data” unpublishes contributions immediately and queues scoped object/row deletion.
-
-## Validation boundary
-
-Android unit, migration, build, and native fixture checks can run locally. Final accuracy parity requires the missing labeled `valid/images`, `valid/labels`, `test/images`, and `test/labels` folders. The ≤200 ms median / ≤350 ms p95 performance gate and 15-minute endurance run require the target Infinix HOT 60 Pro+ over USB debugging.
-
-No Internet service is required for inference. Physical-phone latency, endurance, camera alignment, thermal behavior, and field accuracy still require the user’s final device and real-plant test pass; local builds do not establish those claims.
+Local tests and builds confirm that the code compiles and the app's automated checks pass. They do not replace testing on the final phone with real eggplant photos. Camera alignment, speed, heat, battery use, and detection accuracy should be checked on the target Infinix HOT 60 Pro+.
 
 ## License and third-party notices
 
-The packaged model metadata identifies the Ultralytics YOLO model/export as AGPL-3.0; its license text is preserved at `third_party/licenses/AGPL-3.0.txt`. NCNN and its bundled components retain the notices in `app/src/main/cpp/third_party/ncnn/LICENSE.txt`. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for attribution and the unresolved repository-wide licensing review; this notice does not relicense the original application code.
+The packaged model metadata identifies the Ultralytics YOLO model/export as AGPL-3.0. Its license is kept at `third_party/licenses/AGPL-3.0.txt`. NCNN and its bundled components keep their notices in `app/src/main/cpp/third_party/ncnn/LICENSE.txt`. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for more information.

@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.eggplant.detector.core.ui.components.DiseaseArtwork
+import com.eggplant.detector.core.ui.components.ResponsiveContent
 import com.eggplant.detector.domain.model.Disease
 import androidx.compose.ui.res.stringResource
 import com.eggplant.detector.R
@@ -45,54 +46,58 @@ import com.eggplant.detector.core.ui.stablePageForId
 @Composable
 fun DiseaseDetailsScreen(disease: Disease?, onBack: () -> Unit, showTopBar: Boolean = true) {
     if (disease == null) {
-        Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-            Text(stringResource(R.string.disease_not_found))
-            androidx.compose.material3.TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
+        ResponsiveContent {
+            Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                Text(stringResource(R.string.disease_not_found))
+                androidx.compose.material3.TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
+            }
         }
         return
     }
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .verticalScroll(rememberScrollState())
-            .padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(18.dp),
-    ) {
-        if (showTopBar) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.back))
-                }
-                Text(stringResource(R.string.disease_detail), style = MaterialTheme.typography.titleLarge)
-            }
-        }
-        DiseaseArtwork(disease.id, Modifier.fillMaxWidth().height(240.dp))
-        Text(disease.name, style = MaterialTheme.typography.headlineMedium)
-        Surface(
-            shape = RoundedCornerShape(50),
-            color = MaterialTheme.colorScheme.surfaceVariant,
+    ResponsiveContent {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .verticalScroll(rememberScrollState())
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
+            if (showTopBar) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.back))
+                    }
+                    Text(stringResource(R.string.disease_detail), style = MaterialTheme.typography.titleLarge)
+                }
+            }
+            DiseaseArtwork(disease.id, Modifier.fillMaxWidth().height(240.dp))
+            Text(disease.name, style = MaterialTheme.typography.headlineMedium)
+            Surface(
+                shape = RoundedCornerShape(50),
+                color = MaterialTheme.colorScheme.surfaceVariant,
+            ) {
+                Text(
+                    stringResource(if (disease.type.name.startsWith("LEAF")) R.string.leaf_disease else R.string.fruit_disease),
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+            DetailSection(stringResource(R.string.about_disease, disease.name), disease.symptomPreview)
+            DetailSection(stringResource(R.string.common_signs), disease.signs.joinToString("\n") { "• $it" })
+            DetailSection(stringResource(R.string.recommended_action), disease.treatment)
+            DetailSection(localized("Causes", "Mga sanhi"), disease.causes)
+            DetailSection(stringResource(R.string.prevention), disease.prevention)
+            DetailSection(localized("Guidance", "Gabay"), disease.guidance)
+            DetailSection(localized("When to act", "Kailan kikilos"), disease.whenToAct)
+            DetailSection(localized("References", "Mga sanggunian"), disease.references.joinToString("\n") { "${it.publisher}: ${it.title}\n${it.url}" })
             Text(
-                stringResource(if (disease.type.name.startsWith("LEAF")) R.string.leaf_disease else R.string.fruit_disease),
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.SemiBold,
+                disease.disclaimer.ifBlank { stringResource(R.string.educational_notice) },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        DetailSection(stringResource(R.string.about_disease, disease.name), disease.symptomPreview)
-        DetailSection(stringResource(R.string.common_signs), disease.signs.joinToString("\n") { "• $it" })
-        DetailSection(stringResource(R.string.recommended_action), disease.treatment)
-        DetailSection(localized("Causes", "Mga sanhi"), disease.causes)
-        DetailSection(stringResource(R.string.prevention), disease.prevention)
-        DetailSection(localized("Guidance", "Gabay"), disease.guidance)
-        DetailSection(localized("When to act", "Kailan kikilos"), disease.whenToAct)
-        DetailSection(localized("References", "Mga sanggunian"), disease.references.joinToString("\n") { "${it.publisher}: ${it.title}\n${it.url}" })
-        Text(
-            disease.disclaimer.ifBlank { stringResource(R.string.educational_notice) },
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 
@@ -114,42 +119,44 @@ fun DiseaseDetailsPager(diseases: List<Disease>, initialId: String?, onBack: () 
     fun moveTo(page: Int) = scope.launch {
         if (motion.spatialMovement) pager.animateScrollToPage(page) else pager.scrollToPage(page)
     }
-    Column(Modifier.fillMaxSize()) {
-        val current = diseases[pager.currentPage]
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            color = MaterialTheme.colorScheme.surface,
-            shadowElevation = 2.dp,
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
+    ResponsiveContent {
+        Column(Modifier.fillMaxSize()) {
+            val current = diseases[pager.currentPage]
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.surface,
+                shadowElevation = 2.dp,
             ) {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.back))
-                }
-                Column(Modifier.weight(1f)) {
-                    Text(current.name, style = MaterialTheme.typography.titleMedium, maxLines = 1)
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.back))
+                    }
+                    Column(Modifier.weight(1f)) {
+                        Text(current.name, style = MaterialTheme.typography.titleMedium, maxLines = 1)
+                        Text(
+                            stringResource(if (current.type.name.startsWith("LEAF")) R.string.leaf_disease else R.string.fruit_disease),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                     Text(
-                        stringResource(if (current.type.name.startsWith("LEAF")) R.string.leaf_disease else R.string.fruit_disease),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        stringResource(R.string.item_position, pager.currentPage + 1, diseases.size),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.SemiBold,
                     )
                 }
-                Text(
-                    stringResource(R.string.item_position, pager.currentPage + 1, diseases.size),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.SemiBold,
-                )
             }
-        }
-        HorizontalPager(pager, Modifier.weight(1f), key = { diseases[it].id }) { page ->
-            DiseaseDetailsScreen(diseases[page], onBack, showTopBar = false)
-        }
-        Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            OutlinedButton({ moveTo(pager.currentPage - 1) }, Modifier.weight(1f), enabled = pager.currentPage > 0) { Text(stringResource(R.string.previous)) }
-            OutlinedButton({ moveTo(pager.currentPage + 1) }, Modifier.weight(1f), enabled = pager.currentPage < diseases.lastIndex) { Text(stringResource(R.string.next)) }
+            HorizontalPager(pager, Modifier.weight(1f), key = { diseases[it].id }) { page ->
+                DiseaseDetailsScreen(diseases[page], onBack, showTopBar = false)
+            }
+            Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedButton({ moveTo(pager.currentPage - 1) }, Modifier.weight(1f), enabled = pager.currentPage > 0) { Text(stringResource(R.string.previous)) }
+                OutlinedButton({ moveTo(pager.currentPage + 1) }, Modifier.weight(1f), enabled = pager.currentPage < diseases.lastIndex) { Text(stringResource(R.string.next)) }
+            }
         }
     }
 }

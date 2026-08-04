@@ -46,7 +46,7 @@ import com.eggplant.detector.data.database.entity.GlobalFeedStateEntity
         GlobalFeedStateEntity::class,
         CloudDeletionStateEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = true,
 )
 abstract class EggplantDatabase : RoomDatabase() {

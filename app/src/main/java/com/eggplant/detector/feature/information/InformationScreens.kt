@@ -27,7 +27,10 @@ import androidx.compose.ui.unit.dp
 import com.eggplant.detector.BuildConfig
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import com.eggplant.detector.R
+import com.eggplant.detector.core.ui.components.ResponsiveContent
 
 data class InfoSection(val heading: String, val body: String)
 
@@ -38,11 +41,15 @@ fun InformationScreen(
     sections: List<InfoSection>,
     onBack: () -> Unit,
 ) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
+    ResponsiveContent {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .semantics { contentDescription = "Information page" },
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onBack) {
@@ -81,6 +88,7 @@ fun InformationScreen(
                     }
                 }
             }
+        }
         }
     }
 }

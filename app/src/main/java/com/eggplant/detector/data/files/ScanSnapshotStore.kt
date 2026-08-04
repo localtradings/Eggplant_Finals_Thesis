@@ -7,6 +7,7 @@ import android.os.Trace
 import android.util.Log
 import com.eggplant.detector.BuildConfig
 import com.eggplant.detector.detection.api.RgbFrame
+import com.eggplant.detector.domain.model.ScanResult
 import java.io.File
 import java.util.UUID
 
@@ -94,6 +95,30 @@ class ScanSnapshotStore(context: Context) {
         val temporary = File(destinationRoot, "$id-$position.tmp")
         source.inputStream().use { input -> temporary.outputStream().use(input::copyTo) }
         check(temporary.renameTo(destination)) { "Could not stage cloud photo." }
+        return destination.absolutePath
+    }
+
+    fun createAnnotatedForOutbox(
+        sourcePath: String,
+        result: ScanResult,
+        publishedConfidence: Float,
+        id: String,
+    ): String {
+        val source = File(sourcePath).canonicalFile
+        check(source.isFile && source.toPath().startsWith(outboxRoot.canonicalFile.toPath())) {
+            "Annotated cloud photo must be derived from an outbox scan image."
+        }
+        val destinationRoot = File(outboxRoot, "global").apply { mkdirs() }.canonicalFile
+        val destination = File(destinationRoot, "$id-annotated.jpg")
+        val temporary = File(destinationRoot, "$id-annotated.tmp")
+        try {
+            ScanAnnotationRenderer.render(source, temporary, result, publishedConfidence)
+            check(temporary.renameTo(destination)) { "Could not stage annotated cloud photo." }
+        } catch (error: Throwable) {
+            temporary.delete()
+            destination.delete()
+            throw error
+        }
         return destination.absolutePath
     }
 

@@ -105,3 +105,14 @@ internal fun CameraScene.retainedLiveOutcome(allowHealthy: Boolean): LivePreview
     }
     return null
 }
+
+/**
+ * Provides a result-only fallback for the frame currently visible when the
+ * shutter is released. The normal live path still requires a stable result
+ * for automatic history persistence; this candidate is used only to avoid
+ * leaving the user on the camera when confirmation arrives just after release.
+ */
+internal fun CameraScene.liveReleaseDiseaseCandidate(): DetectionBox? =
+    detectionFrame.detections
+        .filterNot { it.modelClass.isHealthy }
+        .maxByOrNull { it.confidence }

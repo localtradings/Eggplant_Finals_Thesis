@@ -1,6 +1,9 @@
 package com.eggplant.detector.core.ui.components
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,17 +21,27 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.eggplant.detector.R
 import com.eggplant.detector.domain.model.ScanResult
 import com.eggplant.detector.core.formatting.ConfidenceFormatter
 import com.eggplant.detector.core.formatting.DateFormatter
-import androidx.compose.ui.res.stringResource
-import com.eggplant.detector.R
+import java.io.File
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
+private const val HISTORY_THUMBNAIL_MAX_DIMENSION = 320
 
 @Composable
 fun HistoryCard(result: ScanResult, onClick: () -> Unit, modifier: Modifier = Modifier) {
@@ -46,12 +59,7 @@ fun HistoryCard(result: ScanResult, onClick: () -> Unit, modifier: Modifier = Mo
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            ResultArtwork(
-                category = result.category,
-                name = result.name,
-                modifier = Modifier.size(width = 92.dp, height = 78.dp),
-                diseaseId = result.diseaseId,
-            )
+            HistoryThumbnail(result)
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
                 Text(result.name, style = MaterialTheme.typography.titleMedium)
@@ -78,6 +86,52 @@ fun HistoryCard(result: ScanResult, onClick: () -> Unit, modifier: Modifier = Mo
             Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, null)
         }
     }
+}
+
+@Composable
+private fun HistoryThumbnail(result: ScanResult) {
+    val bitmap by produceState<Bitmap?>(initialValue = null, result.imagePath) {
+        value = withContext(Dispatchers.IO) {
+            result.imagePath
+                ?.let(::File)
+                ?.takeIf(File::isFile)
+                ?.let(::decodeHistoryThumbnail)
+        }
+    }
+    val savedBitmap = bitmap
+    val thumbnailModifier = Modifier
+        .size(width = 92.dp, height = 78.dp)
+        .clip(RoundedCornerShape(12.dp))
+    if (savedBitmap != null) {
+        Image(
+            savedBitmap.asImageBitmap(),
+            contentDescription = stringResource(R.string.saved_scan_photo),
+            modifier = thumbnailModifier,
+            contentScale = ContentScale.Crop,
+        )
+    } else {
+        ResultArtwork(
+            category = result.category,
+            name = result.name,
+            modifier = thumbnailModifier,
+            diseaseId = result.diseaseId,
+        )
+    }
+}
+
+private fun decodeHistoryThumbnail(file: File): Bitmap? {
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeFile(file.absolutePath, bounds)
+    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+
+    var sampleSize = 1
+    while (maxOf(bounds.outWidth / sampleSize, bounds.outHeight / sampleSize) > HISTORY_THUMBNAIL_MAX_DIMENSION) {
+        sampleSize *= 2
+    }
+    return BitmapFactory.decodeFile(
+        file.absolutePath,
+        BitmapFactory.Options().apply { inSampleSize = sampleSize },
+    )
 }
 
 @Composable

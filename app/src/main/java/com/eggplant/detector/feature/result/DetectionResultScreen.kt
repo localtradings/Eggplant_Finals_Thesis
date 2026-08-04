@@ -9,9 +9,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -68,6 +70,7 @@ import com.eggplant.detector.domain.model.SyncOutboxState
 import com.eggplant.detector.core.ui.components.ConfidenceDisplay
 import com.eggplant.detector.core.ui.components.PrimaryButton
 import com.eggplant.detector.core.ui.components.ResultArtwork
+import com.eggplant.detector.core.ui.components.ResponsiveContent
 import com.eggplant.detector.domain.model.ScanOutcome
 import com.eggplant.detector.domain.model.ScanResult
 import com.eggplant.detector.domain.model.ScanCategory
@@ -335,100 +338,104 @@ fun ResultReport(
     actions: @Composable () -> Unit = {},
 ) {
     if (result == null) {
-        Column(
-            modifier = Modifier.fillMaxSize().padding(24.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(localized("No scan result available", "Walang available na resulta ng scan"))
-            OutlinedButton(onClick = onBack) { Text(stringResource(R.string.back)) }
+        ResponsiveContent {
+            Column(
+                modifier = Modifier.fillMaxSize().padding(24.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(localized("No scan result available", "Walang available na resulta ng scan"))
+                OutlinedButton(onClick = onBack) { Text(stringResource(R.string.back)) }
+            }
         }
         return
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .verticalScroll(rememberScrollState())
-            .padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(18.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.Outlined.Close, contentDescription = stringResource(R.string.close_detection_result))
-            }
-            Text(title, style = MaterialTheme.typography.titleLarge)
-        }
-        SnapshotPreview(result, Modifier.fillMaxWidth().height(250.dp))
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+    ResponsiveContent {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .verticalScroll(rememberScrollState())
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(20.dp),
-                verticalAlignment = Alignment.CenterVertically,
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.Outlined.Close, contentDescription = stringResource(R.string.close_detection_result))
+                }
+                Text(title, style = MaterialTheme.typography.titleLarge)
+            }
+            SnapshotPreview(result, Modifier.fillMaxWidth().aspectRatio(1.35f).heightIn(min = 180.dp, max = 320.dp))
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             ) {
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(localized("Detected result", "Natukoy na resulta"), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(result.name, style = MaterialTheme.typography.headlineMedium)
-                    Surface(
-                        color = MaterialTheme.colorScheme.surfaceVariant,
-                        shape = RoundedCornerShape(50),
-                    ) {
-                        Text(
-                            localizedCategory(result),
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.SemiBold,
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(20.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(localized("Detected result", "Natukoy na resulta"), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(result.name, style = MaterialTheme.typography.headlineMedium)
+                        Surface(
+                            color = MaterialTheme.colorScheme.surfaceVariant,
+                            shape = RoundedCornerShape(50),
+                        ) {
+                            Text(
+                                localizedCategory(result),
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                        }
+                    }
+                    ConfidenceDisplay(result.confidence)
+                }
+            }
+            when (result.outcome) {
+                ScanOutcome.DISEASE -> {
+                    ReportSection(stringResource(R.string.signs_detected), result.signs.joinToString("\n") { "• $it" })
+                    val additional = result.detections
+                        .filter { it.diseaseId != result.diseaseId }
+                        .groupBy { it.diseaseId }
+                        .mapNotNull { (_, detections) -> detections.maxByOrNull { it.confidence } }
+                        .sortedByDescending { it.confidence }
+                    if (additional.isNotEmpty()) {
+                        ReportSection(
+                            localized("Also detected", "Natukoy rin"),
+                            additional.joinToString("\n") { "• ${it.name} — ${it.confidence}%" },
                         )
                     }
+                    ReportSection(stringResource(R.string.recommended_action), result.treatment)
                 }
-                ConfidenceDisplay(result.confidence)
-            }
-        }
-        when (result.outcome) {
-            ScanOutcome.DISEASE -> {
-                ReportSection(stringResource(R.string.signs_detected), result.signs.joinToString("\n") { "• $it" })
-                val additional = result.detections
-                    .filter { it.diseaseId != result.diseaseId }
-                    .groupBy { it.diseaseId }
-                    .mapNotNull { (_, detections) -> detections.maxByOrNull { it.confidence } }
-                    .sortedByDescending { it.confidence }
-                if (additional.isNotEmpty()) {
+                ScanOutcome.HEALTHY_CONFIRMED -> {
                     ReportSection(
-                        localized("Also detected", "Natukoy rin"),
-                        additional.joinToString("\n") { "• ${it.name} — ${it.confidence}%" },
+                        localized("Healthy result", "Malusog na resulta"),
+                        localized(
+                            "No supported disease was detected in this confirmed healthy area. Healthy-only results are not saved to History.",
+                            "Walang suportadong sakit na nakita sa kumpirmadong malusog na bahaging ito. Hindi sine-save sa Kasaysayan ang healthy-only na resulta.",
+                        ),
                     )
                 }
-                ReportSection(stringResource(R.string.recommended_action), result.treatment)
+                ScanOutcome.NO_MATCH -> {
+                    ReportSection(
+                        localized("No supported disease detected", "Walang suportadong sakit na natukoy"),
+                        localized(
+                            "The selected image loaded correctly, but the packaged detector did not confirm a supported eggplant disease. Try a closer, brighter, steadier photo.",
+                            "Nabuksan nang tama ang napiling larawan, pero walang nakumpirmang suportadong sakit ng talong ang detector. Subukan ang mas malapit, mas maliwanag, at mas matatag na larawan.",
+                        ),
+                    )
+                }
             }
-            ScanOutcome.HEALTHY_CONFIRMED -> {
-                ReportSection(
-                    localized("Healthy result", "Malusog na resulta"),
-                    localized(
-                        "No supported disease was detected in this confirmed healthy area. Healthy-only results are not saved to History.",
-                        "Walang suportadong sakit na nakita sa kumpirmadong malusog na bahaging ito. Hindi sine-save sa Kasaysayan ang healthy-only na resulta.",
-                    ),
-                )
-            }
-            ScanOutcome.NO_MATCH -> {
-                ReportSection(
-                    localized("No supported disease detected", "Walang suportadong sakit na natukoy"),
-                    localized(
-                        "The selected image loaded correctly, but the packaged detector did not confirm a supported eggplant disease. Try a closer, brighter, steadier photo.",
-                        "Nabuksan nang tama ang napiling larawan, pero walang nakumpirmang suportadong sakit ng talong ang detector. Subukan ang mas malapit, mas maliwanag, at mas matatag na larawan.",
-                    ),
-                )
-            }
+            Text(
+                localized("On-device model result for educational screening only. Confirm crop concerns with a qualified agricultural specialist.", "Resulta ng on-device model para lamang sa paunang pagsusuri. Kumpirmahin sa kwalipikadong espesyalista ang problema sa pananim."),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            actions()
         }
-        Text(
-            localized("On-device model result for educational screening only. Confirm crop concerns with a qualified agricultural specialist.", "Resulta ng on-device model para lamang sa paunang pagsusuri. Kumpirmahin sa kwalipikadong espesyalista ang problema sa pananim."),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        actions()
     }
 }
 

@@ -11,7 +11,7 @@ export async function requireAdmin(allowedRoles?: readonly AdminRole[]) {
   if (!user) redirect("/login");
   const { data: member, error: memberError } = await getAdminClient()
     .from("admin_members")
-    .select("role")
+    .select("role,login_name")
     .eq("user_id", user.id)
     .maybeSingle();
   if (memberError) {
@@ -22,7 +22,7 @@ export async function requireAdmin(allowedRoles?: readonly AdminRole[]) {
   if (allowedRoles && !allowedRoles.includes(role)) {
     redirect("/overview?error=forbidden");
   }
-  return { user, role };
+  return { user, role, loginName: typeof member.login_name === "string" ? member.login_name : null };
 }
 
 export async function verifyMobileUser(request: Request) {

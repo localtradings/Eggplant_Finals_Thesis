@@ -3,6 +3,7 @@ import {
   decodeFeedCursor,
   diseaseRequestPhotoPath,
   encodeFeedCursor,
+  globalAnnotatedSharePath,
   globalSharePath,
   isJpeg,
   MAX_UPLOAD_BYTES,
@@ -43,6 +44,42 @@ describe("global-share API validation", () => {
       ok: true,
       value: { ...validIntent, source: "gallery" },
     });
+  });
+
+  it("accepts an optional annotated upload paired with the raw upload", () => {
+    const annotatedSha256 = "b".repeat(64);
+    const candidate = {
+      ...validIntent,
+      annotatedContentLength: 2_048,
+      annotatedSha256,
+    };
+    expect(validateShareIntent(candidate)).toEqual({ ok: true, value: candidate });
+
+    const path = globalSharePath(USER_ID, SCAN_ID, SHA256);
+    const annotatedPath = globalAnnotatedSharePath(USER_ID, SCAN_ID, annotatedSha256);
+    expect(validateShareCompletion({ ...candidate, path, annotatedPath }, USER_ID)).toEqual({
+      ok: true,
+      value: {
+        clientScanId: SCAN_ID,
+        diseaseId: "leaf-spot",
+        confidence: 0.5,
+        source: "capture",
+        modelVersion: "eggplant-ncnn-v2",
+        path,
+        expectedSha256: SHA256,
+        annotatedPath,
+        annotatedExpectedSha256: annotatedSha256,
+      },
+    });
+  });
+
+  it("rejects a partial annotated upload contract", () => {
+    expect(
+      validateShareIntent({ ...validIntent, annotatedSha256: "b".repeat(64) }),
+    ).toEqual({ ok: false });
+    expect(
+      validateShareIntent({ ...validIntent, annotatedContentLength: 2_048 }),
+    ).toEqual({ ok: false });
   });
 
   it.each([

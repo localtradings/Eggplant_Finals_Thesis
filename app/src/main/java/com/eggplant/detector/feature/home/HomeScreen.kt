@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -12,9 +13,11 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -45,6 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -60,6 +64,7 @@ import com.eggplant.detector.app.EggplantAppViewModel
 import com.eggplant.detector.R
 import com.eggplant.detector.core.ui.components.LastScanCard
 import com.eggplant.detector.core.ui.components.QuickActionCard
+import com.eggplant.detector.core.ui.components.ResponsiveContent
 import com.eggplant.detector.core.ui.theme.EggplantLavender
 import com.eggplant.detector.core.ui.theme.EggplantPurple
 import com.eggplant.detector.core.ui.theme.Ink
@@ -81,37 +86,39 @@ fun HomeScreen(
     val lastScan by viewModel.lastScan.collectAsState()
     val homeDescription = stringResource(R.string.home_content)
 
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .semantics { contentDescription = homeDescription },
-        state = listState,
-        contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 22.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
-    ) {
-        item { HomeHeader(onNotifications) }
-        item { HeroCard(onScan) }
-        item { QuickActions(onLibrary, onHistory, onCareGuide, onOfflineUse) }
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    stringResource(R.string.last_scan),
-                    style = MaterialTheme.typography.titleLarge.copy(fontSize = 18.sp),
-                    modifier = Modifier.weight(1f),
-                )
-                TextButton(onClick = onHistory) {
-                    Text(stringResource(R.string.view_all), fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+    ResponsiveContent {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .semantics { contentDescription = homeDescription },
+            state = listState,
+            contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 22.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            item { HomeHeader(onNotifications) }
+            item { HeroCard(onScan) }
+            item { QuickActions(onLibrary, onHistory, onCareGuide, onOfflineUse) }
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        stringResource(R.string.last_scan),
+                        style = MaterialTheme.typography.titleLarge.copy(fontSize = 18.sp),
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(onClick = onHistory) {
+                        Text(stringResource(R.string.view_all), fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                    }
                 }
             }
+            lastScan?.let { result ->
+                item { LastScanCard(result = result, onClick = { onLastScan(result.id) }) }
+            }
+            item { ScanTip() }
         }
-        lastScan?.let { result ->
-            item { LastScanCard(result = result, onClick = { onLastScan(result.id) }) }
-        }
-        item { ScanTip() }
     }
 }
 
@@ -159,64 +166,75 @@ private fun HomeHeader(onNotifications: () -> Unit) {
 @Composable
 private fun HeroCard(onScan: () -> Unit) {
     val headline = stringResource(R.string.home_headline)
-    Card(
-        modifier = Modifier.fillMaxWidth().aspectRatio(1.31f),
-        shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFEAF3E7)),
-    ) {
-        Box(Modifier.fillMaxSize()) {
-            Image(
-                painter = painterResource(R.drawable.hero_leaf),
-                contentDescription = stringResource(R.string.hero_description),
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-            )
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth(.64f)
-                    .padding(start = 22.dp, top = 30.dp),
-                verticalArrangement = Arrangement.spacedBy(11.dp),
-            ) {
-                Text(
-                    buildAnnotatedString {
-                        append(headline.substringBefore('\n'))
-                        append("\n")
-                        withStyle(SpanStyle(color = LeafGreen)) { append(headline.substringAfter('\n')) }
-                    },
-                    color = Ink,
-                    style = MaterialTheme.typography.headlineMedium.copy(fontSize = 21.sp, lineHeight = 27.sp),
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val compact = maxWidth < 400.dp
+        Card(
+            modifier = Modifier.fillMaxWidth().then(
+                if (compact) Modifier.heightIn(min = 205.dp, max = 260.dp) else Modifier.aspectRatio(1.31f),
+            ),
+            shape = RoundedCornerShape(22.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFEAF3E7)),
+        ) {
+            Box(Modifier.fillMaxSize()) {
+                Image(
+                    painter = painterResource(R.drawable.hero_leaf),
+                    contentDescription = stringResource(R.string.hero_description),
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
                 )
-                Text(
-                    stringResource(R.string.home_description),
-                    color = Ink,
-                    style = MaterialTheme.typography.bodyMedium.copy(fontSize = 12.5.sp, lineHeight = 18.sp),
-                )
-                Button(
-                    onClick = onScan,
-                    modifier = Modifier.width(160.dp).height(49.dp),
-                    shape = RoundedCornerShape(15.dp),
-                    contentPadding = PaddingValues(horizontal = 14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = EggplantPurple),
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth(if (compact) .78f else .64f)
+                        .padding(start = if (compact) 16.dp else 22.dp, top = if (compact) 20.dp else 30.dp, end = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(if (compact) 7.dp else 11.dp),
                 ) {
-                    Icon(Icons.Filled.CameraAlt, contentDescription = null, modifier = Modifier.size(23.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.scan_leaf_now), fontSize = 13.5.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Outlined.Security,
-                        contentDescription = null,
-                        tint = LeafGreen,
-                        modifier = Modifier.size(14.dp),
-                    )
-                    Spacer(Modifier.width(5.dp))
                     Text(
-                        stringResource(R.string.home_status),
-                        color = Color(0xFF5F6471),
-                        fontSize = 9.5.sp,
-                        lineHeight = 12.sp,
-                        maxLines = 1,
+                        buildAnnotatedString {
+                            append(headline.substringBefore('\n'))
+                            append("\n")
+                            withStyle(SpanStyle(color = LeafGreen)) { append(headline.substringAfter('\n')) }
+                        },
+                        color = Ink,
+                        style = MaterialTheme.typography.headlineMedium.copy(
+                            fontSize = if (compact) 19.sp else 21.sp,
+                            lineHeight = if (compact) 24.sp else 27.sp,
+                        ),
                     )
+                    Text(
+                        stringResource(R.string.home_description),
+                        color = Ink,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontSize = if (compact) 11.5.sp else 12.5.sp,
+                            lineHeight = if (compact) 16.sp else 18.sp,
+                        ),
+                    )
+                    Button(
+                        onClick = onScan,
+                        modifier = Modifier.widthIn(min = 132.dp, max = 160.dp).fillMaxWidth().heightIn(min = 49.dp),
+                        shape = RoundedCornerShape(15.dp),
+                        contentPadding = PaddingValues(horizontal = if (compact) 10.dp else 14.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = EggplantPurple),
+                    ) {
+                        Icon(Icons.Filled.CameraAlt, contentDescription = null, modifier = Modifier.size(23.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.scan_leaf_now), fontSize = if (compact) 12.sp else 13.5.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Outlined.Security,
+                            contentDescription = null,
+                            tint = LeafGreen,
+                            modifier = Modifier.size(14.dp),
+                        )
+                        Spacer(Modifier.width(5.dp))
+                        Text(
+                            stringResource(R.string.home_status),
+                            color = Color(0xFF5F6471),
+                            fontSize = 9.5.sp,
+                            lineHeight = 12.sp,
+                            maxLines = 2,
+                        )
+                    }
                 }
             }
         }
@@ -230,6 +248,12 @@ private fun QuickActions(
     onCareGuide: () -> Unit,
     onOfflineUse: () -> Unit,
 ) {
+    val actions = listOf(
+        QuickActionItem(stringResource(R.string.learn_diseases), stringResource(R.string.learn_diseases_body), Icons.AutoMirrored.Outlined.MenuBook, onLibrary, LeafGreenSoft, LeafGreen),
+        QuickActionItem(stringResource(R.string.view_history), stringResource(R.string.view_history_body), Icons.Outlined.History, onHistory, EggplantLavender, EggplantPurple),
+        QuickActionItem(stringResource(R.string.care_guide), stringResource(R.string.care_guide_body), Icons.Outlined.Spa, onCareGuide, LeafGreenSoft, LeafGreen),
+        QuickActionItem(stringResource(R.string.offline_use), stringResource(R.string.offline_use_body), Icons.Outlined.CloudDownload, onOfflineUse, EggplantLavender, EggplantPurple),
+    )
     Card(
         modifier = Modifier.fillMaxWidth().height(154.dp),
         shape = RoundedCornerShape(20.dp),
@@ -237,18 +261,29 @@ private fun QuickActions(
         elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
     ) {
         Row(
-            modifier = Modifier.fillMaxSize().padding(vertical = 12.dp),
+            modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            QuickActionCard(stringResource(R.string.learn_diseases), stringResource(R.string.learn_diseases_body), Icons.AutoMirrored.Outlined.MenuBook, onLibrary, Modifier.weight(1f), LeafGreenSoft, LeafGreen)
-            ActionDivider()
-            QuickActionCard(stringResource(R.string.view_history), stringResource(R.string.view_history_body), Icons.Outlined.History, onHistory, Modifier.weight(1f), EggplantLavender, EggplantPurple)
-            ActionDivider()
-            QuickActionCard(stringResource(R.string.care_guide), stringResource(R.string.care_guide_body), Icons.Outlined.Spa, onCareGuide, Modifier.weight(1f), LeafGreenSoft, LeafGreen)
-            ActionDivider()
-            QuickActionCard(stringResource(R.string.offline_use), stringResource(R.string.offline_use_body), Icons.Outlined.CloudDownload, onOfflineUse, Modifier.weight(1f), EggplantLavender, EggplantPurple)
+            actions.forEachIndexed { index, action ->
+                if (index > 0) ActionDivider()
+                QuickAction(action, Modifier.weight(1f))
+            }
         }
     }
+}
+
+private data class QuickActionItem(
+    val title: String,
+    val subtitle: String,
+    val icon: ImageVector,
+    val onClick: () -> Unit,
+    val iconBackground: Color,
+    val iconTint: Color,
+)
+
+@Composable
+private fun QuickAction(item: QuickActionItem, modifier: Modifier) {
+    QuickActionCard(item.title, item.subtitle, item.icon, item.onClick, modifier, item.iconBackground, item.iconTint)
 }
 
 @Composable
@@ -261,7 +296,7 @@ private fun ScanTip() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(64.dp)
+            .heightIn(min = 64.dp)
             .background(
                 brush = Brush.horizontalGradient(listOf(Color(0xFFE5F6E5), Color(0xFFF2F7EE))),
                 shape = RoundedCornerShape(18.dp),

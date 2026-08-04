@@ -9,6 +9,7 @@ import com.eggplant.detector.data.database.migration.MIGRATION_1_TO_2
 import com.eggplant.detector.data.database.migration.MIGRATION_2_TO_3
 import com.eggplant.detector.data.database.migration.MIGRATION_3_TO_4
 import com.eggplant.detector.data.database.migration.MIGRATION_4_TO_5
+import com.eggplant.detector.data.database.migration.MIGRATION_5_TO_6
 import com.eggplant.detector.detection.ncnn.NcnnDetectionEngine
 import com.eggplant.detector.data.cloud.CloudApiClient
 import com.eggplant.detector.data.cloud.CloudSyncScheduler
@@ -28,7 +29,7 @@ class EggplantApplication : Application() {
             applicationContext,
             EggplantDatabase::class.java,
             "eggplant_detector.db",
-        ).addMigrations(MIGRATION_1_TO_2, MIGRATION_2_TO_3, MIGRATION_3_TO_4, MIGRATION_4_TO_5).build()
+        ).addMigrations(MIGRATION_1_TO_2, MIGRATION_2_TO_3, MIGRATION_3_TO_4, MIGRATION_4_TO_5, MIGRATION_5_TO_6).build()
     }
 
     val repository: EggplantRepository by lazy {

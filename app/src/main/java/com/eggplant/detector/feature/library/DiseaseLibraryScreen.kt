@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.sp
 import com.eggplant.detector.core.ui.components.DiseaseArtwork
 import com.eggplant.detector.core.ui.components.DiseaseCard
 import com.eggplant.detector.core.ui.components.FilterChips
+import com.eggplant.detector.core.ui.components.ResponsiveContent
 import com.eggplant.detector.core.ui.components.SearchBar
 import com.eggplant.detector.R
 import com.eggplant.detector.data.catalog.DiseaseCatalog
@@ -73,59 +74,61 @@ fun DiseaseLibraryScreen(
     val leafDiseases = filtered.filter { it.type == DiseaseType.LEAF_DISEASE }
     val fruitDiseases = filtered.filter { it.type == DiseaseType.FRUIT_DISEASE }
 
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .semantics { contentDescription = listDescription },
-        contentPadding = PaddingValues(start = 16.dp, top = 14.dp, end = 16.dp, bottom = 14.dp),
-    ) {
-        item { LibraryHeader(onHelp, onRefresh) }
-        item { Spacer(Modifier.height(8.dp)) }
-        item {
-            SearchBar(
-                value = query,
-                onValueChange = { query = it },
-                placeholder = stringResource(R.string.library_search),
-                onFilterClick = { showFilterSheet = true },
-            )
-        }
-        item { Spacer(Modifier.height(8.dp)) }
-        item {
-            FilterChips(
-                options = listOf(allLabel, leafLabel, fruitLabel),
-                selected = selectedFilter,
-                onSelected = { selectedFilter = it },
-            )
-        }
-
-        if (filtered.isEmpty()) {
+    ResponsiveContent {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .semantics { contentDescription = listDescription },
+            contentPadding = PaddingValues(start = 16.dp, top = 14.dp, end = 16.dp, bottom = 14.dp),
+        ) {
+            item { LibraryHeader(onHelp, onRefresh) }
+            item { Spacer(Modifier.height(8.dp)) }
             item {
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 70.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    DiseaseArtwork("empty", Modifier.fillMaxWidth(.48f).height(120.dp))
-                    Text(stringResource(R.string.no_diseases), style = MaterialTheme.typography.titleLarge)
-                    Text(stringResource(R.string.try_search), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
+                SearchBar(
+                    value = query,
+                    onValueChange = { query = it },
+                    placeholder = stringResource(R.string.library_search),
+                    onFilterClick = { showFilterSheet = true },
+                )
             }
-        } else {
-            if (leafDiseases.isNotEmpty()) {
-                item { Spacer(Modifier.height(8.dp)) }
-                item { SectionHeader(leafLabel, LeafGreen) }
-                items(leafDiseases.size, key = { leafDiseases[it].id }) { index ->
-                    DiseaseCard(leafDiseases[index], { onDiseaseClick(leafDiseases[index]) })
-                    if (index != leafDiseases.lastIndex) Spacer(Modifier.height(2.dp))
-                }
+            item { Spacer(Modifier.height(8.dp)) }
+            item {
+                FilterChips(
+                    options = listOf(allLabel, leafLabel, fruitLabel),
+                    selected = selectedFilter,
+                    onSelected = { selectedFilter = it },
+                )
             }
-            if (fruitDiseases.isNotEmpty()) {
-                item { Spacer(Modifier.height(8.dp)) }
-                item { SectionHeader(fruitLabel, EggplantPurple) }
-                items(fruitDiseases.size, key = { fruitDiseases[it].id }) { index ->
-                    DiseaseCard(fruitDiseases[index], { onDiseaseClick(fruitDiseases[index]) })
-                    if (index != fruitDiseases.lastIndex) Spacer(Modifier.height(2.dp))
+
+            if (filtered.isEmpty()) {
+                item {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 70.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        DiseaseArtwork("empty", Modifier.fillMaxWidth(.48f).height(120.dp))
+                        Text(stringResource(R.string.no_diseases), style = MaterialTheme.typography.titleLarge)
+                        Text(stringResource(R.string.try_search), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            } else {
+                if (leafDiseases.isNotEmpty()) {
+                    item { Spacer(Modifier.height(8.dp)) }
+                    item { SectionHeader(leafLabel, LeafGreen) }
+                    items(leafDiseases.size, key = { leafDiseases[it].id }) { index ->
+                        DiseaseCard(leafDiseases[index], { onDiseaseClick(leafDiseases[index]) })
+                        if (index != leafDiseases.lastIndex) Spacer(Modifier.height(2.dp))
+                    }
+                }
+                if (fruitDiseases.isNotEmpty()) {
+                    item { Spacer(Modifier.height(8.dp)) }
+                    item { SectionHeader(fruitLabel, EggplantPurple) }
+                    items(fruitDiseases.size, key = { fruitDiseases[it].id }) { index ->
+                        DiseaseCard(fruitDiseases[index], { onDiseaseClick(fruitDiseases[index]) })
+                        if (index != fruitDiseases.lastIndex) Spacer(Modifier.height(2.dp))
+                    }
                 }
             }
         }

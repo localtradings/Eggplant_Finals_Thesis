@@ -2,7 +2,7 @@ import "server-only";
 import { getAdminClient } from "@/lib/supabase/admin";
 
 export type DashboardData = {
-  pendingReports: number;
+  reportsReceived: number;
   sharedScans: number;
   installations: number;
   openRequests: number;
@@ -19,7 +19,7 @@ async function readDashboardQueries(
   supabase: ReturnType<typeof getAdminClient>,
 ) {
   return Promise.all([
-    supabase.from("scan_contributions").select("id", { count: "exact", head: true }).eq("status", "quarantined"),
+    supabase.from("content_reports").select("id", { count: "exact", head: true }),
     supabase.from("scan_contributions").select("id", { count: "exact", head: true }).in("status", ["published", "expired"]),
     supabase.from("installations").select("owner_id", { count: "exact", head: true }),
     supabase.from("disease_requests").select("id", { count: "exact", head: true }).in("status", ["submitted", "under_review", "needs_information"]),
@@ -69,7 +69,7 @@ export async function getDashboardData(): Promise<DashboardData> {
   }
   const names = new Map((namesResult.data ?? []).map((x) => [x.disease_id, x.name]));
   return {
-    pendingReports: reports.count ?? 0,
+    reportsReceived: reports.count ?? 0,
     sharedScans: scans.count ?? 0,
     installations: installs.count ?? 0,
     openRequests: requests.count ?? 0,
