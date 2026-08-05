@@ -2,6 +2,7 @@ package com.eggplant.detector.feature.camera
 
 import android.Manifest
 import android.graphics.Bitmap
+import android.os.SystemClock
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -31,6 +32,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -64,6 +66,8 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
 import java.util.concurrent.CancellationException
 import kotlin.math.roundToInt
+
+private const val STILL_PROCESSING_MIN_DURATION_MILLIS = 1_200L
 
 @Composable
 fun CameraScreen(
@@ -118,6 +122,7 @@ fun CameraScreen(
     var liveStillRequestedForDisease by remember { mutableStateOf<String?>(null) }
     var validatedLiveStill by remember { mutableStateOf<CameraScene?>(null) }
     var liveReleaseFinalizing by remember { mutableStateOf(false) }
+    var stillProcessingStartedAtMillis by remember { mutableLongStateOf(0L) }
     val cameraIntroVisible = showCameraIntro &&
         cameraState.engineState == EngineState.READY &&
         cameraState.error == null &&
@@ -208,13 +213,19 @@ fun CameraScreen(
     }
 
     fun handleStillResult(result: Result<CameraScene>, fallbackError: String) {
-        cameraState = cameraState.copy(isStillImageProcessing = false)
-        if (result.exceptionOrNull() is CancellationException) return
-        when (val outcome = result.toStillImageResult(fallbackError)) {
-            is StillImageResult.Disease -> openScene(outcome.scene, outcome.primary)
-            is StillImageResult.Healthy -> openScene(outcome.scene, outcome.primary)
-            is StillImageResult.NoMatch -> viewModel.openNoMatchScene(outcome.scene, ::routeToResult)
-            is StillImageResult.Failure -> cameraState = cameraState.copy(error = outcome.message)
+        val elapsed = SystemClock.uptimeMillis() - stillProcessingStartedAtMillis
+        val remaining = (STILL_PROCESSING_MIN_DURATION_MILLIS - elapsed).coerceAtLeast(0L)
+        scope.launch {
+            if (remaining > 0L) delay(remaining)
+            cameraState = cameraState.copy(isStillImageProcessing = false)
+            stillProcessingStartedAtMillis = 0L
+            if (result.exceptionOrNull() is CancellationException) return@launch
+            when (val outcome = result.toStillImageResult(fallbackError)) {
+                is StillImageResult.Disease -> openScene(outcome.scene, outcome.primary)
+                is StillImageResult.Healthy -> openScene(outcome.scene, outcome.primary)
+                is StillImageResult.NoMatch -> viewModel.openNoMatchScene(outcome.scene, ::routeToResult)
+                is StillImageResult.Failure -> cameraState = cameraState.copy(error = outcome.message)
+            }
         }
     }
 
@@ -270,6 +281,7 @@ fun CameraScreen(
         }
         resultNavigationGate.reset()
         activeController.stopLivePreview()
+        stillProcessingStartedAtMillis = SystemClock.uptimeMillis()
         cameraState = cameraState.copy(isStillImageProcessing = true, error = null)
         scope.launch {
             val bitmap = runCatching { withContext(Dispatchers.IO) { context.decodeGalleryBitmap(uri) } }
@@ -278,6 +290,7 @@ fun CameraScreen(
                         isStillImageProcessing = false,
                         error = error.message ?: galleryOpenFailed,
                     )
+                    stillProcessingStartedAtMillis = 0L
                     return@launch
                 }
             stillPhotoPreview = bitmap.copy(Bitmap.Config.ARGB_8888, false)
@@ -357,6 +370,7 @@ fun CameraScreen(
                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                 captureFlashTrigger += 1
                 activeController.finishLivePreview(allowHealthy = false)
+                stillProcessingStartedAtMillis = SystemClock.uptimeMillis()
                 cameraState = cameraState.copy(isStillImageProcessing = true, error = null)
                 activeController.capturePhoto { result ->
                     handleStillResult(result, captureFailed)
@@ -413,6 +427,7 @@ private fun GalleryWithoutCameraPermission(
     val scope = rememberCoroutineScope()
     var state by remember { mutableStateOf(CameraAnalysisState()) }
     var processingPreview by remember { mutableStateOf<Bitmap?>(null) }
+    var processingStartedAtMillis by remember { mutableLongStateOf(0L) }
     var controller by remember { mutableStateOf<CameraController?>(null) }
     DisposableEffect(lifecycleOwner) {
         val created = CameraController(context, lifecycleOwner, application.detectionEngine, { state = it }, closeEngineOnClose = false)
@@ -423,22 +438,30 @@ private fun GalleryWithoutCameraPermission(
     val galleryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri == null || state.engineState != EngineState.READY || state.isStillImageProcessing) return@rememberLauncherForActivityResult
         val active = controller ?: return@rememberLauncherForActivityResult
+        processingStartedAtMillis = SystemClock.uptimeMillis()
         state = state.copy(isStillImageProcessing = true, error = null)
         scope.launch {
             val bitmap = runCatching { withContext(Dispatchers.IO) { context.decodeGalleryBitmap(uri) } }.getOrElse {
                 state = state.copy(isStillImageProcessing = false, error = it.message ?: "Could not open the selected image.")
+                processingStartedAtMillis = 0L
                 return@launch
             }
             processingPreview = bitmap.copy(Bitmap.Config.ARGB_8888, false)
             active.analyzeBitmap(bitmap, InputSource.GALLERY) { result ->
                 bitmap.recycle()
-                state = state.copy(isStillImageProcessing = false)
-                if (result.exceptionOrNull() is CancellationException) return@analyzeBitmap
-                when (val outcome = result.toStillImageResult("Could not analyze the selected image.")) {
-                    is StillImageResult.Disease -> viewModel.openDetectionScene(outcome.scene, outcome.primary, onResult)
-                    is StillImageResult.Healthy -> viewModel.openDetectionScene(outcome.scene, outcome.primary, onResult)
-                    is StillImageResult.NoMatch -> viewModel.openNoMatchScene(outcome.scene, onResult)
-                    is StillImageResult.Failure -> state = state.copy(error = outcome.message)
+                val elapsed = SystemClock.uptimeMillis() - processingStartedAtMillis
+                val remaining = (STILL_PROCESSING_MIN_DURATION_MILLIS - elapsed).coerceAtLeast(0L)
+                scope.launch {
+                    if (remaining > 0L) delay(remaining)
+                    state = state.copy(isStillImageProcessing = false)
+                    processingStartedAtMillis = 0L
+                    if (result.exceptionOrNull() is CancellationException) return@launch
+                    when (val outcome = result.toStillImageResult("Could not analyze the selected image.")) {
+                        is StillImageResult.Disease -> viewModel.openDetectionScene(outcome.scene, outcome.primary, onResult)
+                        is StillImageResult.Healthy -> viewModel.openDetectionScene(outcome.scene, outcome.primary, onResult)
+                        is StillImageResult.NoMatch -> viewModel.openNoMatchScene(outcome.scene, onResult)
+                        is StillImageResult.Failure -> state = state.copy(error = outcome.message)
+                    }
                 }
             }
         }

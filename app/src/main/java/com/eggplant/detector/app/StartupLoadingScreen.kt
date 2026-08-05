@@ -15,6 +15,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,23 +27,35 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
-import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.animateLottieCompositionAsState
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.eggplant.detector.R
 import com.eggplant.detector.core.ui.motion.LocalEggplantMotion
+import kotlinx.coroutines.delay
+
+internal const val STARTUP_ANIMATION_DURATION_MILLIS = 5_000L
 
 @Composable
-internal fun StartupLoadingScreen(modifier: Modifier = Modifier) {
+internal fun StartupLoadingScreen(
+    modifier: Modifier = Modifier,
+    onFinished: () -> Unit = {},
+) {
     val motion = LocalEggplantMotion.current
     val composition by rememberLottieComposition(
         LottieCompositionSpec.RawRes(R.raw.startup_preparing_plants),
     )
     val progress by animateLottieCompositionAsState(
         composition = composition,
-        iterations = LottieConstants.IterateForever,
+        iterations = 1,
     )
     val loadingDescription = stringResource(R.string.startup_loading_content_description)
+
+    LaunchedEffect(composition, motion.spatialMovement) {
+        if (motion.spatialMovement) {
+            delay(STARTUP_ANIMATION_DURATION_MILLIS)
+        }
+        onFinished()
+    }
 
     Box(
         modifier = modifier

@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -81,17 +83,35 @@ internal fun StillPhotoProcessingOverlay(
                     iterations = LottieConstants.IterateForever,
                     speed = PHOTO_PROCESSING_SPEED,
                 )
-                LottieAnimation(
-                    composition = composition,
-                    progress = { progress },
-                    modifier = Modifier.size(260.dp),
-                )
+                if (composition != null) {
+                    LottieAnimation(
+                        composition = composition,
+                        progress = { progress },
+                        modifier = Modifier
+                            .size(292.dp)
+                            .graphicsLayer { alpha = 0.70f },
+                    )
+                } else {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(54.dp),
+                        color = Color.White.copy(alpha = 0.80f),
+                    )
+                }
             } else {
-                LottieAnimation(
-                    composition = composition,
-                    progress = { 0f },
-                    modifier = Modifier.size(260.dp),
-                )
+                if (composition != null) {
+                    LottieAnimation(
+                        composition = composition,
+                        progress = { 0f },
+                        modifier = Modifier
+                            .size(292.dp)
+                            .graphicsLayer { alpha = 0.70f },
+                    )
+                } else {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(54.dp),
+                        color = Color.White.copy(alpha = 0.80f),
+                    )
+                }
             }
             Surface(
                 color = Color.Black.copy(alpha = 0.58f),

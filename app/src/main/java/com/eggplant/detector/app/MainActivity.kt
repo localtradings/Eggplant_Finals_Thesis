@@ -16,6 +16,9 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
@@ -53,6 +56,8 @@ fun EggplantDetectorApp(
 ) {
     val application = (LocalContext.current.applicationContext as EggplantApplication)
     val startupReady by application.startupReady.collectAsStateWithLifecycle()
+    var startupAnimationFinished by remember { mutableStateOf(false) }
+    val startupVisible = !startupReady || !startupAnimationFinished
     val homeAlpha by animateFloatAsState(
         targetValue = if (startupReady) 1f else 0f,
         animationSpec = tween(420),
@@ -84,12 +89,15 @@ fun EggplantDetectorApp(
                     EggplantNavigation(viewModel = appViewModel)
                 }
                 AnimatedVisibility(
-                    visible = !startupReady,
+                    visible = startupVisible,
                     enter = fadeIn(animationSpec = tween(180)),
                     exit = fadeOut(animationSpec = tween(420)),
                     modifier = Modifier.fillMaxSize(),
                 ) {
-                    StartupLoadingScreen(Modifier.fillMaxSize())
+                    StartupLoadingScreen(
+                        modifier = Modifier.fillMaxSize(),
+                        onFinished = { startupAnimationFinished = true },
+                    )
                 }
             }
         }

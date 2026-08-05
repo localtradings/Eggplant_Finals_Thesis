@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -34,7 +35,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -46,8 +46,7 @@ import com.eggplant.detector.R
 import com.eggplant.detector.core.ui.motion.LocalEggplantMotion
 import com.eggplant.detector.domain.model.NavigationItem
 
-private val NavigationBarShape = RoundedCornerShape(32.dp)
-private val NavigationItemShape = RoundedCornerShape(22.dp)
+private val NavigationItemShape = RoundedCornerShape(16.dp)
 
 @Composable
 fun BottomNavigationBar(currentRoute: String?, onNavigate: (String) -> Unit) {
@@ -59,53 +58,37 @@ fun BottomNavigationBar(currentRoute: String?, onNavigate: (String) -> Unit) {
         NavigationItem(Routes.HISTORY, stringResource(R.string.nav_history), Icons.Outlined.CropFree),
         NavigationItem(Routes.SETTINGS, stringResource(R.string.nav_settings), Icons.Outlined.Settings),
     )
-    val cameraDescription = stringResource(R.string.open_camera)
-
-    Box(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(start = 16.dp, top = 18.dp, end = 16.dp, bottom = 12.dp)
-            .height(104.dp),
-        contentAlignment = Alignment.BottomCenter,
+            .height(76.dp),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 0.dp,
     ) {
-        Surface(
+        Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(86.dp),
-            shape = NavigationBarShape,
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 0.dp,
-            shadowElevation = 10.dp,
+                .fillMaxSize()
+                .padding(horizontal = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight()
-                    .padding(horizontal = 6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                items.forEach { item ->
-                    if (item.route == Routes.CAMERA) {
-                        Spacer(Modifier.weight(1f))
-                    } else {
-                        BottomNavigationItem(
-                            item = item,
-                            selected = currentRoute == item.route,
-                            animationMillis = motion.fastMillis,
-                            onClick = { onNavigate(item.route) },
-                        )
-                    }
+            items.forEach { item ->
+                if (item.route == Routes.CAMERA) {
+                    CameraNavigationItem(
+                        selected = currentRoute == item.route,
+                        animationMillis = motion.fastMillis,
+                        onClick = { onNavigate(Routes.CAMERA) },
+                    )
+                } else {
+                    BottomNavigationItem(
+                        item = item,
+                        selected = currentRoute == item.route,
+                        animationMillis = motion.fastMillis,
+                        onClick = { onNavigate(item.route) },
+                    )
                 }
             }
         }
-
-        CameraNavigationItem(
-            icon = Icons.Filled.CameraAlt,
-            description = cameraDescription,
-            animationMillis = motion.fastMillis,
-            onClick = { onNavigate(Routes.CAMERA) },
-        )
     }
 }
 
@@ -166,7 +149,7 @@ private fun RowScope.BottomNavigationItem(
         verticalArrangement = Arrangement.Center,
     ) {
         Surface(
-            modifier = Modifier.size(width = 76.dp, height = 56.dp),
+            modifier = Modifier.size(width = 64.dp, height = 42.dp),
             shape = NavigationItemShape,
             color = selectionColor,
             tonalElevation = 0.dp,
@@ -184,8 +167,8 @@ private fun RowScope.BottomNavigationItem(
         Text(
             text = item.label,
             color = labelTint,
-            fontSize = 13.sp,
-            lineHeight = 16.sp,
+            fontSize = 11.sp,
+            lineHeight = 13.sp,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
             maxLines = 1,
         )
@@ -193,21 +176,22 @@ private fun RowScope.BottomNavigationItem(
 }
 
 @Composable
-private fun CameraNavigationItem(
-    icon: ImageVector,
-    description: String,
+private fun RowScope.CameraNavigationItem(
+    selected: Boolean,
     animationMillis: Int,
     onClick: () -> Unit,
 ) {
     val cameraSize by animateDpAsState(
-        targetValue = 86.dp,
+        targetValue = if (selected) 70.dp else 66.dp,
         animationSpec = tween(animationMillis),
         label = "bottomNavCameraSize",
     )
+    val description = stringResource(R.string.open_camera)
 
     Box(
         modifier = Modifier
-            .size(100.dp)
+            .weight(1f)
+            .fillMaxHeight()
             .clickable(
                 role = Role.Button,
                 onClick = onClick,
@@ -218,11 +202,11 @@ private fun CameraNavigationItem(
         contentAlignment = Alignment.Center,
     ) {
         Surface(
-            modifier = Modifier.size(98.dp),
+            modifier = Modifier.size(74.dp),
             shape = CircleShape,
-            color = MaterialTheme.colorScheme.surface,
+            color = MaterialTheme.colorScheme.primary,
             tonalElevation = 0.dp,
-            shadowElevation = 8.dp,
+            shadowElevation = 2.dp,
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Surface(
@@ -234,9 +218,10 @@ private fun CameraNavigationItem(
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
-                            imageVector = icon,
+                            imageVector = Icons.Filled.CameraAlt,
                             contentDescription = null,
-                            modifier = Modifier.size(42.dp),
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(32.dp),
                         )
                     }
                 }

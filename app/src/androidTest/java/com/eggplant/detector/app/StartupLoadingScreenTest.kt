@@ -18,13 +18,16 @@ class StartupLoadingScreenTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun loadingScreenShowsCopyProgressAndLottieComposition() {
+    fun loadingScreenShowsCopyProgressAndPackagedLottieCompositions() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val composition = LottieCompositionFactory.fromRawResSync(
-            context,
+        listOf(
             R.raw.startup_preparing_plants,
-        ).value
-        assertNotNull("The startup Lottie composition must parse", composition)
+            R.raw.camera_plant_scanning,
+            R.raw.untitled_file,
+        ).forEach { resourceId ->
+            val composition = LottieCompositionFactory.fromRawResSync(context, resourceId).value
+            assertNotNull("The packaged Lottie composition must parse: $resourceId", composition)
+        }
 
         composeRule.setContent {
             StartupLoadingScreen(Modifier.fillMaxSize())
