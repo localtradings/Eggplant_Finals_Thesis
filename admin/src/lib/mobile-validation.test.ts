@@ -199,6 +199,12 @@ describe("missing-disease API validation", () => {
         ],
       }).ok,
     ).toBe(true);
+    expect(
+      validateDiseaseRequest({
+        ...validRequest,
+        photos: [{ contentLength: 2_048, sha256: SHA256, source: "gallery" }],
+      }).ok,
+    ).toBe(true);
   });
 
   it.each([
@@ -207,7 +213,6 @@ describe("missing-disease API validation", () => {
     ["missing rights", { ...validRequest, rightsConsent: false }],
     ["training consent", { ...validRequest, trainingConsent: true }],
     ["oversized notes", { ...validRequest, notes: "x".repeat(201) }],
-    ["gallery photo source", { ...validRequest, photos: [{ contentLength: 2_048, sha256: SHA256, source: "gallery" }] }],
   ])("rejects %s", (_, candidate) => {
     expect(validateDiseaseRequest(candidate)).toEqual({ ok: false });
   });

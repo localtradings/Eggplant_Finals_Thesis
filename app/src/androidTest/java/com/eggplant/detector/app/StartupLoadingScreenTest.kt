@@ -9,7 +9,9 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.test.platform.app.InstrumentationRegistry
 import com.airbnb.lottie.LottieCompositionFactory
 import com.eggplant.detector.R
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -36,6 +38,9 @@ class StartupLoadingScreenTest {
         composeRule.onNodeWithText(
             context.getString(R.string.startup_preparing_plants),
         ).assertIsDisplayed()
+        composeRule.onNodeWithText(context.getString(R.string.app_name)).assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(context.getString(R.string.logo_description))
+            .assertIsDisplayed()
         composeRule.onNodeWithText(
             context.getString(R.string.startup_loading_message),
         ).assertIsDisplayed()
@@ -44,5 +49,23 @@ class StartupLoadingScreenTest {
         ).assertIsDisplayed()
 
         composeRule.waitForIdle()
+    }
+
+    @Test
+    fun loadingScreenFinishesAfterTheConfiguredAnimationDuration() {
+        var finished = false
+        composeRule.mainClock.autoAdvance = false
+        composeRule.setContent {
+            StartupLoadingScreen(onFinished = { finished = true })
+        }
+
+        composeRule.waitForIdle()
+        assertFalse(finished)
+        composeRule.mainClock.advanceTimeBy(STARTUP_ANIMATION_DURATION_MILLIS - 1L)
+        composeRule.waitForIdle()
+        assertFalse(finished)
+        composeRule.mainClock.advanceTimeBy(1L)
+        composeRule.waitForIdle()
+        assertTrue(finished)
     }
 }

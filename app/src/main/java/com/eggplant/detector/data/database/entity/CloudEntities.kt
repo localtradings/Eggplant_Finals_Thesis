@@ -129,7 +129,7 @@ data class DiseaseRequestPhotoEntity(
     val uploadState: String,
     val sha256: String,
     val sizeBytes: Long,
-    /** Only `live` or `capture` is accepted for new request photos. */
+    /** New request photos may come from live, capture, or gallery detection. */
     val captureSource: String = "capture",
 )
 

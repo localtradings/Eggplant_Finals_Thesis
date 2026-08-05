@@ -187,7 +187,7 @@ fun DetectionResultScreen(
                 }
             }
             if (result?.outcome == ScanOutcome.NO_MATCH) {
-                if (result?.source in setOf("live", "capture")) {
+                if (result?.source in setOf("live", "capture", "gallery")) {
                     OutlinedButton(
                         onClick = {
                             viewModel.beginDiseaseRequest()

@@ -10,7 +10,7 @@
 
     <style name="Theme.EggplantDetector.Starting" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@android:color/white</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_eggplant</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/planta_splash_icon</item>
         <item name="postSplashScreenTheme">@style/Theme.EggplantDetector</item>
     </style>
 </resources>

@@ -3,10 +3,10 @@ package com.eggplant.detector.feature.camera
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.airbnb.lottie.RenderMode
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
@@ -33,7 +34,7 @@ import com.airbnb.lottie.compose.rememberLottieComposition
 import com.eggplant.detector.R
 import com.eggplant.detector.core.ui.motion.LocalEggplantMotion
 
-private const val PHOTO_PROCESSING_SPEED = 1.4285715f
+private const val PHOTO_PROCESSING_SPEED = 2.5f
 
 @Composable
 internal fun StillPhotoProcessingOverlay(
@@ -73,56 +74,52 @@ internal fun StillPhotoProcessingOverlay(
                 .fillMaxSize()
                 .background(Color.Black.copy(alpha = 0.28f)),
         )
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(1f)
+                .padding(10.dp),
+            contentAlignment = Alignment.Center,
         ) {
+            PlantAnimationFallback(
+                modifier = Modifier.fillMaxSize(),
+                tint = Color.White,
+            )
             if (motion.spatialMovement) {
                 val progress by animateLottieCompositionAsState(
                     composition = composition,
                     iterations = LottieConstants.IterateForever,
                     speed = PHOTO_PROCESSING_SPEED,
                 )
-                if (composition != null) {
-                    LottieAnimation(
-                        composition = composition,
-                        progress = { progress },
-                        modifier = Modifier
-                            .size(292.dp)
-                            .graphicsLayer { alpha = 0.70f },
-                    )
-                } else {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(54.dp),
-                        color = Color.White.copy(alpha = 0.80f),
-                    )
-                }
+                LottieAnimation(
+                    composition = composition,
+                    progress = { progress },
+                    renderMode = RenderMode.SOFTWARE,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer { alpha = 0.82f },
+                )
             } else {
-                if (composition != null) {
-                    LottieAnimation(
-                        composition = composition,
-                        progress = { 0f },
-                        modifier = Modifier
-                            .size(292.dp)
-                            .graphicsLayer { alpha = 0.70f },
-                    )
-                } else {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(54.dp),
-                        color = Color.White.copy(alpha = 0.80f),
-                    )
-                }
-            }
-            Surface(
-                color = Color.Black.copy(alpha = 0.58f),
-                shape = RoundedCornerShape(16.dp),
-            ) {
-                Text(
-                    text = stringResource(R.string.analyzing),
-                    color = Color.White,
-                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp),
+                LottieAnimation(
+                    composition = composition,
+                    progress = { 0f },
+                    renderMode = RenderMode.SOFTWARE,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer { alpha = 0.82f },
                 )
             }
+        }
+        Surface(
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 64.dp),
+            color = Color.Black.copy(alpha = 0.58f),
+            shape = RoundedCornerShape(16.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.analyzing),
+                color = Color.White,
+                modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp),
+            )
         }
     }
 }

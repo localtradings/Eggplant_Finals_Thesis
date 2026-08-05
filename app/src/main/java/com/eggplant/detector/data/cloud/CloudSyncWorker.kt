@@ -64,7 +64,8 @@ class CloudSyncWorker(context: Context, parameters: WorkerParameters) : Coroutin
             return if (runAttemptCount < MAX_WORKER_ATTEMPTS) Result.retry() else Result.failure()
         }
         val dao = application.database.cloudDao()
-        val events = dao.pendingEvents(Instant.now().toString())
+        val refreshOnly = inputData.getBoolean(INPUT_REFRESH_ONLY, false)
+        val events = if (refreshOnly) emptyList() else dao.pendingEvents(Instant.now().toString())
         val loadMoreGlobalFeed = inputData.getBoolean(INPUT_LOAD_MORE_GLOBAL_FEED, false)
         var retryNeeded = false
         eventLoop@ for (event in events) {
@@ -243,7 +244,7 @@ class CloudSyncWorker(context: Context, parameters: WorkerParameters) : Coroutin
         val photos = payload.photoPaths().map(::File)
         val sources = payload.photoSources()
         check(photos.size in 1..3 && photos.all { it.isFile && it.length() in 1..8_388_608 }) { "Disease-request photos are unavailable or too large." }
-        check(sources.size == photos.size && sources.all { it in CAMERA_REQUEST_SOURCES }) { "Disease-request photos must be captured in-app." }
+        check(sources.size == photos.size && sources.all { it in CAMERA_REQUEST_SOURCES }) { "Disease-request photos must come from the camera or gallery." }
         if (!isCurrentEvent(event, "UPLOADING")) return null
         val response = client.post("/api/mobile/v1/disease-requests", buildJsonObject {
             listOf("clientRequestId", "modelVersion", "rightsConsent", "trainingConsent").forEach { key -> put(key, payload.getValue(key)) }
@@ -663,14 +664,26 @@ object CloudSyncScheduler {
                 .build(),
         )
     }
+
+    fun refreshGlobalScans(context: Context) {
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            "eggplant-global-scans-refresh",
+            ExistingWorkPolicy.REPLACE,
+            OneTimeWorkRequestBuilder<CloudSyncWorker>()
+                .setConstraints(constraints)
+                .setInputData(workDataOf(INPUT_REFRESH_ONLY to true))
+                .build(),
+        )
+    }
 }
 
 private const val MAX_EVENT_ATTEMPTS = 8
 private const val MAX_WORKER_ATTEMPTS = 8
 private const val SHARING_CONSENT_KEY = "sharing-consent"
 private const val INPUT_LOAD_MORE_GLOBAL_FEED = "load_more_global_feed"
+private const val INPUT_REFRESH_ONLY = "refresh_only"
 private const val MAXIMUM_LEGACY_NOTE_LENGTH = 20_000
-private val CAMERA_REQUEST_SOURCES = setOf("live", "capture")
+private val CAMERA_REQUEST_SOURCES = setOf("live", "capture", "gallery")
 
 private val REMOTE_REQUEST_STATES = setOf(
     "upload_pending",

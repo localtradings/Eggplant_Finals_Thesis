@@ -15,7 +15,7 @@ export async function POST(request: Request) {
   );
   if (!validation.ok) {
     return apiError(
-      "Rights consent and one to three valid in-app camera plant photos are required.",
+      "Rights consent and one to three valid camera or gallery plant photos are required.",
       400,
       "invalid_disease_request",
     );

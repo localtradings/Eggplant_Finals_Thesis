@@ -67,7 +67,8 @@ import kotlinx.coroutines.delay
 import java.util.concurrent.CancellationException
 import kotlin.math.roundToInt
 
-private const val STILL_PROCESSING_MIN_DURATION_MILLIS = 1_200L
+private const val STILL_PROCESSING_MIN_DURATION_MILLIS = 2_000L
+private const val CAMERA_GESTURE_HINT_DURATION_MILLIS = 3_000L
 
 @Composable
 fun CameraScreen(
@@ -113,6 +114,7 @@ fun CameraScreen(
 
     var cameraState by remember { mutableStateOf(CameraAnalysisState()) }
     var showCameraIntro by remember { mutableStateOf(true) }
+    var showGestureHint by remember { mutableStateOf(false) }
     var stillPhotoPreview by remember { mutableStateOf<Bitmap?>(null) }
     var controller by remember { mutableStateOf<CameraController?>(null) }
     var captureFlashTrigger by remember { mutableIntStateOf(0) }
@@ -167,6 +169,12 @@ fun CameraScreen(
             confirmationHapticSent = true
         }
         if (!cameraState.livePreviewActive) confirmationHapticSent = false
+    }
+    LaunchedEffect(showGestureHint) {
+        if (showGestureHint) {
+            delay(CAMERA_GESTURE_HINT_DURATION_MILLIS)
+            showGestureHint = false
+        }
     }
     val confirmedShareDiseaseId = cameraState.confirmedDetections
         .firstOrNull { it.modelClass.diseaseId != null }
@@ -335,7 +343,10 @@ fun CameraScreen(
         )
         CameraIntroOverlay(
             visible = cameraIntroVisible,
-            onFinished = { showCameraIntro = false },
+            onFinished = {
+                showCameraIntro = false
+                showGestureHint = true
+            },
         )
         CameraTopBar(
             state = cameraState,
@@ -350,8 +361,10 @@ fun CameraScreen(
             processing = cameraState.isStillImageProcessing || liveReleaseFinalizing,
             engineState = cameraState.engineState,
             livePreviewActive = cameraState.livePreviewActive,
+            showGestureHint = showGestureHint,
             onGallery = {
                 showCameraIntro = false
+                showGestureHint = false
                 galleryLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
             },
             onCapture = {
@@ -365,6 +378,7 @@ fun CameraScreen(
                     return@CameraBottomBar
                 }
                 showCameraIntro = false
+                showGestureHint = false
                 stillPhotoPreview = previewView.bitmap?.copy(Bitmap.Config.ARGB_8888, false)
                 resultNavigationGate.reset()
                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -378,6 +392,7 @@ fun CameraScreen(
             },
             onStartLivePreview = {
                 showCameraIntro = false
+                showGestureHint = false
                 resultNavigationGate.reset()
                 liveCaptureRevision += 1
                 liveStillRequestedForDisease = null

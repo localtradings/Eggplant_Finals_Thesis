@@ -9,8 +9,12 @@ import com.eggplant.detector.detection.ncnn.ModelMetadata
 import com.eggplant.detector.detection.api.NormalizedBox
 import com.eggplant.detector.detection.api.RgbFrame
 import com.eggplant.detector.detection.api.StabilityResult
+import com.eggplant.detector.domain.model.ScanCategory
 import com.eggplant.detector.domain.model.ScanOutcome
+import com.eggplant.detector.domain.model.ScanResult
 import com.eggplant.detector.domain.model.ShareEligibility
+import java.io.File
+import java.time.LocalDateTime
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertFalse
@@ -202,6 +206,36 @@ class EggplantAppViewModelTest {
         assertEquals(com.eggplant.detector.domain.model.ScanCategory.NO_DISEASE_DETECTED, viewModel.currentResult.value?.category)
         assertFalse(viewModel.saveCurrentResult())
         assertTrue(viewModel.history.value.isEmpty())
+    }
+
+    @Test
+    fun `gallery result can start a disease request`() {
+        val photo = File.createTempFile("planta-gallery-request", ".jpg")
+        photo.writeBytes(byteArrayOf(1, 2, 3))
+        try {
+            val result = ScanResult(
+                id = "gallery-request",
+                name = "No disease detected",
+                category = ScanCategory.NO_DISEASE_DETECTED,
+                outcome = ScanOutcome.NO_MATCH,
+                confidence = 0,
+                scannedAt = LocalDateTime.of(2026, 8, 6, 0, 0),
+                signs = emptyList(),
+                treatment = "",
+                source = "gallery",
+                imagePath = photo.absolutePath,
+            )
+            val viewModel = EggplantAppViewModel(initialHistory = emptyList())
+
+            viewModel.openHistoryResult(result)
+            viewModel.beginDiseaseRequest()
+
+            assertEquals(listOf(photo.absolutePath), viewModel.diseaseRequestDraft.value.photoPaths)
+            assertEquals(listOf("gallery"), viewModel.diseaseRequestDraft.value.photoSources)
+            assertEquals(null, viewModel.diseaseRequestDraft.value.error)
+        } finally {
+            photo.delete()
+        }
     }
 }
 

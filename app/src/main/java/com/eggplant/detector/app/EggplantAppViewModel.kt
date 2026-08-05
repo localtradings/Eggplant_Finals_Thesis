@@ -555,7 +555,7 @@ class EggplantAppViewModel(
         _cloudActionState.value = CloudActionState.Working
         // The worker also bootstraps the public configuration. This lets a
         // user recover after opening the app offline and coming back online.
-        localRepository.refreshCloud()
+        localRepository.refreshGlobalScans()
         _cloudActionState.value = CloudActionState.Queued("Refreshing Global Scans")
     }
 
@@ -624,7 +624,7 @@ class EggplantAppViewModel(
         ) {
             DiseaseRequestDraftState(photoPaths = listOf(photoPath), photoSources = listOf(requireNotNull(source)))
         } else {
-            DiseaseRequestDraftState(error = cloudMessage("Take the plant photo with the in-app camera before requesting a disease.", "Kunan muna ang halaman gamit ang in-app camera bago humiling ng disease."))
+            DiseaseRequestDraftState(error = cloudMessage("Choose or capture a real plant photo before requesting a disease.", "Pumili o kumuha muna ng tunay na larawan ng halaman bago humiling ng disease."))
         }
     }
 
@@ -662,7 +662,7 @@ class EggplantAppViewModel(
             return
         }
         if (draft.photoSources.size != draft.photoPaths.size || draft.photoSources.any { it !in CAMERA_REQUEST_SOURCES }) {
-            _cloudActionState.value = CloudActionState.Error(cloudMessage("Only in-app camera photos can be submitted.", "In-app camera photos lamang ang maaaring isumite."))
+            _cloudActionState.value = CloudActionState.Error(cloudMessage("Only real plant photos from the camera or gallery can be submitted.", "Tanging tunay na larawan ng halaman mula sa camera o gallery ang maaaring isumite."))
             onComplete(false)
             return
         }
@@ -810,7 +810,7 @@ class EggplantAppViewModel(
 
 private const val LOG_TAG = "EggplantDetection"
 private const val DISEASE_REQUEST_NOTES_MAX_LENGTH = 200
-private val CAMERA_REQUEST_SOURCES = setOf("live", "capture")
+private val CAMERA_REQUEST_SOURCES = setOf("live", "capture", "gallery")
 
 private fun CameraScene.toScanResult(
     primary: DetectionBox,

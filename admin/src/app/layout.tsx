@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Eggplant Disease Detector Admin",
+  title: "Planta Admin",
   description: "Private moderation and disease-content administration.",
 };
 

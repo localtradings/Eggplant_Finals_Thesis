@@ -143,7 +143,7 @@ fun HelpScreen(onBack: () -> Unit) = InformationScreen(
 @Composable
 fun AboutScreen(onBack: () -> Unit) = InformationScreen(
     title = stringResource(R.string.about_app),
-    introduction = localized("Eggplant Disease Detector • Version ${BuildConfig.VERSION_NAME}", "Tagatukoy ng Sakit ng Talong • Bersyon ${BuildConfig.VERSION_NAME}"),
+    introduction = localized("Planta • Version ${BuildConfig.VERSION_NAME}", "Planta • Bersyon ${BuildConfig.VERSION_NAME}"),
     sections = listOf(
         InfoSection(localized("Purpose", "Layunin"), localized("An offline-first Android disease detector developed for an eggplant thesis project, with optional anonymous sharing and private disease requests.", "Isang offline-first Android disease detector para sa tesis tungkol sa talong, na may opsyonal na anonymous sharing at pribadong disease request.")),
         InfoSection(localized("Technology", "Teknolohiya"), localized("Built with Kotlin, Jetpack Compose, CameraX, NCNN, and Room/SQLite.", "Binuo gamit ang Kotlin, Jetpack Compose, CameraX, NCNN, at Room/SQLite.")),

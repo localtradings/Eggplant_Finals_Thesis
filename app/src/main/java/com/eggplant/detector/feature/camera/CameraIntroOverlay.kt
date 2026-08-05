@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.airbnb.lottie.RenderMode
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.animateLottieCompositionAsState
@@ -80,20 +81,28 @@ internal fun CameraIntroOverlay(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            if (motion.spatialMovement) {
-                LottieAnimation(
-                    composition = composition,
-                    progress = { progress },
-                    modifier = Modifier
-                        .size(224.dp)
-                        .graphicsLayer {
-                            alpha = 0.70f
-                            if (motion.spatialMovement) {
+            Box(
+                modifier = Modifier.size(224.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                PlantAnimationFallback(
+                    modifier = Modifier.fillMaxSize(),
+                    tint = Color.White,
+                )
+                if (motion.spatialMovement) {
+                    LottieAnimation(
+                        composition = composition,
+                        progress = { progress },
+                        renderMode = RenderMode.SOFTWARE,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .graphicsLayer {
+                                alpha = 0.70f
                                 scaleX = pulse
                                 scaleY = pulse
-                            }
-                        },
-                )
+                            },
+                    )
+                }
             }
             Surface(
                 color = Color.Black.copy(alpha = 0.58f),

@@ -54,6 +54,7 @@ class EggplantRepository(
     private val snapshotStore: ScanSnapshotStore? = null,
     private val cloudSync: (() -> Unit)? = null,
     private val cloudSyncLoadMore: (() -> Unit)? = null,
+    private val cloudSyncGlobalScans: (() -> Unit)? = null,
     private val cloudConfigured: (() -> Boolean)? = null,
     private val cloudConfiguredState: StateFlow<Boolean>? = null,
     private val sharePhotoRevalidator: SharePhotoRevalidator? = null,
@@ -318,7 +319,7 @@ class EggplantRepository(
         require(normalizedNotes == null || normalizedNotes.length <= DISEASE_REQUEST_NOTES_MAX_LENGTH)
         require(photoPaths.size in 1..3)
         require(photoSources.size == photoPaths.size && photoSources.all { it in CAMERA_REQUEST_SOURCES }) {
-            "Disease-request photos must come from the in-app camera."
+            "Disease-request photos must come from the camera or gallery."
         }
         require(rightsConsent)
         val id = UUID.randomUUID().toString()
@@ -409,6 +410,8 @@ class EggplantRepository(
     }
 
     fun refreshCloud() = cloudSync?.invoke()
+
+    fun refreshGlobalScans() = (cloudSyncGlobalScans ?: cloudSync)?.invoke()
 
     fun loadMoreGlobalScans() = cloudSyncLoadMore?.invoke()
 
@@ -591,7 +594,7 @@ private fun SyncOutboxEntity.photoPathsOrEmpty(): List<String> = runCatching {
 private const val SHARING_CONSENT_IDEMPOTENCY_KEY = "sharing-consent"
 private const val REVALIDATED_SHARE_EVENT_VERSION = 3
 private const val DISEASE_REQUEST_NOTES_MAX_LENGTH = 200
-private val CAMERA_REQUEST_SOURCES = setOf("live", "capture")
+private val CAMERA_REQUEST_SOURCES = setOf("live", "capture", "gallery")
 private val GLOBAL_SHARE_SOURCES = setOf("live", "capture", "gallery")
 
 internal fun isGlobalShareSource(source: String): Boolean = source in GLOBAL_SHARE_SOURCES

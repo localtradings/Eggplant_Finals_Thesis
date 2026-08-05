@@ -98,7 +98,7 @@ internal fun CameraStatus(state: CameraAnalysisState, modifier: Modifier = Modif
         state.livePreviewActive && state.status == DetectionStatus.DISEASE_DETECTED -> stringResource(R.string.live_preview_disease)
         state.livePreviewActive -> stringResource(R.string.live_preview_active)
         state.status == DetectionStatus.HEALTHY -> stringResource(R.string.no_disease_detected)
-        else -> stringResource(R.string.point_camera)
+        else -> stringResource(R.string.camera_ready)
     }
     Surface(modifier = modifier.padding(horizontal = 24.dp), color = Color.Black.copy(alpha = .62f), shape = RoundedCornerShape(18.dp)) {
         Row(
@@ -129,6 +129,7 @@ internal fun CameraBottomBar(
     processing: Boolean,
     engineState: EngineState,
     livePreviewActive: Boolean,
+    showGestureHint: Boolean = false,
     onGallery: () -> Unit,
     onCapture: () -> Unit,
     onStartLivePreview: () -> Unit,
@@ -161,7 +162,7 @@ internal fun CameraBottomBar(
             .padding(horizontal = 18.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        if (!processing) {
+        if (showGestureHint && !processing) {
             Surface(
                 color = Color.Black.copy(alpha = .32f),
                 shape = RoundedCornerShape(50),

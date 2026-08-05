@@ -129,8 +129,8 @@ private fun HomeHeader(onNotifications: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Image(
-            painter = painterResource(R.drawable.eggplant_logo),
-            contentDescription = stringResource(R.string.logo_description),
+            painter = painterResource(R.drawable.planta_logo),
+            contentDescription = stringResource(R.string.home_logo_description),
             modifier = Modifier.size(54.dp),
             contentScale = ContentScale.Fit,
         )

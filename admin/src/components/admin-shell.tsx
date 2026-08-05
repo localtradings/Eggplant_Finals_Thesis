@@ -24,8 +24,8 @@ export function AdminShell({ children, role, loginName, reportCount = 0 }: { chi
     <div className="min-h-screen bg-[#f7f7f4] lg:grid lg:grid-cols-[276px_1fr]">
       <aside className="border-b border-[#dfe3dc] bg-[#eef1ed] px-5 py-5 text-[#20251f] lg:relative lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r lg:border-[#d8ddd5]">
         <div className="flex items-center gap-3 px-2">
-          <Image src="/eggplant-mascot.png" alt="" width={50} height={50} priority className="object-contain" />
-          <div><p className="text-xl font-bold tracking-tight">Eggplant</p><p className="text-sm font-semibold text-[#399d4c]">Admin</p></div>
+          <Image src="/planta-logo.png" alt="" width={50} height={50} priority className="object-contain" />
+          <div><p className="text-xl font-bold tracking-tight">Planta</p><p className="text-sm font-semibold text-[#399d4c]">Admin</p></div>
         </div>
         <nav className="mt-8 flex gap-2 overflow-x-auto pb-1 lg:grid lg:grid-cols-1" aria-label="Admin navigation">
           {items.filter(([, , , ownerOnly]) => !ownerOnly || role === "owner").map(([label, href, Icon]) => {

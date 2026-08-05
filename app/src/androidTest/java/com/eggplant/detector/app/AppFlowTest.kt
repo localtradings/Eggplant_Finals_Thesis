@@ -8,6 +8,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -44,7 +45,7 @@ class AppFlowTest {
 
     @Test
     fun homeRouteShowsReferenceContentWithoutConfidenceOrRisk() {
-        composeRule.onNodeWithText("Eggplant").assertIsDisplayed()
+        assertHomeBrandingDisplayed()
         composeRule.onNodeWithText("Disease Detector").assertIsDisplayed()
         composeRule.onNodeWithText("Scan Leaf Now").assertIsDisplayed()
         composeRule.onNodeWithText(
@@ -79,6 +80,28 @@ class AppFlowTest {
         composeRule.onNodeWithContentDescription("Capture scan").assertIsDisplayed()
         composeRule.onNodeWithContentDescription("Choose from gallery").assertIsDisplayed()
         composeRule.onAllNodesWithText("temporary", substring = true).assertCountEquals(0)
+    }
+
+    @Test
+    fun bottomNavigationVisitsEveryDestinationAndReturnsHome() {
+        grantCameraPermission()
+
+        composeRule.onNodeWithContentDescription("Navigate to Library").performClick()
+        composeRule.onAllNodesWithText("Library", substring = false).onFirst().assertIsDisplayed()
+
+        composeRule.onNodeWithContentDescription("Open camera").performClick()
+        composeRule.onNodeWithContentDescription("Choose from gallery").assertIsDisplayed()
+        composeRule.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithContentDescription("Navigate to Scans").performClick()
+        composeRule.onNodeWithText("My Scans").assertIsDisplayed()
+
+        composeRule.onNodeWithContentDescription("Navigate to Settings").performClick()
+        composeRule.onNodeWithText("Personalize your local app experience").assertIsDisplayed()
+
+        composeRule.onNodeWithContentDescription("Navigate to Home").performClick()
+        assertHomeBrandingDisplayed()
     }
 
     @Test
@@ -125,14 +148,14 @@ class AppFlowTest {
         composeRule.onNodeWithContentDescription("Home content").performScrollToIndex(4)
         composeRule.onNodeWithContentDescription("Navigate to Home").performClick()
         composeRule.waitForIdle()
-        composeRule.onNodeWithText("Eggplant").assertIsDisplayed()
+        assertHomeBrandingDisplayed()
     }
 
     @Test
     fun returningFromLibraryKeepsHomeControlsInteractive() {
         composeRule.onNodeWithContentDescription("Navigate to Library").performClick()
         composeRule.onNodeWithContentDescription("Navigate to Home").performClick()
-        composeRule.onNodeWithText("Eggplant").assertIsDisplayed()
+        assertHomeBrandingDisplayed()
 
         composeRule.onNodeWithContentDescription("Open notifications").performClick()
         composeRule.onNodeWithText("Notifications").assertIsDisplayed()
@@ -143,6 +166,13 @@ class AppFlowTest {
         composeRule.onNodeWithContentDescription("Care Guide").assertIsDisplayed().performClick()
         scrollInformationToFirstSection(R.string.scan_quality_tips)
         composeRule.onNodeWithText("Clean the lens").performScrollTo().assertIsDisplayed()
+    }
+
+    private fun assertHomeBrandingDisplayed() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        composeRule.onNodeWithContentDescription(
+            context.getString(R.string.home_logo_description),
+        ).assertIsDisplayed()
     }
 
     @Test
@@ -179,6 +209,15 @@ class AppFlowTest {
     fun historyStartsWithoutFabricatedSampleScans() {
         composeRule.onNodeWithContentDescription("Navigate to Scans").performClick()
         composeRule.onNodeWithText("Sample scans").assertDoesNotExist()
+    }
+
+    @Test
+    fun globalScansRefreshButtonCanBeActivated() {
+        composeRule.onNodeWithContentDescription("Navigate to Scans").performClick()
+        composeRule.onAllNodesWithText("Global Scans", substring = false).onFirst().performClick()
+        composeRule.onAllNodesWithText("Refresh", substring = false).onFirst().performClick()
+        composeRule.waitForIdle()
+        composeRule.onAllNodesWithText("Global Scans", substring = false).onFirst().assertIsDisplayed()
     }
 
     @Test

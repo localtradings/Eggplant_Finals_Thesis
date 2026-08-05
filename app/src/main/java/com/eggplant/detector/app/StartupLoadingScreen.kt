@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.Image
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -19,18 +20,23 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.animateLottieCompositionAsState
 import com.airbnb.lottie.compose.rememberLottieComposition
+import com.airbnb.lottie.RenderMode
 import com.eggplant.detector.R
 import com.eggplant.detector.core.ui.motion.LocalEggplantMotion
+import com.eggplant.detector.feature.camera.PlantAnimationFallback
 import kotlinx.coroutines.delay
 
 internal const val STARTUP_ANIMATION_DURATION_MILLIS = 5_000L
@@ -73,18 +79,45 @@ internal fun StartupLoadingScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            if (motion.spatialMovement) {
-                LottieAnimation(
-                    composition = composition,
-                    progress = { progress },
-                    modifier = Modifier.size(272.dp),
+            Image(
+                painter = painterResource(R.drawable.planta_logo),
+                contentDescription = stringResource(R.string.logo_description),
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.size(112.dp),
+            )
+            Text(
+                text = stringResource(R.string.app_name),
+                style = MaterialTheme.typography.headlineSmall,
+                color = Color(0xFF17152B),
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 2.dp),
+            )
+            Box(
+                modifier = Modifier
+                    .padding(top = 10.dp)
+                    .size(248.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                PlantAnimationFallback(
+                    modifier = Modifier.fillMaxSize(),
+                    tint = MaterialTheme.colorScheme.primary,
                 )
-            } else {
-                LottieAnimation(
-                    composition = composition,
-                    progress = { 0f },
-                    modifier = Modifier.size(272.dp),
-                )
+                if (motion.spatialMovement) {
+                    LottieAnimation(
+                        composition = composition,
+                        progress = { progress },
+                        renderMode = RenderMode.SOFTWARE,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                } else {
+                    LottieAnimation(
+                        composition = composition,
+                        progress = { 0f },
+                        renderMode = RenderMode.SOFTWARE,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
             }
             Text(
                 text = stringResource(R.string.startup_preparing_plants),

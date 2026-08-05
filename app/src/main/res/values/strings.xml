@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Eggplant Disease Detector</string>
+    <string name="app_name">Planta</string>
     <string name="nav_home">Home</string>
     <string name="nav_library">Library</string>
     <string name="nav_camera">Camera</string>
@@ -17,7 +17,7 @@
     <string name="leaf_disease">Leaf Disease</string>
     <string name="fruit_disease">Fruit Disease</string>
 
-    <string name="home_eggplant">Eggplant</string>
+    <string name="home_eggplant">Planta</string>
     <string name="home_detector">Disease Detector</string>
     <string name="home_headline">Detect eggplant diseases.\nProtect your crop.</string>
     <string name="home_description">Scan your eggplant leaves\nto detect diseases early and\nget treatment advice.</string>
@@ -35,7 +35,8 @@
     <string name="view_all">View All ›</string>
     <string name="open_notifications">Open notifications</string>
     <string name="home_tip">Tip: Use clear, even lighting and hold steady until the detection box stabilizes.</string>
-    <string name="logo_description">Eggplant Disease Detector logo</string>
+    <string name="logo_description">Planta logo</string>
+    <string name="home_logo_description">Planta home logo</string>
     <string name="hero_description">Eggplant leaf disease hero photo</string>
 
     <string name="library_title">Library</string>
@@ -75,7 +76,7 @@
     <string name="motion_full">Full</string>
     <string name="motion_reduced">Reduced</string>
     <string name="global_sharing">Global sharing</string>
-    <string name="global_sharing_description">Off by default. You choose which eligible camera scans to publish anonymously.</string>
+    <string name="global_sharing_description">Off by default. You choose which eligible camera, captured, or gallery scans to publish anonymously.</string>
     <string name="cloud_unavailable_build">Cloud features are unavailable in this APK. Install a cloud-enabled build to use Global Scans, disease requests, and live catalog updates.</string>
     <string name="enable_global_sharing">Enable global sharing?</string>
     <string name="global_sharing_consent" formatted="false">Shared photos become public without your name or profile. Disease scans from live camera, captured photos, and gallery photos can be shared after validation. You can turn this off and request deletion later.</string>
@@ -192,7 +193,7 @@
     <string name="request_photo_count">%1$d of %2$d real photos selected</string>
     <string name="add_request_photos">Add gallery photos</string>
     <string name="adding_photos">Adding photos…</string>
-    <string name="request_camera_only_photo">Only the real photo captured in this app is accepted. Gallery photos cannot be submitted.</string>
+    <string name="request_camera_only_photo">Only a real plant photo captured in this app or chosen from the gallery is accepted.</string>
     <string name="retry">Retry</string>
 
     <string name="capture_scan">Capture scan</string>
@@ -205,6 +206,7 @@
     <string name="no_disease_detected">No disease detected</string>
     <string name="disease_detected_tap">Disease detected</string>
     <string name="point_camera">Tap to capture. Hold the shutter for live preview.</string>
+    <string name="camera_ready">Ready to scan</string>
     <string name="camera_intro_message">Point the camera at an eggplant leaf or fruit to start scanning.</string>
     <string name="save_scan">Save scan</string>
     <string name="camera_permission_required">Camera permission required</string>

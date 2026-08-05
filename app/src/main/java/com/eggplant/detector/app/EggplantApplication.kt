@@ -45,6 +45,7 @@ class EggplantApplication : Application() {
             snapshotStore = ScanSnapshotStore(applicationContext),
             cloudSync = { CloudSyncScheduler.refresh(this) },
             cloudSyncLoadMore = { CloudSyncScheduler.loadMoreGlobalScans(this) },
+            cloudSyncGlobalScans = { CloudSyncScheduler.refreshGlobalScans(this) },
             cloudConfigured = { cloudApiClient.isConfigured },
             cloudConfiguredState = cloudApiClient.configured,
             sharePhotoRevalidator = NcnnSharePhotoRevalidator(detectionEngine),
