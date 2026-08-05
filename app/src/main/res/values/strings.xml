@@ -6,6 +6,9 @@
     <string name="nav_camera">Camera</string>
     <string name="nav_history">Scans</string>
     <string name="nav_settings">Settings</string>
+    <string name="startup_preparing_plants">Preparing your plants</string>
+    <string name="startup_loading_message">Getting everything ready for your next scan…</string>
+    <string name="startup_loading_content_description">Preparing the app for your next plant scan</string>
     <string name="navigate_to">Navigate to %1$s</string>
     <string name="open_camera">Open camera</string>
     <string name="back">Back</string>
@@ -202,6 +205,7 @@
     <string name="no_disease_detected">No disease detected</string>
     <string name="disease_detected_tap">Disease detected</string>
     <string name="point_camera">Tap to capture. Hold the shutter for live preview.</string>
+    <string name="camera_intro_message">Point the camera at an eggplant leaf or fruit to start scanning.</string>
     <string name="save_scan">Save scan</string>
     <string name="camera_permission_required">Camera permission required</string>
     <string name="camera_permission_body">Camera access is needed for live disease detection.</string>

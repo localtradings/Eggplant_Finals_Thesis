@@ -1,6 +1,7 @@
 package com.eggplant.detector.app
 
 import android.app.Application
+import android.util.Log
 import androidx.room.Room
 import com.eggplant.detector.data.repository.EggplantRepository
 import com.eggplant.detector.data.files.ScanSnapshotStore
@@ -17,10 +18,16 @@ import com.eggplant.detector.data.cloud.NcnnSharePhotoRevalidator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class EggplantApplication : Application() {
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val _startupReady = MutableStateFlow(false)
+    val startupReady: StateFlow<Boolean> = _startupReady.asStateFlow()
     val detectionEngine: NcnnDetectionEngine by lazy { NcnnDetectionEngine(applicationContext) }
     val cloudApiClient: CloudApiClient by lazy { CloudApiClient(applicationContext) }
 
@@ -47,6 +54,21 @@ class EggplantApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         CloudSyncScheduler.schedule(this)
+        applicationScope.launch {
+            runCatching {
+                // These are the same local reads the first screen already
+                // depends on. Waiting for them removes the blank startup
+                // frame without delaying the app with a timer.
+                repository.ensureCatalog()
+                repository.settings.first()
+                repository.history.first()
+            }.onFailure { error ->
+                // The bundled catalog/default UI can still open if a local
+                // startup read fails; never leave the user on a loader.
+                Log.w("EggplantStartup", "Local startup preparation failed", error)
+            }
+            _startupReady.value = true
+        }
         applicationScope.launch {
             if (cloudApiClient.bootstrapConfiguration()) {
                 CloudSyncScheduler.refresh(this@EggplantApplication)

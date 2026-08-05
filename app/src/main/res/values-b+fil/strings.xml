@@ -6,6 +6,9 @@
     <string name="nav_camera">Kamera</string>
     <string name="nav_history">Mga Scan</string>
     <string name="nav_settings">Mga Setting</string>
+    <string name="startup_preparing_plants">Inihahanda ang iyong mga halaman</string>
+    <string name="startup_loading_message">Inihahanda ang lahat para sa susunod mong scan…</string>
+    <string name="startup_loading_content_description">Inihahanda ang app para sa susunod na scan ng halaman</string>
     <string name="navigate_to">Pumunta sa %1$s</string>
     <string name="open_camera">Buksan ang kamera</string>
     <string name="back">Bumalik</string>
@@ -202,6 +205,7 @@
     <string name="no_disease_detected">Walang natukoy na sakit</string>
     <string name="disease_detected_tap">May natukoy na sakit</string>
     <string name="point_camera">I-tap para kumuha. Pindutin nang matagal ang shutter para sa live preview.</string>
+    <string name="camera_intro_message">Itutok ang camera sa dahon o bunga ng talong para magsimulang mag-scan.</string>
     <string name="save_scan">I-save ang scan</string>
     <string name="camera_permission_required">Kailangan ang pahintulot sa kamera</string>
     <string name="camera_permission_body">Kailangan ang camera access para sa live disease detection.</string>

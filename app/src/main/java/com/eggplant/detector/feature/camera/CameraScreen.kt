@@ -1,6 +1,7 @@
 package com.eggplant.detector.feature.camera
 
 import android.Manifest
+import android.graphics.Bitmap
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -107,6 +108,8 @@ fun CameraScreen(
     }
 
     var cameraState by remember { mutableStateOf(CameraAnalysisState()) }
+    var showCameraIntro by remember { mutableStateOf(true) }
+    var stillPhotoPreview by remember { mutableStateOf<Bitmap?>(null) }
     var controller by remember { mutableStateOf<CameraController?>(null) }
     var captureFlashTrigger by remember { mutableIntStateOf(0) }
     var focusPoint by remember { mutableStateOf<Offset?>(null) }
@@ -115,6 +118,12 @@ fun CameraScreen(
     var liveStillRequestedForDisease by remember { mutableStateOf<String?>(null) }
     var validatedLiveStill by remember { mutableStateOf<CameraScene?>(null) }
     var liveReleaseFinalizing by remember { mutableStateOf(false) }
+    val cameraIntroVisible = showCameraIntro &&
+        cameraState.engineState == EngineState.READY &&
+        cameraState.error == null &&
+        !cameraState.livePreviewActive &&
+        !cameraState.isStillImageProcessing &&
+        !liveReleaseFinalizing
     val resultNavigationGate = remember { ResultNavigationGate() }
     val scope = rememberCoroutineScope()
     val previewView = remember {
@@ -271,6 +280,7 @@ fun CameraScreen(
                     )
                     return@launch
                 }
+            stillPhotoPreview = bitmap.copy(Bitmap.Config.ARGB_8888, false)
             activeController.analyzeBitmap(bitmap, InputSource.GALLERY) { result ->
                 bitmap.recycle()
                 handleStillResult(result, galleryOpenFailed)
@@ -310,18 +320,25 @@ fun CameraScreen(
             },
             onDetectionClick = null,
         )
+        CameraIntroOverlay(
+            visible = cameraIntroVisible,
+            onFinished = { showCameraIntro = false },
+        )
         CameraTopBar(
             state = cameraState,
             onBack = onBack,
             onToggleTorch = { controller?.toggleTorch() },
         )
-        CameraStatus(cameraState, Modifier.align(Alignment.TopCenter).padding(top = 82.dp))
+        if (!cameraIntroVisible) {
+            CameraStatus(cameraState, Modifier.align(Alignment.TopCenter).padding(top = 82.dp))
+        }
         CaptureFlashOverlay(captureFlashTrigger)
         CameraBottomBar(
             processing = cameraState.isStillImageProcessing || liveReleaseFinalizing,
             engineState = cameraState.engineState,
             livePreviewActive = cameraState.livePreviewActive,
             onGallery = {
+                showCameraIntro = false
                 galleryLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
             },
             onCapture = {
@@ -334,6 +351,8 @@ fun CameraScreen(
                 ) {
                     return@CameraBottomBar
                 }
+                showCameraIntro = false
+                stillPhotoPreview = previewView.bitmap?.copy(Bitmap.Config.ARGB_8888, false)
                 resultNavigationGate.reset()
                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                 captureFlashTrigger += 1
@@ -344,6 +363,7 @@ fun CameraScreen(
                 }
             },
             onStartLivePreview = {
+                showCameraIntro = false
                 resultNavigationGate.reset()
                 liveCaptureRevision += 1
                 liveStillRequestedForDisease = null
@@ -364,10 +384,16 @@ fun CameraScreen(
             },
             modifier = Modifier.align(Alignment.BottomCenter),
         )
-        if (cameraState.isStillImageProcessing || liveReleaseFinalizing) {
+        if (cameraState.isStillImageProcessing) {
+            StillPhotoProcessingOverlay(
+                previewBitmap = stillPhotoPreview,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+        if (liveReleaseFinalizing) {
             StillImageProcessingOverlay(
                 modifier = Modifier.fillMaxSize(),
-                labelRes = if (liveReleaseFinalizing) R.string.saving_live_history else R.string.analyzing,
+                labelRes = R.string.saving_live_history,
             )
         }
     }
@@ -386,6 +412,7 @@ private fun GalleryWithoutCameraPermission(
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
     var state by remember { mutableStateOf(CameraAnalysisState()) }
+    var processingPreview by remember { mutableStateOf<Bitmap?>(null) }
     var controller by remember { mutableStateOf<CameraController?>(null) }
     DisposableEffect(lifecycleOwner) {
         val created = CameraController(context, lifecycleOwner, application.detectionEngine, { state = it }, closeEngineOnClose = false)
@@ -402,6 +429,7 @@ private fun GalleryWithoutCameraPermission(
                 state = state.copy(isStillImageProcessing = false, error = it.message ?: "Could not open the selected image.")
                 return@launch
             }
+            processingPreview = bitmap.copy(Bitmap.Config.ARGB_8888, false)
             active.analyzeBitmap(bitmap, InputSource.GALLERY) { result ->
                 bitmap.recycle()
                 state = state.copy(isStillImageProcessing = false)
@@ -422,7 +450,13 @@ private fun GalleryWithoutCameraPermission(
             onGallery = { galleryLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
             onBack = onBack,
         )
-        if (state.engineState == EngineState.UNINITIALIZED || state.isStillImageProcessing) StillImageProcessingOverlay(Modifier.fillMaxSize())
+        if (state.engineState == EngineState.UNINITIALIZED) StillImageProcessingOverlay(Modifier.fillMaxSize())
+        if (state.isStillImageProcessing) {
+            StillPhotoProcessingOverlay(
+                previewBitmap = processingPreview,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
         state.error?.let { Text(it, Modifier.align(Alignment.BottomCenter).padding(24.dp), color = MaterialTheme.colorScheme.error) }
     }
 }
