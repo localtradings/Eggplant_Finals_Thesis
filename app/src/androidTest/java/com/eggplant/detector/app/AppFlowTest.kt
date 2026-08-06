@@ -67,9 +67,9 @@ class AppFlowTest {
     fun homeRouteShowsReferenceContentWithoutConfidenceOrRisk() {
         assertHomeBrandingDisplayed()
         composeRule.onNodeWithText("Disease Detector").assertIsDisplayed()
-        composeRule.onNodeWithText("Scan Leaf Now").assertIsDisplayed()
+        composeRule.onNodeWithText("Scan a Leaf").assertIsDisplayed()
         composeRule.onNodeWithText(
-            "Scan your eggplant leaves\nto detect diseases early and\nget treatment advice.",
+            "Detect diseases early and\nget expert care advice.",
         ).assertIsDisplayed()
         composeRule.onNodeWithContentDescription("Eggplant leaf disease hero photo")
             .assertIsDisplayed()
@@ -164,6 +164,24 @@ class AppFlowTest {
     }
 
     @Test
+    fun redesignedHomeActionsKeepExistingRoutes() {
+        composeRule.onNodeWithContentDescription("Learn Diseases").performClick()
+        composeRule.onAllNodesWithText("Library", substring = false).onFirst().assertIsDisplayed()
+
+        composeRule.onNodeWithContentDescription("Navigate to Home").performClick()
+        composeRule.onNodeWithContentDescription("Home content").performScrollToIndex(2)
+        composeRule.onNodeWithContentDescription("Scan History").performClick()
+        composeRule.onNodeWithText("My Scans").assertIsDisplayed()
+    }
+
+    @Test
+    fun redesignedHeroScanCtaStillOpensCamera() {
+        grantCameraPermission()
+        composeRule.onAllNodesWithText("Scan a Leaf", substring = false).onFirst().performClick()
+        composeRule.onNodeWithContentDescription("Capture scan").assertIsDisplayed()
+    }
+
+    @Test
     fun reselectingHomeScrollsToTheTop() {
         composeRule.onNodeWithContentDescription("Home content").performScrollToIndex(4)
         composeRule.onNodeWithContentDescription("Navigate to Home").performClick()
@@ -250,7 +268,7 @@ class AppFlowTest {
         composeRule.waitForIdle()
 
         composeRule.onNodeWithContentDescription("Home content").performScrollToIndex(2)
-        composeRule.onNodeWithText("Offline Use").performClick()
+        composeRule.onNodeWithText("Offline Mode").performClick()
         scrollInformationToFirstSection(R.string.offline_use)
         composeRule.onNodeWithText("What works offline").performScrollTo().assertIsDisplayed()
         composeRule.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }

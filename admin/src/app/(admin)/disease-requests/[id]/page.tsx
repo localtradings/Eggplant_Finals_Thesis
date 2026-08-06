@@ -1,9 +1,9 @@
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import { randomUUID } from "node:crypto";
 import { notFound } from "next/navigation";
 import { FormSubmitButton } from "@/components/form-submit-button";
+import { ImageZoomViewer } from "@/components/image-zoom-viewer";
 import { requireAdmin } from "@/lib/auth";
 import { adminActionLabel, requestStatusLabel } from "@/lib/admin-copy";
 import { getAdminClient } from "@/lib/supabase/admin";
@@ -62,7 +62,7 @@ export default async function RequestReview({
   );
 
   return (
-    <div className="fade-up mx-auto max-w-6xl">
+    <div className="fade-up mx-auto max-w-[1320px]">
       <Link
         href="/disease-requests"
         className="inline-flex items-center gap-2 text-sm font-semibold text-[#512b91]"
@@ -81,29 +81,17 @@ export default async function RequestReview({
             : `Request marked ${reviewed}.`}
         </p>
       )}
-      <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(19rem,.8fr)]">
+      <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1.7fr)_minmax(19rem,.7fr)]">
         <section className="min-w-0">
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4">
             {signed.map((photo, index) => (
-              <div
-                className="surface relative aspect-[4/3] overflow-hidden"
+              <ImageZoomViewer
                 key={photos[index]?.object_path}
-              >
-                {photo.signedUrl ? (
-                  <Image
-                    src={photo.signedUrl}
-                    alt={`Private plant photo ${index + 1}`}
-                    fill
-                    sizes="(min-width: 640px) 50vw, 100vw"
-                    unoptimized
-                    className="object-contain"
-                  />
-                ) : (
-                  <div className="grid h-full place-items-center text-sm text-[#777286]">
-                    Photo unavailable
-                  </div>
-                )}
-              </div>
+                url={photo.signedUrl ?? null}
+                alt={`Private plant photo ${index + 1}`}
+                sizes="(min-width: 1024px) 68vw, 100vw"
+                className="surface h-[32rem] max-h-[68svh] min-h-[22rem] w-full"
+              />
             ))}
           </div>
           <section className="surface mt-5 p-5">

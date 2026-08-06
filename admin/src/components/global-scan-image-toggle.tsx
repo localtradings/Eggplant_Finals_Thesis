@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import { useState } from "react";
+import { ImageZoomViewer } from "@/components/image-zoom-viewer";
 
 type GlobalScanImageToggleProps = {
   originalUrl: string | null;
@@ -42,13 +42,12 @@ export function GlobalScanImageToggle({
           </div>
         </div>
       ) : null}
-      <div className="relative aspect-[4/3] bg-[#f1ecf8]">
-        {activeUrl ? (
-          <Image src={activeUrl} alt={alt} fill sizes="(min-width: 1280px) 60vw, 100vw" unoptimized className="object-contain" />
-        ) : (
-          <div className="grid h-full place-items-center text-sm text-[#68687c]">Photo unavailable</div>
-        )}
-      </div>
+      <ImageZoomViewer
+        url={activeUrl}
+        alt={alt}
+        sizes="(min-width: 1280px) 65vw, 100vw"
+        className="h-[32rem] max-h-[70svh] min-h-[20rem] w-full"
+      />
       {showAnnotated && annotatedUrl ? <p className="border-t border-[#ece9f1] px-4 py-2 text-[11px] font-semibold text-[#716c80]">AI screening overlay • confidence shown from the scan result</p> : null}
     </>
   );

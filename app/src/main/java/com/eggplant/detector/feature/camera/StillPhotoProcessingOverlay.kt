@@ -126,11 +126,10 @@ private class StillPhotoScanningLottieView(
     init {
         setLayerType(LAYER_TYPE_SOFTWARE, null)
         drawable.callback = this
-        // Use the vector-only scan composition here. The supplied untitled animation
-        // contains an opaque embedded screen/panel, so it cannot be composited over
-        // the selected image without covering it.
+        // Photo/gallery processing has its own animation. The camera introduction
+        // keeps using camera_plant_scanning.json.
         drawable.composition = LottieCompositionFactory
-            .fromRawResSync(context, R.raw.camera_plant_scanning)
+            .fromRawResSync(context, R.raw.still_photo_scanning)
             .value
         drawable.progress = if (motionEnabled) 0f else 0.5f
     }

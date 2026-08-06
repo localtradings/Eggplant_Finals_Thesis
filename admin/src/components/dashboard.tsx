@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { ArrowUpRight, ClipboardCheck, Globe2, Leaf, UsersRound } from "lucide-react";
+import type { ReactNode } from "react";
 import type { DashboardData } from "@/lib/dashboard-data";
 import { RefreshDashboardButton } from "@/components/refresh-dashboard-button";
+import { LiveActivityTimestamp } from "@/components/live-activity-timestamp";
 import { scanStatusLabel, scanStatusTone } from "@/lib/admin-copy";
 
 function Metric({ label, value, icon: Icon, href }: { label: string; value: number; icon: typeof Globe2; href?: string }) {
@@ -41,7 +43,7 @@ export function Dashboard({ data }: { data: DashboardData }) {
       <section className="mt-5 grid overflow-hidden rounded-[20px] border border-[#e5ddec] bg-[#fffdfd] sm:grid-cols-3" aria-label="System status">
         <Ops label="Mobile submissions" value={data.cloudWritesEnabled ? "On" : "Paused"} hint="Global scans and disease requests" />
         <Ops label="Photo storage" value={formatBytes(data.storageBytes)} hint="Private review images" />
-        <Ops label="Last app activity" value={data.lastInstallationSeenAt ? new Date(data.lastInstallationSeenAt).toLocaleString() : "No sync yet"} hint="Most recent mobile activity" />
+        <Ops label="Last app activity" value={<LiveActivityTimestamp timestamp={data.lastInstallationSeenAt} />} hint="Most recent cloud activity · auto-refreshes" />
       </section>
       <div className="mt-5 grid gap-5 xl:grid-cols-[1fr_1.15fr]">
         <section className="surface p-5">
@@ -58,5 +60,5 @@ export function Dashboard({ data }: { data: DashboardData }) {
 }
 
 function Empty({ text }: { text: string }) { return <div className="mt-4 rounded-xl border border-dashed border-[#d9d3e4] bg-[#faf9fc] p-8 text-center text-sm text-[#716c80]">{text}</div>; }
-function Ops({ label, value, hint }: { label: string; value: string; hint: string }) { return <div className="border-b border-[#ece9f1] p-4 last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0"><p className="text-xs font-semibold text-[#68687c]">{label}</p><p className="mt-1 truncate font-mono text-sm font-semibold text-[#17152b]">{value}</p><p className="mt-1 truncate text-xs text-[#8a8498]">{hint}</p></div>; }
+function Ops({ label, value, hint }: { label: string; value: ReactNode; hint: string }) { return <div className="border-b border-[#ece9f1] p-4 last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0"><p className="text-xs font-semibold text-[#68687c]">{label}</p><p className="mt-1 truncate font-mono text-sm font-semibold text-[#17152b]">{value}</p><p className="mt-1 truncate text-xs text-[#8a8498]">{hint}</p></div>; }
 function formatBytes(bytes: number) { if (bytes < 1024) return `${bytes} B`; if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`; return `${(bytes / 1024 / 1024).toFixed(1)} MB`; }

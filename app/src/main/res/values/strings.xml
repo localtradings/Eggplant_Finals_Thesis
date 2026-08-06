@@ -19,9 +19,9 @@
 
     <string name="home_eggplant">Planta</string>
     <string name="home_detector">Disease Detector</string>
-    <string name="home_headline">Detect eggplant diseases.\nProtect your crop.</string>
-    <string name="home_description">Scan your eggplant leaves\nto detect diseases early and\nget treatment advice.</string>
-    <string name="scan_leaf_now">Scan Leaf Now</string>
+    <string name="home_headline">Keep your\neggplants healthy\nnaturally.</string>
+    <string name="home_description">Detect diseases early and\nget expert care advice.</string>
+    <string name="home_scan_cta">Scan a Leaf</string>
     <string name="home_status">Offline • Private • Live detection</string>
     <string name="learn_diseases">Learn Diseases</string>
     <string name="learn_diseases_body">Identify and learn\nabout diseases</string>
@@ -31,10 +31,16 @@
     <string name="care_guide_body">Treatment and\nprevention tips</string>
     <string name="offline_use">Offline Use</string>
     <string name="offline_use_body">How local data\nand features work</string>
+    <string name="home_scan_history">Scan History</string>
+    <string name="home_offline_mode">Offline Mode</string>
+    <string name="quick_access">Quick Access</string>
     <string name="last_scan">Last Scan</string>
     <string name="view_all">View All ›</string>
+    <string name="no_recent_scans_title">No recent scans yet</string>
+    <string name="no_recent_scans_body">Start scanning your eggplant leaves to detect diseases and keep your plants healthy.</string>
     <string name="open_notifications">Open notifications</string>
-    <string name="home_tip">Tip: Use clear, even lighting and hold steady until the detection box stabilizes.</string>
+    <string name="daily_plant_care_tip">Daily Plant Care Tip</string>
+    <string name="home_tip">Regularly check your leaves and remove affected parts to keep your plants healthy.</string>
     <string name="logo_description">Planta logo</string>
     <string name="home_logo_description">Planta home logo</string>
     <string name="hero_description">Eggplant leaf disease hero photo</string>

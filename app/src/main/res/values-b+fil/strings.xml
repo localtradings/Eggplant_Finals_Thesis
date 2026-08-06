@@ -19,9 +19,9 @@
 
     <string name="home_eggplant">Planta</string>
     <string name="home_detector">Tagatukoy ng Sakit</string>
-    <string name="home_headline">Tukuyin ang sakit ng talong.\nProtektahan ang iyong pananim.</string>
-    <string name="home_description">I-scan ang dahon ng talong\nupang maagang matukoy ang sakit\nat makita ang gabay sa paggamot.</string>
-    <string name="scan_leaf_now">I-scan ang Dahon</string>
+    <string name="home_headline">Panatilihing malusog\nang iyong mga talong\nnang natural.</string>
+    <string name="home_description">Tukuyin agad ang mga sakit\nat alamin ang gabay sa pag-aalaga.</string>
+    <string name="home_scan_cta">I-scan ang Dahon</string>
     <string name="home_status">Offline • Pribado • Live detection</string>
     <string name="learn_diseases">Alamin ang Sakit</string>
     <string name="learn_diseases_body">Kilalanin at alamin\nang mga sakit</string>
@@ -31,10 +31,16 @@
     <string name="care_guide_body">Mga payo sa paggamot\nat pag-iwas</string>
     <string name="offline_use">Paggamit Offline</string>
     <string name="offline_use_body">Lokal na datos\nat mga tampok</string>
+    <string name="home_scan_history">Kasaysayan ng Scan</string>
+    <string name="home_offline_mode">Offline Mode</string>
+    <string name="quick_access">Mabilis na Access</string>
     <string name="last_scan">Huling Scan</string>
     <string name="view_all">Tingnan Lahat ›</string>
+    <string name="no_recent_scans_title">Wala pang bagong scan</string>
+    <string name="no_recent_scans_body">Magsimulang mag-scan ng dahon ng talong para matukoy ang sakit at mapanatiling malusog ang iyong mga halaman.</string>
     <string name="open_notifications">Buksan ang mga abiso</string>
-    <string name="home_tip">Payo: Gumamit ng malinaw at pantay na ilaw at panatilihing matatag hanggang maging stable ang detection box.</string>
+    <string name="daily_plant_care_tip">Araw-araw na Gabay sa Halaman</string>
+    <string name="home_tip">Regular na suriin ang mga dahon at alisin ang mga apektadong bahagi upang manatiling malusog ang mga halaman.</string>
     <string name="logo_description">Logo ng Planta</string>
     <string name="home_logo_description">Logo ng Planta sa home</string>
     <string name="hero_description">Larawan ng may sakit na dahon ng talong</string>

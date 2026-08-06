@@ -78,7 +78,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
           const photoUrl = scan ? signedByPath.get(scan.photo_path) : "";
           return <article className="surface min-w-0 p-4 sm:p-5" key={report.id}>
             <div className="flex min-w-0 flex-col gap-4 sm:flex-row">
-              {scan && <div className="relative h-24 w-full shrink-0 overflow-hidden rounded-xl bg-[#eeeaf4] sm:h-24 sm:w-32">{photoUrl ? <Image src={photoUrl} alt="Reported shared scan" fill sizes="128px" unoptimized className="object-cover"/> : <div className="grid h-full place-items-center text-xs text-[#777286]">Photo unavailable</div>}</div>}
+              {scan && (photoUrl ? <div className="relative h-48 w-full shrink-0 overflow-hidden rounded-xl bg-[#f1ecf8] sm:w-72"><Image src={photoUrl} alt="Reported shared scan" fill sizes="(min-width: 640px) 18rem, 100vw" unoptimized className="object-cover" /></div> : <div className="grid h-48 w-full shrink-0 place-items-center rounded-xl bg-[#f1ecf8] text-sm text-[#68687c] sm:w-72">Photo unavailable</div>)}
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div><p className="text-xs font-semibold uppercase tracking-[.08em] text-[#777286]">{reportReasonLabel(report.reason)}</p><h2 className="safe-long-content mt-1 text-lg font-bold">{scan ? scan.disease_id.replaceAll("-", " ") : "Scan unavailable"}</h2></div>

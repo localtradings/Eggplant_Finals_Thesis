@@ -34,7 +34,7 @@ class StillPhotoProcessingOverlayTest {
     fun selectedImageRemainsVisibleWhileScanningOverlayIsDisplayed() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val composition = LottieCompositionFactory
-            .fromRawResSync(context, R.raw.camera_plant_scanning)
+            .fromRawResSync(context, R.raw.still_photo_scanning)
             .value
         assertNotNull("The still-image scanning Lottie must parse", composition)
 
