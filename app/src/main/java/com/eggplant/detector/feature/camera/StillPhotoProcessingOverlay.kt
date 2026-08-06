@@ -1,6 +1,10 @@
 package com.eggplant.detector.feature.camera
 
+import android.animation.ValueAnimator
+import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.view.View
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -8,10 +12,8 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,16 +27,13 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.airbnb.lottie.RenderMode
-import com.airbnb.lottie.compose.LottieAnimation
-import com.airbnb.lottie.compose.LottieCompositionSpec
-import com.airbnb.lottie.compose.LottieConstants
-import com.airbnb.lottie.compose.animateLottieCompositionAsState
-import com.airbnb.lottie.compose.rememberLottieComposition
+import androidx.compose.ui.viewinterop.AndroidView
+import com.airbnb.lottie.LottieCompositionFactory
+import com.airbnb.lottie.LottieDrawable
 import com.eggplant.detector.R
 import com.eggplant.detector.core.ui.motion.LocalEggplantMotion
 
-private const val PHOTO_PROCESSING_SPEED = 2.5f
+private const val PHOTO_PROCESSING_DURATION_MILLIS = 2_000L
 
 @Composable
 internal fun StillPhotoProcessingOverlay(
@@ -42,9 +41,6 @@ internal fun StillPhotoProcessingOverlay(
     modifier: Modifier = Modifier,
 ) {
     val motion = LocalEggplantMotion.current
-    val composition by rememberLottieComposition(
-        LottieCompositionSpec.RawRes(R.raw.untitled_file),
-    )
     val imageBitmap = remember(previewBitmap) { previewBitmap?.asImageBitmap() }
 
     DisposableEffect(previewBitmap) {
@@ -81,30 +77,18 @@ internal fun StillPhotoProcessingOverlay(
                 .padding(10.dp),
             contentAlignment = Alignment.Center,
         ) {
-            if (motion.spatialMovement) {
-                val progress by animateLottieCompositionAsState(
-                    composition = composition,
-                    iterations = LottieConstants.IterateForever,
-                    speed = PHOTO_PROCESSING_SPEED,
-                )
-                LottieAnimation(
-                    composition = composition,
-                    progress = { progress },
-                    renderMode = RenderMode.SOFTWARE,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .graphicsLayer { alpha = 0.82f },
-                )
-            } else {
-                LottieAnimation(
-                    composition = composition,
-                    progress = { 0f },
-                    renderMode = RenderMode.SOFTWARE,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .graphicsLayer { alpha = 0.82f },
-                )
-            }
+            AndroidView(
+                factory = { context ->
+                    StillPhotoScanningLottieView(
+                        context = context,
+                        motionEnabled = motion.spatialMovement,
+                    )
+                },
+                update = { view -> view.setMotionEnabled(motion.spatialMovement) },
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer { alpha = 0.82f },
+            )
         }
         Surface(
             modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 64.dp),
@@ -117,5 +101,67 @@ internal fun StillPhotoProcessingOverlay(
                 modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp),
             )
         }
+    }
+}
+
+/**
+ * The supplied scan animation contains embedded bitmap assets. A real Android View is
+ * used as the drawable callback so Lottie can resolve those assets with a Context.
+ */
+private class StillPhotoScanningLottieView(
+    context: Context,
+    motionEnabled: Boolean,
+) : View(context) {
+    private var motionEnabledState = motionEnabled
+    private val drawable = LottieDrawable()
+    private val frameAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
+        duration = PHOTO_PROCESSING_DURATION_MILLIS
+        repeatCount = ValueAnimator.INFINITE
+        addUpdateListener { animator ->
+            drawable.progress = animator.animatedValue as Float
+            invalidate()
+        }
+    }
+
+    init {
+        setLayerType(LAYER_TYPE_SOFTWARE, null)
+        drawable.callback = this
+        drawable.composition = LottieCompositionFactory
+            .fromRawResSync(context, R.raw.untitled_file)
+            .value
+        drawable.progress = if (motionEnabled) 0f else 0.5f
+    }
+
+    fun setMotionEnabled(enabled: Boolean) {
+        motionEnabledState = enabled
+        if (enabled) {
+            if (isAttachedToWindow && !frameAnimator.isStarted) frameAnimator.start()
+        } else {
+            frameAnimator.cancel()
+            drawable.progress = 0.5f
+            invalidate()
+        }
+    }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        drawable.callback = this
+        setMotionEnabled(motionEnabledState)
+    }
+
+    override fun onDetachedFromWindow() {
+        frameAnimator.cancel()
+        drawable.callback = null
+        super.onDetachedFromWindow()
+    }
+
+    override fun onSizeChanged(width: Int, height: Int, oldWidth: Int, oldHeight: Int) {
+        super.onSizeChanged(width, height, oldWidth, oldHeight)
+        drawable.setBounds(0, 0, width, height)
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        drawable.setBounds(0, 0, width, height)
+        drawable.draw(canvas)
     }
 }

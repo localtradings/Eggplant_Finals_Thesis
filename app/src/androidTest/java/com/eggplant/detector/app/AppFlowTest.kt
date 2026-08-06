@@ -48,7 +48,15 @@ class AppFlowTest {
     fun waitForStartupLoadingToFinish() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val loadingDescription = context.getString(R.string.startup_loading_content_description)
-        composeRule.waitUntil(8_000) {
+        // The startup screen is intentionally time-based. Advance the Compose
+        // clock explicitly so this suite does not depend on emulator frame
+        // scheduling or real wall-clock time.
+        composeRule.mainClock.autoAdvance = false
+        composeRule.mainClock.advanceTimeBy(
+            STARTUP_BRAND_DURATION_MILLIS + STARTUP_ANIMATION_DURATION_MILLIS + 1_000L,
+        )
+        composeRule.mainClock.autoAdvance = true
+        composeRule.waitUntil(2_000) {
             composeRule.onAllNodesWithContentDescription(loadingDescription)
                 .fetchSemanticsNodes()
                 .isEmpty()

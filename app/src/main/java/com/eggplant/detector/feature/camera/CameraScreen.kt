@@ -116,6 +116,7 @@ fun CameraScreen(
     var showCameraIntro by remember { mutableStateOf(true) }
     var showGestureHint by remember { mutableStateOf(false) }
     var stillPhotoPreview by remember { mutableStateOf<Bitmap?>(null) }
+    var stillPhotoProcessing by remember { mutableStateOf(false) }
     var controller by remember { mutableStateOf<CameraController?>(null) }
     var captureFlashTrigger by remember { mutableIntStateOf(0) }
     var focusPoint by remember { mutableStateOf<Offset?>(null) }
@@ -129,7 +130,7 @@ fun CameraScreen(
         cameraState.engineState == EngineState.READY &&
         cameraState.error == null &&
         !cameraState.livePreviewActive &&
-        !cameraState.isStillImageProcessing &&
+        !stillPhotoProcessing &&
         !liveReleaseFinalizing
     val resultNavigationGate = remember { ResultNavigationGate() }
     val scope = rememberCoroutineScope()
@@ -225,6 +226,7 @@ fun CameraScreen(
         val remaining = (STILL_PROCESSING_MIN_DURATION_MILLIS - elapsed).coerceAtLeast(0L)
         scope.launch {
             if (remaining > 0L) delay(remaining)
+            stillPhotoProcessing = false
             cameraState = cameraState.copy(isStillImageProcessing = false)
             stillProcessingStartedAtMillis = 0L
             if (result.exceptionOrNull() is CancellationException) return@launch
@@ -276,7 +278,7 @@ fun CameraScreen(
     val galleryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (
             uri == null ||
-            cameraState.isStillImageProcessing ||
+            stillPhotoProcessing ||
             liveReleaseFinalizing ||
             cameraState.engineState != EngineState.READY
         ) {
@@ -290,6 +292,7 @@ fun CameraScreen(
         resultNavigationGate.reset()
         activeController.stopLivePreview()
         stillPhotoPreview = null
+        stillPhotoProcessing = true
         stillProcessingStartedAtMillis = SystemClock.uptimeMillis()
         cameraState = cameraState.copy(isStillImageProcessing = true, error = null)
         scope.launch {
@@ -299,6 +302,7 @@ fun CameraScreen(
                         isStillImageProcessing = false,
                         error = error.message ?: galleryOpenFailed,
                     )
+                    stillPhotoProcessing = false
                     stillProcessingStartedAtMillis = 0L
                     return@launch
                 }
@@ -355,11 +359,14 @@ fun CameraScreen(
             onToggleTorch = { controller?.toggleTorch() },
         )
         if (!cameraIntroVisible) {
-            CameraStatus(cameraState, Modifier.align(Alignment.TopCenter).padding(top = 82.dp))
+            CameraStatus(
+                cameraState.copy(isStillImageProcessing = stillPhotoProcessing),
+                Modifier.align(Alignment.TopCenter).padding(top = 82.dp),
+            )
         }
         CaptureFlashOverlay(captureFlashTrigger)
         CameraBottomBar(
-            processing = cameraState.isStillImageProcessing || liveReleaseFinalizing,
+            processing = stillPhotoProcessing || liveReleaseFinalizing,
             engineState = cameraState.engineState,
             livePreviewActive = cameraState.livePreviewActive,
             showGestureHint = showGestureHint,
@@ -372,7 +379,7 @@ fun CameraScreen(
                 val activeController = controller
                 if (
                     activeController == null ||
-                    cameraState.isStillImageProcessing ||
+                    stillPhotoProcessing ||
                     liveReleaseFinalizing ||
                     cameraState.engineState != EngineState.READY
                 ) {
@@ -381,6 +388,7 @@ fun CameraScreen(
                 showCameraIntro = false
                 showGestureHint = false
                 stillPhotoPreview = null
+                stillPhotoProcessing = true
                 resultNavigationGate.reset()
                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                 captureFlashTrigger += 1
@@ -416,7 +424,7 @@ fun CameraScreen(
             },
             modifier = Modifier.align(Alignment.BottomCenter),
         )
-        if (cameraState.isStillImageProcessing) {
+        if (stillPhotoProcessing) {
             StillPhotoProcessingOverlay(
                 previewBitmap = stillPhotoPreview,
                 modifier = Modifier.fillMaxSize(),
@@ -445,6 +453,7 @@ private fun GalleryWithoutCameraPermission(
     val scope = rememberCoroutineScope()
     var state by remember { mutableStateOf(CameraAnalysisState()) }
     var processingPreview by remember { mutableStateOf<Bitmap?>(null) }
+    var processing by remember { mutableStateOf(false) }
     var processingStartedAtMillis by remember { mutableLongStateOf(0L) }
     var controller by remember { mutableStateOf<CameraController?>(null) }
     DisposableEffect(lifecycleOwner) {
@@ -454,13 +463,15 @@ private fun GalleryWithoutCameraPermission(
         onDispose { created.close(); controller = null }
     }
     val galleryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        if (uri == null || state.engineState != EngineState.READY || state.isStillImageProcessing) return@rememberLauncherForActivityResult
+        if (uri == null || state.engineState != EngineState.READY || processing) return@rememberLauncherForActivityResult
         val active = controller ?: return@rememberLauncherForActivityResult
         processingStartedAtMillis = SystemClock.uptimeMillis()
+        processing = true
         state = state.copy(isStillImageProcessing = true, error = null)
         scope.launch {
             val bitmap = runCatching { withContext(Dispatchers.IO) { context.decodeGalleryBitmap(uri) } }.getOrElse {
                 state = state.copy(isStillImageProcessing = false, error = it.message ?: "Could not open the selected image.")
+                processing = false
                 processingStartedAtMillis = 0L
                 return@launch
             }
@@ -471,6 +482,7 @@ private fun GalleryWithoutCameraPermission(
                 val remaining = (STILL_PROCESSING_MIN_DURATION_MILLIS - elapsed).coerceAtLeast(0L)
                 scope.launch {
                     if (remaining > 0L) delay(remaining)
+                    processing = false
                     state = state.copy(isStillImageProcessing = false)
                     processingStartedAtMillis = 0L
                     if (result.exceptionOrNull() is CancellationException) return@launch
@@ -492,7 +504,7 @@ private fun GalleryWithoutCameraPermission(
             onBack = onBack,
         )
         if (state.engineState == EngineState.UNINITIALIZED) StillImageProcessingOverlay(Modifier.fillMaxSize())
-        if (state.isStillImageProcessing) {
+        if (processing) {
             StillPhotoProcessingOverlay(
                 previewBitmap = processingPreview,
                 modifier = Modifier.fillMaxSize(),
