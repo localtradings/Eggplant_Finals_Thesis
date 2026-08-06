@@ -289,6 +289,7 @@ fun CameraScreen(
         }
         resultNavigationGate.reset()
         activeController.stopLivePreview()
+        stillPhotoPreview = null
         stillProcessingStartedAtMillis = SystemClock.uptimeMillis()
         cameraState = cameraState.copy(isStillImageProcessing = true, error = null)
         scope.launch {
@@ -379,14 +380,16 @@ fun CameraScreen(
                 }
                 showCameraIntro = false
                 showGestureHint = false
-                stillPhotoPreview = previewView.bitmap?.copy(Bitmap.Config.ARGB_8888, false)
+                stillPhotoPreview = null
                 resultNavigationGate.reset()
                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                 captureFlashTrigger += 1
                 activeController.finishLivePreview(allowHealthy = false)
                 stillProcessingStartedAtMillis = SystemClock.uptimeMillis()
                 cameraState = cameraState.copy(isStillImageProcessing = true, error = null)
-                activeController.capturePhoto { result ->
+                activeController.capturePhoto(
+                    onPreviewReady = { preview -> stillPhotoPreview = preview },
+                ) { result ->
                     handleStillResult(result, captureFailed)
                 }
             },

@@ -81,10 +81,6 @@ internal fun StillPhotoProcessingOverlay(
                 .padding(10.dp),
             contentAlignment = Alignment.Center,
         ) {
-            PlantAnimationFallback(
-                modifier = Modifier.fillMaxSize(),
-                tint = Color.White,
-            )
             if (motion.spatialMovement) {
                 val progress by animateLottieCompositionAsState(
                     composition = composition,

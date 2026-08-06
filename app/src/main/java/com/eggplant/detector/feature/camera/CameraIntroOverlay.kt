@@ -85,10 +85,6 @@ internal fun CameraIntroOverlay(
                 modifier = Modifier.size(224.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                PlantAnimationFallback(
-                    modifier = Modifier.fillMaxSize(),
-                    tint = Color.White,
-                )
                 if (motion.spatialMovement) {
                     LottieAnimation(
                         composition = composition,

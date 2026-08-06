@@ -31,6 +31,7 @@ import com.eggplant.detector.detection.api.StabilityResult
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import com.eggplant.detector.app.ResultWarning
@@ -42,6 +43,17 @@ import kotlinx.coroutines.runBlocking
 class AppFlowTest {
     @get:Rule
     val composeRule = createAndroidComposeRule<MainActivity>()
+
+    @Before
+    fun waitForStartupLoadingToFinish() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val loadingDescription = context.getString(R.string.startup_loading_content_description)
+        composeRule.waitUntil(8_000) {
+            composeRule.onAllNodesWithContentDescription(loadingDescription)
+                .fetchSemanticsNodes()
+                .isEmpty()
+        }
+    }
 
     @Test
     fun homeRouteShowsReferenceContentWithoutConfidenceOrRisk() {
@@ -403,7 +415,7 @@ class AppFlowTest {
 
     private fun scrollInformationToFirstSection(titleResId: Int) {
         val title = InstrumentationRegistry.getInstrumentation().targetContext.getString(titleResId)
-        composeRule.waitUntil(5_000) {
+        composeRule.waitUntil(10_000) {
             composeRule.onAllNodesWithText(title).fetchSemanticsNodes().isNotEmpty()
         }
     }

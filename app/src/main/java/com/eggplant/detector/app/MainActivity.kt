@@ -55,11 +55,10 @@ fun EggplantDetectorApp(
     ),
 ) {
     val application = (LocalContext.current.applicationContext as EggplantApplication)
-    val startupReady by application.startupReady.collectAsStateWithLifecycle()
-    var startupAnimationFinished by remember { mutableStateOf(false) }
-    val startupVisible = !startupReady || !startupAnimationFinished
+    var startupAnimationFinished by remember { mutableStateOf(application.startupAnimationShown) }
+    val startupVisible = !startupAnimationFinished
     val homeAlpha by animateFloatAsState(
-        targetValue = if (startupReady) 1f else 0f,
+        targetValue = if (startupAnimationFinished) 1f else 0f,
         animationSpec = tween(420),
         label = "startupHomeAlpha",
     )
@@ -96,7 +95,10 @@ fun EggplantDetectorApp(
                 ) {
                     StartupLoadingScreen(
                         modifier = Modifier.fillMaxSize(),
-                        onFinished = { startupAnimationFinished = true },
+                        onFinished = {
+                            application.startupAnimationShown = true
+                            startupAnimationFinished = true
+                        },
                     )
                 }
             }

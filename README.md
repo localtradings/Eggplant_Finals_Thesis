@@ -19,7 +19,7 @@ Basic scanning, the disease guide, and My Scans work offline. Global Scans, dise
 
 [Download the latest demo APK from GitHub Releases](https://github.com/localtradings/Eggplant_Finals_Thesis/releases/latest)
 
-The current demo release is **v1.5.24**.
+The current demo release is **v1.5.25**.
 
 The demo APK is made for testing and thesis demonstrations. It is debug-signed and is not a Google Play Store release. Android may ask you to allow installation from the browser or file manager.
 

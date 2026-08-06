@@ -28,6 +28,8 @@ class EggplantApplication : Application() {
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val _startupReady = MutableStateFlow(false)
     val startupReady: StateFlow<Boolean> = _startupReady.asStateFlow()
+    var startupAnimationShown: Boolean = false
+        internal set
     val detectionEngine: NcnnDetectionEngine by lazy { NcnnDetectionEngine(applicationContext) }
     val cloudApiClient: CloudApiClient by lazy { CloudApiClient(applicationContext) }
 
