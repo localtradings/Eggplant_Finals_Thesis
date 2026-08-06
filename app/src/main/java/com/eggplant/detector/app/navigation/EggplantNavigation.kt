@@ -44,6 +44,8 @@ import com.eggplant.detector.R
 import com.eggplant.detector.core.ui.motion.LocalEggplantMotion
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.core.tween
 
 private val bottomRoutes = setOf(Routes.HOME, Routes.LIBRARY, Routes.HISTORY, Routes.SETTINGS)
@@ -119,10 +121,34 @@ fun EggplantNavigation(viewModel: EggplantAppViewModel) {
             navController = navController,
             startDestination = Routes.HOME,
             modifier = Modifier.padding(padding).consumeWindowInsets(padding),
-            enterTransition = { fadeIn(tween(motion.standardMillis)) },
-            exitTransition = { fadeOut(tween(motion.fastMillis)) },
-            popEnterTransition = { fadeIn(tween(motion.standardMillis)) },
-            popExitTransition = { fadeOut(tween(motion.fastMillis)) },
+            enterTransition = {
+                fadeIn(tween(motion.standardMillis)) +
+                    slideInHorizontally(
+                        initialOffsetX = { fullWidth -> fullWidth / 12 },
+                        animationSpec = tween(motion.standardMillis),
+                    )
+            },
+            exitTransition = {
+                fadeOut(tween(motion.fastMillis)) +
+                    slideOutHorizontally(
+                        targetOffsetX = { fullWidth -> -fullWidth / 12 },
+                        animationSpec = tween(motion.fastMillis),
+                    )
+            },
+            popEnterTransition = {
+                fadeIn(tween(motion.standardMillis)) +
+                    slideInHorizontally(
+                        initialOffsetX = { fullWidth -> -fullWidth / 12 },
+                        animationSpec = tween(motion.standardMillis),
+                    )
+            },
+            popExitTransition = {
+                fadeOut(tween(motion.fastMillis)) +
+                    slideOutHorizontally(
+                        targetOffsetX = { fullWidth -> fullWidth / 12 },
+                        animationSpec = tween(motion.fastMillis),
+                    )
+            },
         ) {
             composable(Routes.HOME) {
                 HomeScreen(

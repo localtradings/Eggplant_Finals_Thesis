@@ -5,6 +5,7 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,9 +20,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Book
 import androidx.compose.material.icons.rounded.CameraAlt
@@ -32,17 +31,19 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -50,8 +51,6 @@ import androidx.compose.ui.unit.sp
 import com.eggplant.detector.R
 import com.eggplant.detector.core.ui.motion.LocalEggplantMotion
 import com.eggplant.detector.domain.model.NavigationItem
-
-private val NavigationItemShape = RoundedCornerShape(14.dp)
 
 @Composable
 fun BottomNavigationBar(currentRoute: String?, onNavigate: (String) -> Unit) {
@@ -67,7 +66,7 @@ fun BottomNavigationBar(currentRoute: String?, onNavigate: (String) -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .height(72.dp),
+            .height(66.dp),
     ) {
         NavigationBarBackground()
         Row(
@@ -122,50 +121,41 @@ private fun RowScope.BottomNavigationItem(
         animationSpec = tween(animationMillis),
         label = "bottomNavLabelTint",
     )
-    val selectionColor by animateColorAsState(
-        targetValue = if (selected) {
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
-        } else {
-            Color.Transparent
-        },
-        animationSpec = tween(animationMillis),
-        label = "bottomNavSelectionColor",
-    )
     val iconSize by animateDpAsState(
         targetValue = if (selected) 26.dp else 24.dp,
         animationSpec = tween(animationMillis),
         label = "bottomNavIconSize",
     )
+    val interactionSource = remember { MutableInteractionSource() }
 
     Column(
         modifier = Modifier
             .weight(1f)
             .fillMaxHeight()
-            .selectable(
-                selected = selected,
-                onClick = onClick,
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
                 role = Role.Tab,
+                onClick = onClick,
             )
             .semantics(mergeDescendants = true) {
                 contentDescription = description
+                role = Role.Tab
+                this.selected = selected
             },
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Surface(
+        Box(
             modifier = Modifier.size(width = 46.dp, height = 34.dp),
-            shape = NavigationItemShape,
-            color = selectionColor,
-            tonalElevation = 0.dp,
+            contentAlignment = Alignment.Center,
         ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    imageVector = item.icon,
-                    contentDescription = null,
-                    tint = iconTint,
-                    modifier = Modifier.size(iconSize),
-                )
-            }
+            Icon(
+                imageVector = item.icon,
+                contentDescription = null,
+                tint = iconTint,
+                modifier = Modifier.size(iconSize),
+            )
         }
         Spacer(Modifier.height(1.dp))
         Text(
@@ -186,17 +176,20 @@ private fun RowScope.CameraNavigationItem(
     onClick: () -> Unit,
 ) {
     val cameraSize by animateDpAsState(
-        targetValue = if (selected) 60.dp else 58.dp,
+        targetValue = if (selected) 56.dp else 54.dp,
         animationSpec = tween(animationMillis),
         label = "bottomNavCameraSize",
     )
     val description = stringResource(R.string.open_camera)
+    val interactionSource = remember { MutableInteractionSource() }
 
     Box(
         modifier = Modifier
             .weight(1f)
             .fillMaxHeight()
             .clickable(
+                interactionSource = interactionSource,
+                indication = null,
                 role = Role.Button,
                 onClick = onClick,
             )
@@ -207,7 +200,7 @@ private fun RowScope.CameraNavigationItem(
     ) {
         Surface(
             modifier = Modifier
-                .offset(y = (-8).dp)
+                .offset(y = (-6).dp)
                 .size(cameraSize),
             shape = CircleShape,
             color = MaterialTheme.colorScheme.primary,
@@ -219,7 +212,7 @@ private fun RowScope.CameraNavigationItem(
                     imageVector = Icons.Rounded.CameraAlt,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(28.dp),
+                    modifier = Modifier.size(26.dp),
                 )
             }
         }
@@ -230,7 +223,7 @@ private fun RowScope.CameraNavigationItem(
 private fun NavigationBarBackground() {
     val color = MaterialTheme.colorScheme.surface
     Canvas(Modifier.fillMaxSize()) {
-        val top = 16.dp.toPx()
+        val top = 14.dp.toPx()
         drawRoundRect(
             color = color,
             topLeft = Offset.Zero.copy(y = top),
@@ -239,7 +232,7 @@ private fun NavigationBarBackground() {
         )
         drawCircle(
             color = color,
-            radius = 36.dp.toPx(),
+            radius = 32.dp.toPx(),
             center = Offset(size.width / 2f, top),
         )
     }

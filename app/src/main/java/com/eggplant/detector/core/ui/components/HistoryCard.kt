@@ -4,17 +4,19 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -55,41 +57,58 @@ fun HistoryCard(result: ScanResult, onClick: () -> Unit, modifier: Modifier = Mo
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
     ) {
-        Row(
+        Column(
             modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            HistoryThumbnail(result)
-            Spacer(Modifier.width(14.dp))
-            Column(Modifier.weight(1f)) {
-                Text(result.name, style = MaterialTheme.typography.titleMedium)
-                Text(
-                    when (result.category) {
-                        com.eggplant.detector.domain.model.ScanCategory.LEAF_DISEASE -> stringResource(R.string.leaf_disease)
-                        com.eggplant.detector.domain.model.ScanCategory.FRUIT_DISEASE -> stringResource(R.string.fruit_disease)
-                        com.eggplant.detector.domain.model.ScanCategory.NO_DISEASE_DETECTED -> localized("Healthy", "Malusog")
-                    },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.secondary,
-                )
-                Text(
-                    stringResource(R.string.confidence_value, ConfidenceFormatter.format(result.confidence)),
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = MaterialTheme.colorScheme.primary,
-                )
-                Text(
-                    DateFormatter.format(result.scannedAt),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            HistoryThumbnail(
+                result = result,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1.18f),
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    Text(
+                        result.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 2,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        when (result.category) {
+                            com.eggplant.detector.domain.model.ScanCategory.LEAF_DISEASE -> stringResource(R.string.leaf_disease)
+                            com.eggplant.detector.domain.model.ScanCategory.FRUIT_DISEASE -> stringResource(R.string.fruit_disease)
+                            com.eggplant.detector.domain.model.ScanCategory.NO_DISEASE_DETECTED -> localized("Healthy", "Malusog")
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.secondary,
+                    )
+                    Text(
+                        stringResource(R.string.confidence_value, ConfidenceFormatter.format(result.confidence)),
+                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Text(
+                        DateFormatter.format(result.scannedAt),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, null)
             }
-            Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, null)
         }
     }
 }
 
 @Composable
-private fun HistoryThumbnail(result: ScanResult) {
+private fun HistoryThumbnail(result: ScanResult, modifier: Modifier) {
     val bitmap by produceState<Bitmap?>(initialValue = null, result.imagePath) {
         value = withContext(Dispatchers.IO) {
             result.imagePath
@@ -99,8 +118,7 @@ private fun HistoryThumbnail(result: ScanResult) {
         }
     }
     val savedBitmap = bitmap
-    val thumbnailModifier = Modifier
-        .size(width = 92.dp, height = 78.dp)
+    val thumbnailModifier = modifier
         .clip(RoundedCornerShape(12.dp))
     if (savedBitmap != null) {
         Image(
@@ -110,12 +128,16 @@ private fun HistoryThumbnail(result: ScanResult) {
             contentScale = ContentScale.Crop,
         )
     } else {
-        ResultArtwork(
-            category = result.category,
-            name = result.name,
-            modifier = thumbnailModifier,
-            diseaseId = result.diseaseId,
-        )
+        Box(
+            modifier = thumbnailModifier.background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.PhotoCamera,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 

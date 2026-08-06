@@ -105,8 +105,8 @@ internal fun StillPhotoProcessingOverlay(
 }
 
 /**
- * The supplied scan animation contains embedded bitmap assets. A real Android View is
- * used as the drawable callback so Lottie can resolve those assets with a Context.
+ * A real Android View owns the Lottie drawable and its frame clock so the animation
+ * stays independent from the detector result callback.
  */
 private class StillPhotoScanningLottieView(
     context: Context,
@@ -126,8 +126,11 @@ private class StillPhotoScanningLottieView(
     init {
         setLayerType(LAYER_TYPE_SOFTWARE, null)
         drawable.callback = this
+        // Use the vector-only scan composition here. The supplied untitled animation
+        // contains an opaque embedded screen/panel, so it cannot be composited over
+        // the selected image without covering it.
         drawable.composition = LottieCompositionFactory
-            .fromRawResSync(context, R.raw.untitled_file)
+            .fromRawResSync(context, R.raw.camera_plant_scanning)
             .value
         drawable.progress = if (motionEnabled) 0f else 0.5f
     }
