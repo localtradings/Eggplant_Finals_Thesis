@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.eggplant.detector.R
+import com.eggplant.detector.core.ui.theme.LeafGreen
 import com.eggplant.detector.detection.api.DetectionBox
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -63,7 +64,7 @@ internal fun DetectionOverlay(
             val isCompact = min(width, height) < with(density) { 72.dp.toPx() }
             val borderWidth = if (isCompact) 2.dp else 3.dp
             val shape = RoundedCornerShape(if (isCompact) 6.dp else 10.dp)
-            val phaseColor = if (item.phase == OverlayPhase.CONFIRMED) Color(0xFF35B854) else Color(0xFF9A6AD4)
+            val phaseColor = if (item.phase == OverlayPhase.CONFIRMED) Color(0xFF35B854) else LeafGreen
             val description = if (item.phase == OverlayPhase.CONFIRMED) {
                 stringResource(
                     R.string.detection_box_description,

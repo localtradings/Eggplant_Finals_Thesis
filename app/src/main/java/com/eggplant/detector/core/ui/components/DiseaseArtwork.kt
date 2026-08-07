@@ -16,6 +16,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.eggplant.detector.R
 import com.eggplant.detector.domain.model.ScanCategory
+import com.eggplant.detector.core.ui.theme.PrimaryGreenSoft
 
 @Composable
 fun DiseaseArtwork(
@@ -38,7 +39,7 @@ fun DiseaseArtwork(
                 .clip(RoundedCornerShape(12.dp))
                 .background(
                     Brush.linearGradient(
-                        listOf(Color(0xFFE9F5E8), Color(0xFFF1ECF8)),
+                        listOf(Color(0xFFE9F5E8), PrimaryGreenSoft),
                     ),
                 ),
         )

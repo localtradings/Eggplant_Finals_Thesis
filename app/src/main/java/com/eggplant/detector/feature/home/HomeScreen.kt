@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -63,7 +64,6 @@ import com.eggplant.detector.R
 import com.eggplant.detector.app.EggplantAppViewModel
 import com.eggplant.detector.core.ui.components.LastScanCard
 import com.eggplant.detector.core.ui.components.ResponsiveContent
-import com.eggplant.detector.core.ui.theme.LeafGreenDark
 
 @Composable
 fun HomeScreen(
@@ -87,8 +87,8 @@ fun HomeScreen(
                 .background(MaterialTheme.colorScheme.background)
                 .semantics { contentDescription = homeDescription },
             state = listState,
-            contentPadding = PaddingValues(start = 18.dp, top = 16.dp, end = 18.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp),
+            contentPadding = PaddingValues(start = 18.dp, top = 12.dp, end = 18.dp, bottom = 18.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item { HomeHeader(onNotifications) }
             item { HeroCard(onScan) }
@@ -135,13 +135,13 @@ private fun HomeHeader(onNotifications: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(68.dp),
+            .height(56.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Image(
             painter = painterResource(R.drawable.planta_logo),
             contentDescription = stringResource(R.string.home_logo_description),
-            modifier = Modifier.size(58.dp),
+            modifier = Modifier.size(50.dp),
             contentScale = ContentScale.Fit,
         )
         Spacer(Modifier.width(9.dp))
@@ -164,15 +164,15 @@ private fun HomeHeader(onNotifications: () -> Unit) {
         Box {
             Surface(
                 shape = RoundedCornerShape(18.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.52f),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.66f),
                 shadowElevation = 0.dp,
             ) {
-                IconButton(onClick = onNotifications, modifier = Modifier.size(52.dp)) {
+                IconButton(onClick = onNotifications, modifier = Modifier.size(48.dp)) {
                     Icon(
                         Icons.Outlined.NotificationsNone,
                         contentDescription = stringResource(R.string.open_notifications),
                         tint = accent,
-                        modifier = Modifier.size(27.dp),
+                        modifier = Modifier.size(24.dp),
                     )
                 }
             }
@@ -198,19 +198,19 @@ private fun HeroCard(onScan: () -> Unit) {
             modifier = Modifier
                 .fillMaxWidth()
                 .then(
-                    if (compact) Modifier.heightIn(min = 232.dp, max = 270.dp)
-                    else Modifier.aspectRatio(1.42f),
+                    if (compact) Modifier.heightIn(min = 204.dp, max = 226.dp)
+                    else Modifier.aspectRatio(1.58f),
                 ),
-            shape = RoundedCornerShape(26.dp),
+            shape = RoundedCornerShape(22.dp),
             colors = CardDefaults.cardColors(
-                containerColor = if (darkTheme) Color(0xFF1C2A20) else Color(0xFFF1F6EC),
+                containerColor = if (darkTheme) Color(0xFF1C2A20) else Color(0xFFEAF4E8),
             ),
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         ) {
             Box(Modifier.fillMaxSize()) {
                 Image(
-                    painter = painterResource(R.drawable.home_hero_eggplant),
+                    painter = painterResource(R.drawable.home_hero_eggplant_v2),
                     contentDescription = stringResource(R.string.hero_description),
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
@@ -228,8 +228,8 @@ private fun HeroCard(onScan: () -> Unit) {
                                     )
                                 } else {
                                     listOf(
-                                        Color(0xFFF7FAF2).copy(alpha = 0.96f),
-                                        Color(0xFFF7FAF2).copy(alpha = 0.73f),
+                                        Color(0xFFEAF4E8).copy(alpha = 0.92f),
+                                        Color(0xFFEAF4E8).copy(alpha = 0.66f),
                                         Color.Transparent,
                                     )
                                 },
@@ -241,7 +241,7 @@ private fun HeroCard(onScan: () -> Unit) {
                         .fillMaxWidth(if (compact) 0.72f else 0.66f)
                         .padding(
                             start = if (compact) 18.dp else 24.dp,
-                            top = if (compact) 20.dp else 28.dp,
+                            top = if (compact) 16.dp else 22.dp,
                             end = 4.dp,
                         ),
                     verticalArrangement = Arrangement.spacedBy(if (compact) 8.dp else 11.dp),
@@ -279,8 +279,8 @@ private fun HeroCard(onScan: () -> Unit) {
                         onClick = onScan,
                         modifier = Modifier
                             .widthIn(min = 145.dp, max = 172.dp)
-                            .heightIn(min = 48.dp),
-                        shape = RoundedCornerShape(15.dp),
+                        .heightIn(min = 46.dp),
+                        shape = RoundedCornerShape(18.dp),
                         contentPadding = PaddingValues(horizontal = if (compact) 11.dp else 15.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = accent,
@@ -326,7 +326,7 @@ private fun QuickActions(
                 fontWeight = FontWeight.Bold,
             ),
         )
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(8.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -358,7 +358,9 @@ private fun QuickAccessItem(item: QuickActionItem, modifier: Modifier = Modifier
         Image(
             painter = painterResource(item.iconRes),
             contentDescription = null,
-            modifier = Modifier.size(66.dp),
+            modifier = Modifier
+                .size(58.dp)
+                .offset(x = if (item.iconRes == R.drawable.home_quick_offline) (-7).dp else 0.dp),
             contentScale = ContentScale.Fit,
         )
         Text(
@@ -366,8 +368,8 @@ private fun QuickAccessItem(item: QuickActionItem, modifier: Modifier = Modifier
             modifier = Modifier.fillMaxWidth(),
             color = MaterialTheme.colorScheme.onSurface,
             style = MaterialTheme.typography.bodyLarge.copy(
-                fontSize = 12.sp,
-                lineHeight = 16.sp,
+                fontSize = 11.5.sp,
+                lineHeight = 15.sp,
                 fontWeight = FontWeight.Medium,
             ),
             textAlign = TextAlign.Center,
@@ -390,13 +392,13 @@ private fun EmptyRecentScans(onScan: () -> Unit) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 18.dp),
+                .padding(horizontal = 16.dp, vertical = 14.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Image(
                 painter = painterResource(R.drawable.home_empty_scans),
                 contentDescription = null,
-                modifier = Modifier.size(width = 170.dp, height = 116.dp),
+                modifier = Modifier.size(width = 148.dp, height = 98.dp),
                 contentScale = ContentScale.Fit,
             )
             Text(
@@ -439,7 +441,7 @@ private fun ScanTip() {
     val darkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (darkTheme) MaterialTheme.colorScheme.surfaceVariant else Color(0xFFF2F7EE),
         ),
@@ -448,14 +450,14 @@ private fun ScanTip() {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 92.dp)
+                .heightIn(min = 82.dp)
                 .padding(horizontal = 10.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Image(
                 painter = painterResource(R.drawable.home_care_tip),
                 contentDescription = null,
-                modifier = Modifier.size(width = 100.dp, height = 82.dp),
+                modifier = Modifier.size(width = 88.dp, height = 72.dp),
                 contentScale = ContentScale.Fit,
             )
             Spacer(Modifier.width(8.dp))
@@ -499,9 +501,5 @@ private fun ScanTip() {
 
 @Composable
 private fun homeAccentColor(): Color {
-    return if (MaterialTheme.colorScheme.background.luminance() < 0.5f) {
-        MaterialTheme.colorScheme.secondary
-    } else {
-        LeafGreenDark
-    }
+    return MaterialTheme.colorScheme.primary
 }

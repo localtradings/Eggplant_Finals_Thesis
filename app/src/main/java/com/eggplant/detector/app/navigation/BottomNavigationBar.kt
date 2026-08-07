@@ -223,17 +223,17 @@ private fun RowScope.CameraNavigationItem(
 private fun NavigationBarBackground() {
     val color = MaterialTheme.colorScheme.surface
     Canvas(Modifier.fillMaxSize()) {
-        val top = 14.dp.toPx()
+        val notchCenterY = 14.dp.toPx()
         drawRoundRect(
             color = color,
-            topLeft = Offset.Zero.copy(y = top),
-            size = Size(size.width, size.height - top),
+            topLeft = Offset.Zero,
+            size = Size(size.width, size.height),
             cornerRadius = CornerRadius(26.dp.toPx(), 26.dp.toPx()),
         )
         drawCircle(
             color = color,
             radius = 32.dp.toPx(),
-            center = Offset(size.width / 2f, top),
+            center = Offset(size.width / 2f, notchCenterY),
         )
     }
 }

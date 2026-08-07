@@ -19,9 +19,9 @@ Basic scanning, the disease guide, and My Scans work offline. Global Scans, dise
 
 [Download the latest demo APK from GitHub Releases](https://github.com/localtradings/Eggplant_Finals_Thesis/releases/latest)
 
-The current demo release is **v1.5.28**.
+The current demo release is **v1.5.29**.
 
-This version updates the Planta home screen with a clearer plant-focused design, keeps the selected photo on screen while it is being scanned, and shows the scanning animation over the photo. It also removes the gray navigation boxes, uses the real saved photo in My Scans, and keeps the camera navigation button smaller and centered.
+This version uses a calm green color theme throughout the app, tightens the Planta home screen, keeps the last saved scan visible when one exists, and uses a clearer full-width plant image in the home card. The disease guide now shows leaf and fruit diseases in a two-column layout, including all 5 leaf diseases and 3 fruit diseases. Scanning, saving, sharing, navigation, and the database behavior are unchanged.
 
 The demo APK is made for testing and thesis demonstrations. It is debug-signed and is not a Google Play Store release. Android may ask you to allow installation from the browser or file manager.
 

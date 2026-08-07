@@ -80,8 +80,8 @@ class AppFlowTest {
     @Test
     fun librarySearchAndDetailExcludeConfidence() {
         composeRule.onNodeWithContentDescription("Navigate to Library").performClick()
-        composeRule.onNodeWithText("Learn about common eggplant diseases and how to manage them.")
-            .assertIsDisplayed()
+        composeRule.onAllNodesWithText("Learn about common eggplant diseases and how to manage them.")
+            .assertCountEquals(0)
         composeRule.onNodeWithContentDescription("Leaf Spot disease photo")
             .assertIsDisplayed()
         composeRule.onNodeWithContentDescription("Disease library list").performScrollToIndex(15)

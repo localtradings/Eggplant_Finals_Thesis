@@ -7,7 +7,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 
 private val LightColors = lightColorScheme(
-    primary = EggplantPurple,
+    primary = PrimaryGreen,
     onPrimary = androidx.compose.ui.graphics.Color.White,
     secondary = LeafGreen,
     onSecondary = androidx.compose.ui.graphics.Color.White,
@@ -15,22 +15,22 @@ private val LightColors = lightColorScheme(
     onBackground = Ink,
     surface = androidx.compose.ui.graphics.Color.White,
     onSurface = Ink,
-    surfaceVariant = EggplantLavender,
+    surfaceVariant = PrimaryGreenSoft,
     onSurfaceVariant = MutedInk,
     outline = CardBorder,
 )
 
 private val DarkColors = darkColorScheme(
-    primary = androidx.compose.ui.graphics.Color(0xFFB89BE2),
-    onPrimary = EggplantPurpleDark,
+    primary = androidx.compose.ui.graphics.Color(0xFF8BCB8F),
+    onPrimary = androidx.compose.ui.graphics.Color(0xFF12351A),
     secondary = androidx.compose.ui.graphics.Color(0xFF91D49D),
-    onSecondary = LeafGreenDark,
+    onSecondary = androidx.compose.ui.graphics.Color(0xFF12351A),
     background = DarkBackground,
-    onBackground = androidx.compose.ui.graphics.Color(0xFFF5F1FA),
+    onBackground = androidx.compose.ui.graphics.Color(0xFFF0F7F1),
     surface = DarkSurface,
-    onSurface = androidx.compose.ui.graphics.Color(0xFFF5F1FA),
-    surfaceVariant = androidx.compose.ui.graphics.Color(0xFF302B3B),
-    onSurfaceVariant = androidx.compose.ui.graphics.Color(0xFFD4CDDD),
+    onSurface = androidx.compose.ui.graphics.Color(0xFFF0F7F1),
+    surfaceVariant = androidx.compose.ui.graphics.Color(0xFF253A29),
+    onSurfaceVariant = androidx.compose.ui.graphics.Color(0xFFC8D8CA),
 )
 
 @Composable

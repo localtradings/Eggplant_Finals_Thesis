@@ -11,7 +11,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
@@ -47,8 +50,8 @@ import com.eggplant.detector.R
 import com.eggplant.detector.data.catalog.DiseaseCatalog
 import com.eggplant.detector.domain.model.Disease
 import com.eggplant.detector.domain.model.DiseaseType
-import com.eggplant.detector.core.ui.theme.EggplantPurple
 import com.eggplant.detector.core.ui.theme.LeafGreen
+import com.eggplant.detector.core.ui.theme.PrimaryGreen
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
@@ -75,16 +78,19 @@ fun DiseaseLibraryScreen(
     val fruitDiseases = filtered.filter { it.type == DiseaseType.FRUIT_DISEASE }
 
     ResponsiveContent {
-        LazyColumn(
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(2),
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
                 .semantics { contentDescription = listDescription },
             contentPadding = PaddingValues(start = 16.dp, top = 14.dp, end = 16.dp, bottom = 14.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            item { LibraryHeader(onHelp, onRefresh) }
-            item { Spacer(Modifier.height(8.dp)) }
-            item {
+            item(span = { GridItemSpan(maxLineSpan) }) { LibraryHeader(onHelp, onRefresh) }
+            item(span = { GridItemSpan(maxLineSpan) }) { Spacer(Modifier.height(2.dp)) }
+            item(span = { GridItemSpan(maxLineSpan) }) {
                 SearchBar(
                     value = query,
                     onValueChange = { query = it },
@@ -92,8 +98,8 @@ fun DiseaseLibraryScreen(
                     onFilterClick = { showFilterSheet = true },
                 )
             }
-            item { Spacer(Modifier.height(8.dp)) }
-            item {
+            item(span = { GridItemSpan(maxLineSpan) }) { Spacer(Modifier.height(2.dp)) }
+            item(span = { GridItemSpan(maxLineSpan) }) {
                 FilterChips(
                     options = listOf(allLabel, leafLabel, fruitLabel),
                     selected = selectedFilter,
@@ -102,7 +108,7 @@ fun DiseaseLibraryScreen(
             }
 
             if (filtered.isEmpty()) {
-                item {
+                item(span = { GridItemSpan(maxLineSpan) }) {
                     Column(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 70.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -115,19 +121,25 @@ fun DiseaseLibraryScreen(
                 }
             } else {
                 if (leafDiseases.isNotEmpty()) {
-                    item { Spacer(Modifier.height(8.dp)) }
-                    item { SectionHeader(leafLabel, LeafGreen) }
-                    items(leafDiseases.size, key = { leafDiseases[it].id }) { index ->
-                        DiseaseCard(leafDiseases[index], { onDiseaseClick(leafDiseases[index]) })
-                        if (index != leafDiseases.lastIndex) Spacer(Modifier.height(2.dp))
+                    item(span = { GridItemSpan(maxLineSpan) }) { Spacer(Modifier.height(2.dp)) }
+                    item(span = { GridItemSpan(maxLineSpan) }) { SectionHeader(leafLabel, LeafGreen) }
+                    items(leafDiseases, key = { it.id }) { disease ->
+                        DiseaseCard(
+                            disease = disease,
+                            onClick = { onDiseaseClick(disease) },
+                            compact = true,
+                        )
                     }
                 }
                 if (fruitDiseases.isNotEmpty()) {
-                    item { Spacer(Modifier.height(8.dp)) }
-                    item { SectionHeader(fruitLabel, EggplantPurple) }
-                    items(fruitDiseases.size, key = { fruitDiseases[it].id }) { index ->
-                        DiseaseCard(fruitDiseases[index], { onDiseaseClick(fruitDiseases[index]) })
-                        if (index != fruitDiseases.lastIndex) Spacer(Modifier.height(2.dp))
+                    item(span = { GridItemSpan(maxLineSpan) }) { Spacer(Modifier.height(2.dp)) }
+                    item(span = { GridItemSpan(maxLineSpan) }) { SectionHeader(fruitLabel, PrimaryGreen) }
+                    items(fruitDiseases, key = { it.id }) { disease ->
+                        DiseaseCard(
+                            disease = disease,
+                            onClick = { onDiseaseClick(disease) },
+                            compact = true,
+                        )
                     }
                 }
             }
@@ -160,31 +172,26 @@ fun DiseaseLibraryScreen(
 @Composable
 private fun LibraryHeader(onHelp: () -> Unit, onRefresh: () -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth().height(54.dp),
+        modifier = Modifier.fillMaxWidth().height(46.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
             Icons.AutoMirrored.Outlined.MenuBook,
             contentDescription = null,
             modifier = Modifier.size(42.dp).padding(end = 10.dp),
-            tint = EggplantPurple,
+            tint = MaterialTheme.colorScheme.primary,
         )
         Column(Modifier.weight(1f)) {
             Text(
                 stringResource(R.string.library_title),
                 style = MaterialTheme.typography.headlineMedium.copy(fontSize = 24.sp, lineHeight = 28.sp),
             )
-            Text(
-                stringResource(R.string.library_subtitle),
-                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 11.5.sp, lineHeight = 16.sp),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
         }
         IconButton(onClick = onRefresh, modifier = Modifier.size(48.dp)) {
             Icon(
                 Icons.Outlined.Refresh,
                 contentDescription = stringResource(R.string.refresh),
-                tint = EggplantPurple,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(22.dp),
             )
         }
@@ -192,7 +199,7 @@ private fun LibraryHeader(onHelp: () -> Unit, onRefresh: () -> Unit) {
             Icon(
                 Icons.AutoMirrored.Outlined.HelpOutline,
                 contentDescription = stringResource(R.string.open_help),
-                tint = EggplantPurple,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(22.dp),
             )
         }

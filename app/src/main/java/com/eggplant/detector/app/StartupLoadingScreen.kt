@@ -28,7 +28,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -69,7 +68,7 @@ internal fun StartupLoadingScreen(
 
     Box(
         modifier = modifier
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.background)
             .semantics {
                 contentDescription = loadingDescription
             },
@@ -104,7 +103,7 @@ private fun BrandLoadingScreen() {
         Text(
             text = stringResource(R.string.app_name),
             style = MaterialTheme.typography.headlineSmall,
-            color = Color(0xFF17152B),
+            color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 2.dp),
@@ -154,14 +153,14 @@ private fun PreparingPlantsLoadingScreen(
         Text(
             text = stringResource(R.string.startup_preparing_plants),
             style = MaterialTheme.typography.titleLarge,
-            color = Color(0xFF17152B),
+            color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 8.dp),
         )
         Text(
             text = stringResource(R.string.startup_loading_message),
             style = MaterialTheme.typography.bodyMedium,
-            color = Color(0xFF68687C),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 6.dp),
         )
@@ -170,7 +169,7 @@ private fun PreparingPlantsLoadingScreen(
                 .padding(top = 22.dp)
                 .width(176.dp),
             color = MaterialTheme.colorScheme.primary,
-            trackColor = Color(0xFFF1ECF8),
+            trackColor = MaterialTheme.colorScheme.surfaceVariant,
         )
     }
 }
