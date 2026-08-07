@@ -11,7 +11,7 @@ export function RefreshDashboardButton() {
   return (
     <button
       type="button"
-      className="focus-ring action-button inline-flex min-h-11 items-center gap-2 rounded-xl border border-[#d9d3e4] bg-white px-3.5 text-sm font-semibold text-[#512b91]"
+      className="focus-ring action-button inline-flex min-h-11 items-center gap-2 rounded-xl border border-[#d6e3d2] bg-white px-3.5 text-sm font-semibold text-[#1f6b3a]"
       onClick={() => startTransition(() => router.refresh())}
       disabled={isPending}
       aria-busy={isPending}

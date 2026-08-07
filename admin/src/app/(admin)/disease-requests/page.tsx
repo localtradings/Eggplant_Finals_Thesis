@@ -17,13 +17,13 @@ function StatusPill({ status }: { status: string }) {
     ? "bg-[#e9f6eb] text-[#247936]"
     : status === "not_supported" || status === "closed"
       ? "bg-[#fff0f2] text-[#a92f40]"
-      : "bg-[#f0eafa] text-[#512b91]";
+      : "bg-[#e7f2e6] text-[#1f6b3a]";
   return <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${tone}`}>{requestStatusLabel(status)}</span>;
 }
 
 function RequestThumbnail({ url, name }: { url?: string; name: string }) {
-  return <div className="relative h-20 w-24 shrink-0 overflow-hidden rounded-xl bg-[#eeeaf4] sm:h-16 sm:w-20">
-    {url ? <Image src={url} alt={`Private request photo for ${name}`} fill sizes="96px" unoptimized className="object-cover" /> : <div className="grid h-full place-items-center text-[#777286]"><ImageOff size={18} aria-label="Photo unavailable" /></div>}
+  return <div className="relative h-20 w-24 shrink-0 overflow-hidden rounded-xl bg-[#eef5eb] sm:h-16 sm:w-20">
+    {url ? <Image src={url} alt={`Private request photo for ${name}`} fill sizes="96px" unoptimized className="object-cover" /> : <div className="grid h-full place-items-center text-[#68766b]"><ImageOff size={18} aria-label="Photo unavailable" /></div>}
   </div>;
 }
 
@@ -48,26 +48,26 @@ export default async function DiseaseRequestsPage({ searchParams }: { searchPara
 
   return <div className="fade-up mx-auto max-w-[1240px]">
       <header className="flex flex-wrap items-end justify-between gap-4">
-        <div><h1 className="text-3xl font-bold tracking-[-.03em]">Disease requests</h1><p className="mt-1 text-sm text-[#6f6b80]">Private no-match requests. Review the real submitted photo before changing status.</p></div>
-        {!error && <p className="rounded-xl border border-[#ded9e8] bg-white px-3 py-2 text-sm font-semibold text-[#5e596e]">{requests.length} recent request{requests.length === 1 ? "" : "s"}</p>}
+        <div><h1 className="text-3xl font-bold tracking-[-.03em]">Disease requests</h1><p className="mt-1 text-sm text-[#647166]">Private no-match requests. Review the real submitted photo before changing status.</p></div>
+        {!error && <p className="rounded-xl border border-[#d5e2d3] bg-white px-3 py-2 text-sm font-semibold text-[#5b695f]">{requests.length} recent request{requests.length === 1 ? "" : "s"}</p>}
       </header>
       {reviewSucceeded && <p role="status" className="status-banner mt-5 flex items-center gap-2 rounded-xl border border-[#bfe4c5] bg-[#f1fbf2] p-3 text-sm font-semibold text-[#247936]"><CheckCircle2 size={17}/>{outcome === "unchanged" ? "No request changes were needed." : `Request marked ${requestStatusLabel(reviewed)}.`}</p>}
-      {error ? <p role="alert" className="mt-6 rounded-xl bg-[#fff0f2] p-4 text-sm text-[#a92f40]">Disease requests are temporarily unavailable.</p> : requests.length === 0 ? <div className="surface mt-6 grid place-items-center p-10 text-center sm:p-14"><Image src="/disease-requests-empty.webp" alt="Eggplant seedling beside a blank request sheet" width={220} height={220} className="h-36 w-36 object-contain sm:h-44 sm:w-44"/><h2 className="mt-3 text-lg font-bold">No open requests</h2><p className="mt-1 text-sm text-[#6f6b80]">Private no-match reports will appear here.</p></div> : <>
+      {error ? <p role="alert" className="mt-6 rounded-xl bg-[#fff0f2] p-4 text-sm text-[#a92f40]">Disease requests are temporarily unavailable.</p> : requests.length === 0 ? <div className="surface mt-6 grid place-items-center p-10 text-center sm:p-14"><Image src="/disease-requests-empty.webp" alt="Eggplant seedling beside a blank request sheet" width={220} height={220} className="h-36 w-36 object-contain sm:h-44 sm:w-44"/><h2 className="mt-3 text-lg font-bold">No open requests</h2><p className="mt-1 text-sm text-[#647166]">Private no-match reports will appear here.</p></div> : <>
         <section className="mt-6 grid gap-3 md:hidden" aria-label="Disease request cards">
           {requests.map((request) => {
             const photos = ([...(request.disease_request_photos ?? [])] as RequestPhoto[]).sort((a, b) => a.position - b.position);
             const name = request.requested_name || "Name not provided";
             return <article className="surface request-item p-4" key={request.id}>
-              <div className="flex items-start gap-3"><RequestThumbnail url={photos[0] ? signedByPath.get(photos[0].object_path) : undefined} name={name}/><div className="min-w-0 flex-1"><div className="flex flex-wrap items-start justify-between gap-2"><Link className="focus-ring safe-long-content font-semibold text-[#512b91] hover:underline" href={`/disease-requests/${request.id}`}>{name}</Link><StatusPill status={request.status}/></div><p className="safe-long-content mt-2 line-clamp-3 text-sm leading-5 text-[#625e72]">{request.notes || "No notes supplied."}</p><p className="mt-2 font-mono text-xs text-[#777286]">{photos.length} photo{photos.length === 1 ? "" : "s"} · {new Date(request.created_at).toLocaleString()}</p></div></div>
-              <div className="mt-4 flex items-center justify-between gap-3 border-t border-[#ece9f1] pt-3"><Link href={`/disease-requests/${request.id}`} className="focus-ring text-sm font-semibold text-[#512b91]">Open review</Link><RequestReviewActions action={updateDiseaseRequest} requestId={request.id} currentStatus={request.status} plannedIdempotencyKey={randomUUID()} unsupportedIdempotencyKey={randomUUID()} compact/></div>
+              <div className="flex items-start gap-3"><RequestThumbnail url={photos[0] ? signedByPath.get(photos[0].object_path) : undefined} name={name}/><div className="min-w-0 flex-1"><div className="flex flex-wrap items-start justify-between gap-2"><Link className="focus-ring safe-long-content font-semibold text-[#1f6b3a] hover:underline" href={`/disease-requests/${request.id}`}>{name}</Link><StatusPill status={request.status}/></div><p className="safe-long-content mt-2 line-clamp-3 text-sm leading-5 text-[#5e6d61]">{request.notes || "No notes supplied."}</p><p className="mt-2 font-mono text-xs text-[#68766b]">{photos.length} photo{photos.length === 1 ? "" : "s"} · {new Date(request.created_at).toLocaleString()}</p></div></div>
+              <div className="mt-4 flex items-center justify-between gap-3 border-t border-[#e5ece2] pt-3"><Link href={`/disease-requests/${request.id}`} className="focus-ring text-sm font-semibold text-[#1f6b3a]">Open review</Link><RequestReviewActions action={updateDiseaseRequest} requestId={request.id} currentStatus={request.status} plannedIdempotencyKey={randomUUID()} unsupportedIdempotencyKey={randomUUID()} compact/></div>
             </article>;
           })}
         </section>
         <section className="surface mt-6 hidden overflow-x-auto p-5 md:block">
-          <table className="w-full min-w-[980px] text-left text-sm"><thead className="text-xs uppercase tracking-wide text-[#797487]"><tr><th className="pb-3">Photo</th><th className="pb-3">Requested disease</th><th className="pb-3">Notes</th><th className="pb-3">Status</th><th className="pb-3">Submitted</th><th className="pb-3 text-right">Quick review</th></tr></thead><tbody className="divide-y divide-[#ece9f1]">{requests.map((request) => {
+          <table className="w-full min-w-[980px] text-left text-sm"><thead className="text-xs uppercase tracking-wide text-[#748276]"><tr><th className="pb-3">Photo</th><th className="pb-3">Requested disease</th><th className="pb-3">Notes</th><th className="pb-3">Status</th><th className="pb-3">Submitted</th><th className="pb-3 text-right">Quick review</th></tr></thead><tbody className="divide-y divide-[#e5ece2]">{requests.map((request) => {
             const photos = ([...(request.disease_request_photos ?? [])] as RequestPhoto[]).sort((a, b) => a.position - b.position);
             const name = request.requested_name || "Name not provided";
-            return <tr className="request-item" key={request.id}><td className="py-3 pr-4"><RequestThumbnail url={photos[0] ? signedByPath.get(photos[0].object_path) : undefined} name={name}/></td><td className="max-w-[13rem] py-3 pr-4 align-top"><Link className="focus-ring safe-long-content font-semibold text-[#512b91] hover:underline" href={`/disease-requests/${request.id}`}>{name}</Link><p className="mt-1 font-mono text-xs text-[#777286]">{photos.length} photo{photos.length === 1 ? "" : "s"}</p></td><td className="max-w-[20rem] py-3 pr-4 align-top text-[#666174]"><p className="safe-long-content line-clamp-3 leading-5">{request.notes || "—"}</p></td><td className="py-3 pr-4 align-top"><StatusPill status={request.status}/></td><td className="whitespace-nowrap py-3 pr-4 align-top font-mono text-xs text-[#777286]">{new Date(request.created_at).toLocaleString()}</td><td className="py-3 text-right align-top"><RequestReviewActions action={updateDiseaseRequest} requestId={request.id} currentStatus={request.status} plannedIdempotencyKey={randomUUID()} unsupportedIdempotencyKey={randomUUID()}/></td></tr>;
+            return <tr className="request-item" key={request.id}><td className="py-3 pr-4"><RequestThumbnail url={photos[0] ? signedByPath.get(photos[0].object_path) : undefined} name={name}/></td><td className="max-w-[13rem] py-3 pr-4 align-top"><Link className="focus-ring safe-long-content font-semibold text-[#1f6b3a] hover:underline" href={`/disease-requests/${request.id}`}>{name}</Link><p className="mt-1 font-mono text-xs text-[#68766b]">{photos.length} photo{photos.length === 1 ? "" : "s"}</p></td><td className="max-w-[20rem] py-3 pr-4 align-top text-[#5e6d61]"><p className="safe-long-content line-clamp-3 leading-5">{request.notes || "—"}</p></td><td className="py-3 pr-4 align-top"><StatusPill status={request.status}/></td><td className="whitespace-nowrap py-3 pr-4 align-top font-mono text-xs text-[#68766b]">{new Date(request.created_at).toLocaleString()}</td><td className="py-3 text-right align-top"><RequestReviewActions action={updateDiseaseRequest} requestId={request.id} currentStatus={request.status} plannedIdempotencyKey={randomUUID()} unsupportedIdempotencyKey={randomUUID()}/></td></tr>;
           })}</tbody></table>
         </section>
       </>}

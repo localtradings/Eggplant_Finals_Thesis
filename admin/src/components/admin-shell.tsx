@@ -21,7 +21,7 @@ export function AdminShell({ children, role, loginName, reportCount = 0 }: { chi
   const pathname = usePathname();
 
   return (
-    <div className="min-h-screen bg-[#f7f7f4] lg:grid lg:grid-cols-[276px_1fr]">
+    <div className="min-h-screen bg-[#f6f8f3] lg:grid lg:grid-cols-[276px_1fr]">
       <aside className="border-b border-[#dfe3dc] bg-[#eef1ed] px-5 py-5 text-[#20251f] lg:relative lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r lg:border-[#d8ddd5]">
         <div className="flex items-center gap-3 px-2">
           <Image src="/planta-logo.png" alt="" width={50} height={50} priority className="object-contain" />
@@ -30,16 +30,16 @@ export function AdminShell({ children, role, loginName, reportCount = 0 }: { chi
         <nav className="mt-8 flex gap-2 overflow-x-auto pb-1 lg:grid lg:grid-cols-1" aria-label="Admin navigation">
           {items.filter(([, , , ownerOnly]) => !ownerOnly || role === "owner").map(([label, href, Icon]) => {
             const selected = pathname === href || pathname.startsWith(`${href}/`);
-            return <Link prefetch={false} key={href} href={href} aria-current={selected ? "page" : undefined} className={`focus-ring flex min-h-11 shrink-0 items-center gap-3 rounded-xl px-3.5 text-sm font-semibold transition-all lg:w-full ${selected ? "bg-[#d8c5eb] text-[#3d2269]" : "text-[#5f645e] hover:bg-white/70 hover:text-[#3d2269]"}`}><Icon size={19} strokeWidth={1.9}/><span className="flex-1">{label}</span>{label === "Reports" && reportCount > 0 && <span aria-label={`${reportCount} reports`} className="rounded-full bg-[#fff0dd] px-2 py-0.5 text-[11px] font-bold text-[#995a06]">{reportCount > 99 ? "99+" : reportCount}</span>}</Link>;
+            return <Link prefetch={false} key={href} href={href} aria-current={selected ? "page" : undefined} className={`focus-ring flex min-h-11 shrink-0 items-center gap-3 rounded-xl px-3.5 text-sm font-semibold transition-all lg:w-full ${selected ? "bg-[#d8ebd7] text-[#144b2b]" : "text-[#5f645e] hover:bg-white/70 hover:text-[#144b2b]"}`}><Icon size={19} strokeWidth={1.9}/><span className="flex-1">{label}</span>{label === "Reports" && reportCount > 0 && <span aria-label={`${reportCount} reports`} className="rounded-full bg-[#fff0dd] px-2 py-0.5 text-[11px] font-bold text-[#995a06]">{reportCount > 99 ? "99+" : reportCount}</span>}</Link>;
           })}
         </nav>
         <div className="mt-6 rounded-2xl border border-[#d8ddd5] bg-white/65 p-4 lg:absolute lg:bottom-5 lg:left-5 lg:right-5">
           <div className="flex items-center gap-2 text-sm font-semibold"><ShieldCheck size={17} className="text-[#399d4c]"/>Admin workspace</div>
           <p className="mt-1 text-xs leading-5 text-[#5f645e]">Signed in as {adminRoleLabel(role)}{loginName ? ` · ${loginName}` : ""}. Changes are audited.</p>
-          <form action="/auth/signout" method="post" className="mt-3"><button className="focus-ring flex items-center gap-2 text-xs font-semibold text-[#5b3295] hover:text-[#3d2269]"><LogOut size={14}/>Sign out</button></form>
+          <form action="/auth/signout" method="post" className="mt-3"><button className="focus-ring flex items-center gap-2 text-xs font-semibold text-[#1f6b3a] hover:text-[#144b2b]"><LogOut size={14}/>Sign out</button></form>
         </div>
       </aside>
-      <main className="min-w-0 p-5 sm:p-7 lg:p-10">{children}</main>
+      <main className="admin-main min-w-0 p-5 sm:p-7 lg:p-10">{children}</main>
     </div>
   );
 }

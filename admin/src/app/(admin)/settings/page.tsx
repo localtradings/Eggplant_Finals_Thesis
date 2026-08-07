@@ -60,7 +60,7 @@ export default async function SettingsPage({
   return (
     <div className="fade-up mx-auto max-w-3xl">
       <h1 className="text-3xl font-bold tracking-[-.03em]">Settings</h1>
-      <p className="mt-1 text-sm text-[#68687c]">
+      <p className="mt-1 text-sm text-[#68766b]">
         Control mobile submissions and review the audit log.
       </p>
       {statusChanged && (
@@ -86,7 +86,7 @@ export default async function SettingsPage({
             <h2 className="text-lg font-bold">
               Mobile cloud submissions: {enabled ? "On" : "Paused"}
             </h2>
-            <p className="mt-1 text-sm leading-6 text-[#68687c]">
+            <p className="mt-1 text-sm leading-6 text-[#68766b]">
               When this is on, the mobile app can send new Global Scans and disease requests for review.
               When paused, reading still works and new submissions stay in the app queue until this is turned on.
             </p>
@@ -97,11 +97,11 @@ export default async function SettingsPage({
                 <FormSubmitButton
                   label={enabled ? "Pause mobile submissions" : "Allow mobile submissions"}
                   pendingLabel={enabled ? "Pausing submissions" : "Allowing submissions"}
-                  className={`px-4 text-white ${enabled ? "bg-[#b33143]" : "bg-[#5b3295]"}`}
+                  className={`px-4 text-white ${enabled ? "bg-[#b33143]" : "bg-[#1f6b3a]"}`}
                 />
               </form>
             ) : (
-              <p className="mt-4 text-xs font-semibold text-[#68687c]">
+              <p className="mt-4 text-xs font-semibold text-[#68766b]">
                 Only the owner can change this safety switch.
               </p>
             )}
@@ -110,12 +110,12 @@ export default async function SettingsPage({
       </section>
       <section className="surface mt-5 p-6">
         <div className="flex items-start gap-4">
-          <span className="rounded-full bg-[#f1ecf8] p-3 text-[#5b3295]">
+          <span className="rounded-full bg-[#eaf4e8] p-3 text-[#1f6b3a]">
             <LockKeyhole />
           </span>
           <div>
             <h2 className="text-lg font-bold">Security</h2>
-            <p className="mt-1 text-sm leading-6 text-[#68687c]">
+            <p className="mt-1 text-sm leading-6 text-[#68766b]">
               Private storage, owner-scoped data, server-only credentials, audited moderation, and Row Level Security.
               Catalog version: {data.catalog_version ?? 1}.
             </p>
@@ -125,18 +125,18 @@ export default async function SettingsPage({
       <section className="surface mt-5 p-6">
         <h2 className="font-bold">Audit log</h2>
         {audit.length === 0 ? (
-          <p className="mt-3 text-sm text-[#68687c]">No moderation actions yet.</p>
+          <p className="mt-3 text-sm text-[#68766b]">No moderation actions yet.</p>
         ) : (
-          <div className="mt-4 divide-y divide-[#ece9f1]">
+          <div className="mt-4 divide-y divide-[#e5ece2]">
             {audit.map((event) => (
               <div className="safe-long-content py-3 text-sm" key={event.id}>
                 <div className="flex flex-wrap justify-between gap-4">
                   <span className="font-semibold">{adminActionLabel(event.action)}</span>
-                  <span className="font-mono text-xs text-[#68687c]">
+                  <span className="font-mono text-xs text-[#68766b]">
                     {new Date(event.created_at).toLocaleString()}
                   </span>
                 </div>
-                <p className="safe-long-content mt-1 text-xs text-[#68687c]">
+                <p className="safe-long-content mt-1 text-xs text-[#68766b]">
                   Target: {event.contribution_id ?? event.request_id ?? [event.resource_type, event.resource_key].filter(Boolean).join(":")}
                 </p>
                 {event.reason && (

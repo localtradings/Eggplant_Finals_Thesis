@@ -88,11 +88,11 @@ export function ImageZoomViewer({ url, alt, className = "h-80 w-full", sizes = "
   }
 
   return (
-    <div className={`relative overflow-hidden bg-[#f1ecf8] ${className}`}>
+    <div className={`relative overflow-hidden bg-[#eaf4e8] ${className}`}>
       {url ? (
         <>
           <div className="absolute right-3 top-3 z-20 flex items-center gap-2" role="group" aria-label="Image zoom controls">
-            <span aria-live="polite" className="rounded-xl border border-[#dcd8e4] bg-white/95 px-3 py-2 text-center font-mono text-xs font-semibold text-[#5e596e] shadow-sm backdrop-blur-sm">
+            <span aria-live="polite" className="rounded-xl border border-[#d5e2d3] bg-white/95 px-3 py-2 text-center font-mono text-xs font-semibold text-[#5b695f] shadow-sm backdrop-blur-sm">
               {Math.round(zoom * 100)}%
             </span>
             <button
@@ -101,7 +101,7 @@ export function ImageZoomViewer({ url, alt, className = "h-80 w-full", sizes = "
               title="Zoom out"
               disabled={zoom <= MIN_IMAGE_ZOOM}
               onClick={() => setZoom((current) => clampImageZoom(current - IMAGE_ZOOM_STEP))}
-              className="focus-ring grid h-10 w-10 place-items-center rounded-xl border border-[#dcd8e4] bg-white/95 text-[#5b3295] shadow-sm backdrop-blur-sm hover:bg-[#f1ecf8] disabled:cursor-not-allowed disabled:opacity-35"
+              className="focus-ring grid h-10 w-10 place-items-center rounded-xl border border-[#d5e2d3] bg-white/95 text-[#1f6b3a] shadow-sm backdrop-blur-sm hover:bg-[#eaf4e8] disabled:cursor-not-allowed disabled:opacity-35"
             >
               <Minus size={17} aria-hidden="true" />
             </button>
@@ -111,7 +111,7 @@ export function ImageZoomViewer({ url, alt, className = "h-80 w-full", sizes = "
               title="Zoom in"
               disabled={zoom >= MAX_IMAGE_ZOOM}
               onClick={() => setZoom((current) => clampImageZoom(current + IMAGE_ZOOM_STEP))}
-              className="focus-ring grid h-10 w-10 place-items-center rounded-xl border border-[#dcd8e4] bg-white/95 text-[#5b3295] shadow-sm backdrop-blur-sm hover:bg-[#f1ecf8] disabled:cursor-not-allowed disabled:opacity-35"
+              className="focus-ring grid h-10 w-10 place-items-center rounded-xl border border-[#d5e2d3] bg-white/95 text-[#1f6b3a] shadow-sm backdrop-blur-sm hover:bg-[#eaf4e8] disabled:cursor-not-allowed disabled:opacity-35"
             >
               <Plus size={17} aria-hidden="true" />
             </button>
@@ -121,7 +121,7 @@ export function ImageZoomViewer({ url, alt, className = "h-80 w-full", sizes = "
               title="Reset zoom"
               disabled={zoom === MIN_IMAGE_ZOOM}
               onClick={() => setZoom(MIN_IMAGE_ZOOM)}
-              className="focus-ring grid h-10 w-10 place-items-center rounded-xl border border-[#dcd8e4] bg-white/95 text-[#716c80] shadow-sm backdrop-blur-sm hover:bg-[#f1ecf8] disabled:cursor-not-allowed disabled:opacity-35"
+              className="focus-ring grid h-10 w-10 place-items-center rounded-xl border border-[#d5e2d3] bg-white/95 text-[#647166] shadow-sm backdrop-blur-sm hover:bg-[#eaf4e8] disabled:cursor-not-allowed disabled:opacity-35"
             >
               <RotateCcw size={15} aria-hidden="true" />
             </button>
@@ -156,7 +156,7 @@ export function ImageZoomViewer({ url, alt, className = "h-80 w-full", sizes = "
           </div>
         </>
       ) : (
-        <div className="grid h-full place-items-center text-sm text-[#68687c]">Photo unavailable</div>
+        <div className="grid h-full place-items-center text-sm text-[#68766b]">Photo unavailable</div>
       )}
     </div>
   );

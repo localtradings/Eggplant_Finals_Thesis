@@ -88,7 +88,7 @@ function RequestsWorkspace() {
           <div className="surface p-4" key={index}><div className="flex gap-3"><Bar className="h-20 w-24 shrink-0" /><div className="min-w-0 flex-1"><Bar className="h-5 w-2/3" /><Bar className="mt-3 h-4 w-full" /><Bar className="mt-2 h-4 w-4/5" /></div></div><Bar className="mt-4 h-8 w-full" /></div>
         ))}
       </div>
-      <div className="surface mt-6 hidden overflow-hidden p-5 md:block"><div className="grid grid-cols-[5rem_1.1fr_1.5fr_7rem_9rem_8rem] gap-4 border-b border-[#ece7f1] pb-3">{Array.from({ length: 6 }, (_, index) => <Bar className="h-3 w-full" key={index} />)}</div><div className="divide-y divide-[#ece7f1]">{Array.from({ length: 5 }, (_, index) => <div className="grid grid-cols-[5rem_1.1fr_1.5fr_7rem_9rem_8rem] items-center gap-4 py-4" key={index}>{Array.from({ length: 6 }, (_, cell) => <Bar className={`${cell === 0 ? "h-14" : "h-5"} w-full`} key={cell} />)}</div>)}</div></div>
+      <div className="surface mt-6 hidden overflow-hidden p-5 md:block"><div className="grid grid-cols-[5rem_1.1fr_1.5fr_7rem_9rem_8rem] gap-4 border-b border-[#e5ece2] pb-3">{Array.from({ length: 6 }, (_, index) => <Bar className="h-3 w-full" key={index} />)}</div><div className="divide-y divide-[#e5ece2]">{Array.from({ length: 5 }, (_, index) => <div className="grid grid-cols-[5rem_1.1fr_1.5fr_7rem_9rem_8rem] items-center gap-4 py-4" key={index}>{Array.from({ length: 6 }, (_, cell) => <Bar className={`${cell === 0 ? "h-14" : "h-5"} w-full`} key={cell} />)}</div>)}</div></div>
     </>
   );
 }
