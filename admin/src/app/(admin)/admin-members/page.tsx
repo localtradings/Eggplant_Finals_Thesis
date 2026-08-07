@@ -46,7 +46,7 @@ export default async function AdminMembersPage({
   const created = query.created === "1";
   const claimed = query.claimed === "1";
 
-  return <div className="fade-up mx-auto max-w-5xl">
+  return <div className="admin-page admin-members-page fade-up mx-auto max-w-5xl">
       <header>
         <h1 className="text-3xl font-bold tracking-[-.03em]">Admin access</h1>
         <p className="mt-1 max-w-2xl text-sm leading-6 text-[#647166]">Create dashboard users with a username and password. Supabase keeps the password secure; the internal Auth identity is never shown in this interface.</p>
@@ -56,7 +56,7 @@ export default async function AdminMembersPage({
       {created && <p role="status" className="status-banner mt-5 rounded-xl border border-[#bfe4c5] bg-[#f1fbf2] p-3 text-sm font-semibold text-[#247936]">The admin account is ready. They can sign in with the username and password you entered.</p>}
       {claimed && <p role="status" className="status-banner mt-5 rounded-xl border border-[#bfe4c5] bg-[#f1fbf2] p-3 text-sm font-semibold text-[#247936]">Your owner account now has a username login.</p>}
 
-      <section className="surface mt-6 p-6">
+      <section className="admin-member-form surface mt-6 p-6">
         <div className="flex items-start gap-4">
           <span className="rounded-full bg-[#e7f2e6] p-3 text-[#1f6b3a]"><UserPlus size={22} aria-hidden="true" /></span>
           <div>
@@ -99,10 +99,10 @@ export default async function AdminMembersPage({
         </form>
       </section>}
 
-      <section className="surface mt-5 overflow-hidden">
+      <section className="admin-member-list surface mt-5 overflow-hidden">
         <div className="border-b border-[#e5ece2] p-6"><h2 className="text-lg font-bold">Current admin accounts</h2><p className="mt-1 text-sm text-[#5e6d61]">Membership is required in addition to a valid Supabase Auth session.</p></div>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[38rem] text-left text-sm">
+          <table className="data-table w-full min-w-[38rem] text-left text-sm">
             <thead className="bg-[#fbfdf9] text-xs uppercase tracking-[.1em] text-[#68766b]"><tr><th className="px-6 py-3 font-semibold">Username</th><th className="px-6 py-3 font-semibold">Role</th><th className="px-6 py-3 font-semibold">Added</th></tr></thead>
             <tbody className="divide-y divide-[#e5ece2]">
               {(members ?? []).map((member) => <tr key={member.user_id}><td className="safe-long-content px-6 py-4 font-semibold">{member.login_name ?? "Legacy configured owner"}</td><td className="px-6 py-4">{adminRoleLabel(member.role)}</td><td className="px-6 py-4 text-[#68766b]">{formatDate(member.created_at)}</td></tr>)}

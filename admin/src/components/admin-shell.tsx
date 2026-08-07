@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, ClipboardList, Flag, Globe2, LayoutDashboard, LogOut, Settings, ShieldCheck } from "lucide-react";
+import { Bell, BookOpen, ChevronDown, CircleHelp, ClipboardList, Flag, Globe2, LayoutDashboard, LogOut, Search, Settings, ShieldCheck } from "lucide-react";
 import type { ReactNode } from "react";
 import { adminRoleLabel } from "@/lib/admin-copy";
 
@@ -21,25 +21,32 @@ export function AdminShell({ children, role, loginName, reportCount = 0 }: { chi
   const pathname = usePathname();
 
   return (
-    <div className="min-h-screen bg-[#f6f8f3] lg:grid lg:grid-cols-[276px_1fr]">
-      <aside className="border-b border-[#dfe3dc] bg-[#eef1ed] px-5 py-5 text-[#20251f] lg:relative lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r lg:border-[#d8ddd5]">
-        <div className="flex items-center gap-3 px-2">
-          <Image src="/planta-logo.png" alt="" width={50} height={50} priority className="object-contain" />
-          <div><p className="text-xl font-bold tracking-tight">Planta</p><p className="text-sm font-semibold text-[#399d4c]">Admin</p></div>
-        </div>
-        <nav className="mt-8 flex gap-2 overflow-x-auto pb-1 lg:grid lg:grid-cols-1" aria-label="Admin navigation">
+    <div className="admin-shell">
+      <aside className="admin-rail">
+        <Link href="/overview" className="admin-brand focus-ring">
+          <span className="admin-brand-mark"><Image src="/planta-logo.png" alt="" width={42} height={42} priority className="object-contain" /></span>
+          <span className="admin-brand-copy"><strong>Planta</strong><small>Disease monitoring</small></span>
+        </Link>
+        <nav className="admin-nav" aria-label="Admin navigation">
           {items.filter(([, , , ownerOnly]) => !ownerOnly || role === "owner").map(([label, href, Icon]) => {
             const selected = pathname === href || pathname.startsWith(`${href}/`);
-            return <Link prefetch={false} key={href} href={href} aria-current={selected ? "page" : undefined} className={`focus-ring flex min-h-11 shrink-0 items-center gap-3 rounded-xl px-3.5 text-sm font-semibold transition-all lg:w-full ${selected ? "bg-[#d8ebd7] text-[#144b2b]" : "text-[#5f645e] hover:bg-white/70 hover:text-[#144b2b]"}`}><Icon size={19} strokeWidth={1.9}/><span className="flex-1">{label}</span>{label === "Reports" && reportCount > 0 && <span aria-label={`${reportCount} reports`} className="rounded-full bg-[#fff0dd] px-2 py-0.5 text-[11px] font-bold text-[#995a06]">{reportCount > 99 ? "99+" : reportCount}</span>}</Link>;
+            return <Link prefetch={false} key={href} href={href} aria-current={selected ? "page" : undefined} className={`admin-nav-item focus-ring ${selected ? "is-active" : ""}`}><Icon size={19} strokeWidth={1.8}/><span>{label}</span>{label === "Reports" && reportCount > 0 && <span aria-label={`${reportCount} reports`} className="admin-nav-count">{reportCount > 99 ? "99+" : reportCount}</span>}</Link>;
           })}
         </nav>
-        <div className="mt-6 rounded-2xl border border-[#d8ddd5] bg-white/65 p-4 lg:absolute lg:bottom-5 lg:left-5 lg:right-5">
-          <div className="flex items-center gap-2 text-sm font-semibold"><ShieldCheck size={17} className="text-[#399d4c]"/>Admin workspace</div>
-          <p className="mt-1 text-xs leading-5 text-[#5f645e]">Signed in as {adminRoleLabel(role)}{loginName ? ` · ${loginName}` : ""}. Changes are audited.</p>
-          <form action="/auth/signout" method="post" className="mt-3"><button className="focus-ring flex items-center gap-2 text-xs font-semibold text-[#1f6b3a] hover:text-[#144b2b]"><LogOut size={14}/>Sign out</button></form>
+        <div className="admin-rail-footer">
+          <div className="admin-workspace-switcher"><span className="admin-status-dot" aria-hidden="true" /><div><small>Workspace</small><strong>Planta Admin</strong></div><ChevronDown size={15} aria-hidden="true" /></div>
+          <div className="admin-account-row"><span className="admin-account-avatar">{(loginName || "A").slice(0, 1).toUpperCase()}</span><div className="min-w-0"><strong className="block truncate">{loginName || "Admin"}</strong><small className="block truncate">{adminRoleLabel(role)}</small></div><CircleHelp size={16} aria-hidden="true" /></div>
+          <form action="/auth/signout" method="post"><button className="admin-signout focus-ring"><LogOut size={14}/>Sign out</button></form>
         </div>
       </aside>
-      <main className="admin-main min-w-0 p-5 sm:p-7 lg:p-10">{children}</main>
+      <div className="admin-workspace">
+        <header className="admin-topbar">
+          <div className="admin-mobile-brand"><span className="admin-brand-mark"><Image src="/planta-logo.png" alt="" width={34} height={34} /></span><strong>Planta Admin</strong></div>
+          <div className="admin-search" aria-label="Workspace search"><Search size={17} aria-hidden="true"/><span>Search this workspace</span><kbd>⌘ K</kbd></div>
+          <div className="admin-topbar-actions"><span className="admin-health"><span className="admin-status-dot" aria-hidden="true"/>Authenticated workspace</span><button type="button" className="admin-icon-button focus-ring" aria-label="Notifications"><Bell size={18}/><span className="admin-notification-dot" aria-hidden="true"/></button><div className="admin-topbar-user"><span className="admin-account-avatar">{(loginName || "A").slice(0, 1).toUpperCase()}</span><span className="hidden sm:block"><strong className="block text-sm">{loginName || "Admin"}</strong><small className="block text-xs">{adminRoleLabel(role)}</small></span><ChevronDown size={15} aria-hidden="true" /></div></div>
+        </header>
+        <main className="admin-main min-w-0">{children}</main>
+      </div>
     </div>
   );
 }

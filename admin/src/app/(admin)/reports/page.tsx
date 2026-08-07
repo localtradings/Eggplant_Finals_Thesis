@@ -58,10 +58,10 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   const signedByPath = new Map(paths.map((path, index) => [path, signedResult.data?.[index]?.signedUrl ?? ""]));
   const error = countError ?? reportError ?? scanError;
 
-  return <div className="fade-up mx-auto max-w-[1240px]">
+  return <div className="admin-page reports-page fade-up mx-auto max-w-[1240px]">
     <header className="flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <div className="flex items-center gap-3"><span className="rounded-full bg-[#eaf4e8] p-2.5 text-[#1f6b3a]"><Flag size={20}/></span><h1 className="text-3xl font-bold tracking-[-.03em]">Reports</h1></div>
+        <div>
+        <div className="flex items-center gap-3"><span className="rounded-full bg-[#eaf4e8] p-2.5 text-[#1f6b3a]"><Flag size={20}/></span><div><p className="page-kicker">Moderation queue</p><h1 className="mt-2 text-3xl font-bold tracking-[-.03em]">Reports</h1></div></div>
         <p className="mt-2 max-w-2xl text-sm text-[#647166]">When someone flags a shared scan, it appears here. Open the scan to check the photo and decide whether it should stay public.</p>
         <p className="mt-2 text-xs font-semibold text-[#399d4c]">Signed in as {adminRoleLabel(admin.role)}{admin.loginName ? ` · ${admin.loginName}` : ""}</p>
       </div>
@@ -76,7 +76,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
         {reports.map((report) => {
           const scan = scanById.get(report.contribution_id);
           const photoUrl = scan ? signedByPath.get(scan.photo_path) : "";
-          return <article className="surface min-w-0 p-4 sm:p-5" key={report.id}>
+          return <article className="report-card surface min-w-0 p-4 sm:p-5" key={report.id}>
             <div className="flex min-w-0 flex-col gap-4 sm:flex-row">
               {scan && (photoUrl ? <div className="relative h-48 w-full shrink-0 overflow-hidden rounded-xl bg-[#eaf4e8] sm:w-72"><Image src={photoUrl} alt="Reported shared scan" fill sizes="(min-width: 640px) 18rem, 100vw" unoptimized className="object-cover" /></div> : <div className="grid h-48 w-full shrink-0 place-items-center rounded-xl bg-[#eaf4e8] text-sm text-[#68766b] sm:w-72">Photo unavailable</div>)}
               <div className="min-w-0 flex-1">

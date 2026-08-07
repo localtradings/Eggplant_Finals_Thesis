@@ -58,7 +58,7 @@ export default async function SettingsPage({
   const statusChanged = query.cloudWrites === "enabled" || query.cloudWrites === "paused";
 
   return (
-    <div className="fade-up mx-auto max-w-3xl">
+    <div className="admin-page settings-page fade-up mx-auto max-w-3xl">
       <h1 className="text-3xl font-bold tracking-[-.03em]">Settings</h1>
       <p className="mt-1 text-sm text-[#68766b]">
         Control mobile submissions and review the audit log.
@@ -73,7 +73,7 @@ export default async function SettingsPage({
             : `Mobile submissions are now ${query.cloudWrites}.`}
         </p>
       )}
-      <section className="surface mt-6 p-6">
+      <section className="settings-feature surface mt-6 p-6">
         <div className="flex items-start gap-4">
           <span
             className={`rounded-full p-3 ${
@@ -82,7 +82,7 @@ export default async function SettingsPage({
           >
             <Cloud />
           </span>
-          <div className="flex-1">
+          <div className="settings-feature-copy flex-1">
             <h2 className="text-lg font-bold">
               Mobile cloud submissions: {enabled ? "On" : "Paused"}
             </h2>
@@ -108,7 +108,7 @@ export default async function SettingsPage({
           </div>
         </div>
       </section>
-      <section className="surface mt-5 p-6">
+      <section className="settings-security surface mt-5 p-6">
         <div className="flex items-start gap-4">
           <span className="rounded-full bg-[#eaf4e8] p-3 text-[#1f6b3a]">
             <LockKeyhole />
@@ -122,12 +122,12 @@ export default async function SettingsPage({
           </div>
         </div>
       </section>
-      <section className="surface mt-5 p-6">
+      <section className="settings-audit surface mt-5 p-6">
         <h2 className="font-bold">Audit log</h2>
         {audit.length === 0 ? (
           <p className="mt-3 text-sm text-[#68766b]">No moderation actions yet.</p>
         ) : (
-          <div className="mt-4 divide-y divide-[#e5ece2]">
+          <div className="settings-audit-list mt-4 divide-y divide-[#e5ece2]">
             {audit.map((event) => (
               <div className="safe-long-content py-3 text-sm" key={event.id}>
                 <div className="flex flex-wrap justify-between gap-4">

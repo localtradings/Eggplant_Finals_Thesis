@@ -46,7 +46,7 @@ export default async function DiseaseRequestsPage({ searchParams }: { searchPara
   const outcome = (await searchParams).outcome;
   const reviewSucceeded = reviewed && REQUEST_REVIEW_STATUSES.includes(reviewed as (typeof REQUEST_REVIEW_STATUSES)[number]);
 
-  return <div className="fade-up mx-auto max-w-[1240px]">
+  return <div className="admin-page disease-requests-page fade-up mx-auto max-w-[1240px]">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div><h1 className="text-3xl font-bold tracking-[-.03em]">Disease requests</h1><p className="mt-1 text-sm text-[#647166]">Private no-match requests. Review the real submitted photo before changing status.</p></div>
         {!error && <p className="rounded-xl border border-[#d5e2d3] bg-white px-3 py-2 text-sm font-semibold text-[#5b695f]">{requests.length} recent request{requests.length === 1 ? "" : "s"}</p>}
@@ -63,8 +63,8 @@ export default async function DiseaseRequestsPage({ searchParams }: { searchPara
             </article>;
           })}
         </section>
-        <section className="surface mt-6 hidden overflow-x-auto p-5 md:block">
-          <table className="w-full min-w-[980px] text-left text-sm"><thead className="text-xs uppercase tracking-wide text-[#748276]"><tr><th className="pb-3">Photo</th><th className="pb-3">Requested disease</th><th className="pb-3">Notes</th><th className="pb-3">Status</th><th className="pb-3">Submitted</th><th className="pb-3 text-right">Quick review</th></tr></thead><tbody className="divide-y divide-[#e5ece2]">{requests.map((request) => {
+        <section className="request-table surface mt-6 hidden overflow-x-auto p-5 md:block">
+          <table className="data-table w-full min-w-[980px] text-left text-sm"><thead className="text-xs uppercase tracking-wide text-[#748276]"><tr><th className="pb-3">Photo</th><th className="pb-3">Requested disease</th><th className="pb-3">Notes</th><th className="pb-3">Status</th><th className="pb-3">Submitted</th><th className="pb-3 text-right">Quick review</th></tr></thead><tbody className="divide-y divide-[#e5ece2]">{requests.map((request) => {
             const photos = ([...(request.disease_request_photos ?? [])] as RequestPhoto[]).sort((a, b) => a.position - b.position);
             const name = request.requested_name || "Name not provided";
             return <tr className="request-item" key={request.id}><td className="py-3 pr-4"><RequestThumbnail url={photos[0] ? signedByPath.get(photos[0].object_path) : undefined} name={name}/></td><td className="max-w-[13rem] py-3 pr-4 align-top"><Link className="focus-ring safe-long-content font-semibold text-[#1f6b3a] hover:underline" href={`/disease-requests/${request.id}`}>{name}</Link><p className="mt-1 font-mono text-xs text-[#68766b]">{photos.length} photo{photos.length === 1 ? "" : "s"}</p></td><td className="max-w-[20rem] py-3 pr-4 align-top text-[#5e6d61]"><p className="safe-long-content line-clamp-3 leading-5">{request.notes || "—"}</p></td><td className="py-3 pr-4 align-top"><StatusPill status={request.status}/></td><td className="whitespace-nowrap py-3 pr-4 align-top font-mono text-xs text-[#68766b]">{new Date(request.created_at).toLocaleString()}</td><td className="py-3 text-right align-top"><RequestReviewActions action={updateDiseaseRequest} requestId={request.id} currentStatus={request.status} plannedIdempotencyKey={randomUUID()} unsupportedIdempotencyKey={randomUUID()}/></td></tr>;
