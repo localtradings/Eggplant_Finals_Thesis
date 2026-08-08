@@ -39,21 +39,11 @@ export function Dashboard({ data }: { data: DashboardData }) {
         <Metric label="Contributing installs" value={data.installations} icon={UsersRound} />
         <Metric label="Open requests" value={data.openRequests} icon={Leaf} />
       </section>
-      <div className="workspace-status mt-5">
-        <section className="status-panel" aria-label="System status">
-          <Ops label="Mobile submissions" value={data.cloudWritesEnabled ? "On" : "Paused"} hint="Global scans and disease requests" />
-          <Ops label="Photo storage" value={formatBytes(data.storageBytes)} hint="Private review images" />
-          <Ops label="Last app activity" value={<LiveActivityTimestamp timestamp={data.lastInstallationSeenAt} />} hint="Most recent cloud activity · auto-refreshes" />
-        </section>
-        <section className="attention-panel surface" aria-labelledby="attention-heading">
-          <div className="attention-panel-header"><h2 id="attention-heading">Needs attention</h2><Link href="/settings">Settings <ArrowUpRight className="ml-1 inline" size={15} /></Link></div>
-          <div className="attention-list">
-            <AttentionRow label="Reports received" value={data.reportsReceived} href="/reports" />
-            <AttentionRow label="Open disease requests" value={data.openRequests} href="/disease-requests" />
-            <AttentionRow label="Mobile submissions" value={data.cloudWritesEnabled ? "On" : "Paused"} href="/settings" />
-          </div>
-        </section>
-      </div>
+      <section className="status-panel mt-5" aria-label="System status">
+        <Ops label="Mobile submissions" value={data.cloudWritesEnabled ? "On" : "Paused"} hint="Global scans and disease requests" />
+        <Ops label="Photo storage" value={formatBytes(data.storageBytes)} hint="Private review images" />
+        <Ops label="Last app activity" value={<LiveActivityTimestamp timestamp={data.lastInstallationSeenAt} />} hint="Most recent cloud activity · auto-refreshes" />
+      </section>
       <div className="workspace-layout mt-5">
         <section className="workspace-panel">
           <div className="workspace-panel-header"><h2>Recent shared scans</h2><Link href="/global-scans">View all <ArrowUpRight className="ml-1 inline" size={15} /></Link></div>
@@ -70,5 +60,4 @@ export function Dashboard({ data }: { data: DashboardData }) {
 
 function Empty({ text }: { text: string }) { return <div className="m-5 rounded-xl border border-dashed border-[#d6dec9] bg-[#fafbf4] p-8 text-center text-sm text-[#6b7469]">{text}</div>; }
 function Ops({ label, value, hint }: { label: string; value: ReactNode; hint: string }) { return <div className="status-cell"><p className="status-cell-label">{label}</p><p className="status-cell-value truncate">{value}</p><p className="status-cell-hint truncate">{hint}</p></div>; }
-function AttentionRow({ label, value, href }: { label: string; value: number | string; href: string }) { return <Link href={href} className="attention-row focus-ring"><span className="attention-row-label">{label}</span><span className="attention-row-value">{typeof value === "number" ? value.toLocaleString() : value}</span></Link>; }
 function formatBytes(bytes: number) { if (bytes < 1024) return `${bytes} B`; if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`; return `${(bytes / 1024 / 1024).toFixed(1)} MB`; }

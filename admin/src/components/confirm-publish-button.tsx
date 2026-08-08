@@ -2,9 +2,19 @@
 
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
+import { createPortal } from "react-dom";
+import { useSyncExternalStore } from "react";
 
-export function ConfirmPublishButton() {
+const noopSubscribe = (onStoreChange: () => void) => {
+  void onStoreChange;
+  return () => {};
+};
+const mountedSnapshot = () => true;
+const serverSnapshot = () => false;
+
+export function ConfirmPublishButton({ formId }: { formId: string }) {
   const [open, setOpen] = useState(false);
+  const mounted = useSyncExternalStore(noopSubscribe, mountedSnapshot, serverSnapshot);
   const { pending } = useFormStatus();
   return (
     <>
@@ -16,8 +26,8 @@ export function ConfirmPublishButton() {
       >
         Review and publish disease
       </button>
-      {open && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-[#10251a]/70 p-4 backdrop-blur-[2px]" role="presentation">
+      {open && mounted && createPortal(
+        <div className="publish-dialog-backdrop" role="presentation">
           <section
             role="dialog"
             aria-modal="true"
@@ -29,9 +39,9 @@ export function ConfirmPublishButton() {
               <h2 id="publish-disease-title" className="text-xl font-bold text-[#173322]">Publish this disease?</h2>
             </div>
             <div className="px-6 py-5">
-            <p id="publish-disease-description" className="text-sm leading-6 text-[#5e6d61]">
+              <p id="publish-disease-description" className="text-sm leading-6 text-[#5e6d61]">
               This adds the bilingual content and image to the Library catalog. It will not add a new detector model class.
-            </p>
+              </p>
             </div>
             <div className="flex justify-end gap-3 border-t border-[#e2eadf] bg-[#fbfdf9] px-6 py-4">
               <button
@@ -44,6 +54,7 @@ export function ConfirmPublishButton() {
               </button>
               <button
                 type="submit"
+                form={formId}
                 className="focus-ring h-11 rounded-xl bg-[#278b3d] px-4 font-semibold text-white disabled:cursor-wait disabled:opacity-60"
                 disabled={pending}
               >
@@ -51,7 +62,8 @@ export function ConfirmPublishButton() {
               </button>
             </div>
           </section>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );

@@ -38,16 +38,14 @@ function OverviewWorkspace() {
           </div>
         ))}
       </div>
-      <div className="workspace-status mt-5">
-        <div className="status-panel">
-          {Array.from({ length: 3 }, (_, index) => (
-            <div className="status-cell" key={index}>
-              <Bar className="h-3 w-24" />
-              <Bar className="mt-2 h-4 w-32" />
-            </div>
-          ))}
-        </div>
-        <div className="attention-panel surface min-h-[9rem]"><Bar className="h-5 w-36" /><div className="mt-5 grid gap-3"><Bar className="h-4 w-full" /><Bar className="h-4 w-4/5" /><Bar className="h-4 w-3/5" /></div></div>
+      <div className="status-panel mt-5">
+        {Array.from({ length: 3 }, (_, index) => (
+          <div className="status-cell" key={index}>
+            <Bar className="h-3 w-24" />
+            <Bar className="mt-2 h-5 w-32" />
+            <Bar className="mt-2 h-3 w-44 max-w-full" />
+          </div>
+        ))}
       </div>
       <div className="workspace-layout mt-5">
         <div className="surface min-h-[19rem] p-5">

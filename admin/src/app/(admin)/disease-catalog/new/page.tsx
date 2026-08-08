@@ -85,7 +85,7 @@ export default async function AddDiseasePage() {
         </div>
         <p className="mt-1 max-w-3xl text-sm leading-6 text-[#686a69]">Add a library entry with complete English and Filipino educational content. New entries are library-only and do not change the on-device detector model.</p>
       </header>
-      <form action={createDisease} encType="multipart/form-data" className="mt-6 grid gap-5">
+      <form id="create-disease-form" action={createDisease} encType="multipart/form-data" className="mt-6 grid gap-5">
         <input type="hidden" name="idempotency_key" value={randomUUID()} />
         <section className="surface p-5">
           <h2 className="text-xl font-bold">Catalog identity</h2>
@@ -100,7 +100,7 @@ export default async function AddDiseasePage() {
         <LanguageSection language="fil" title="Filipino" />
         <div className="surface flex flex-wrap items-center justify-between gap-4 p-5">
           <p className="max-w-xl text-sm leading-6 text-[#686a69]">Publishing increases the catalog version. The app will show this entry in Library after its next successful catalog refresh; the existing detector remains unchanged.</p>
-          <ConfirmPublishButton />
+          <ConfirmPublishButton formId="create-disease-form" />
         </div>
       </form>
     </div>

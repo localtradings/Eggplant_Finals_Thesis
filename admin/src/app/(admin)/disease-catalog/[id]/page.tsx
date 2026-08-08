@@ -2,6 +2,7 @@ import { FormSubmitButton } from "@/components/form-submit-button";
 import { ConfirmDeleteDiseaseButton } from "@/components/confirm-delete-disease-button";
 import { hashActionPayload, requireIdempotencyKey } from "@/lib/action-idempotency";
 import { requireAdmin } from "@/lib/auth";
+import { getCatalogArtworkUrl, getCatalogDisplayCategory } from "@/lib/catalog-artwork";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { ArrowLeft, LockKeyhole } from "lucide-react";
 import Image from "next/image";
@@ -118,9 +119,9 @@ export default async function DiseaseContentEditor({ params, searchParams }: { p
   const { data: disease, error } = await supabase.from("disease_catalog").select("id,detector_supported,model_class_index,model_label,category,artwork_path,content_version,disease_localizations(*),disease_signs(*),disease_references(*)").eq("id", id).maybeSingle();
   if (error) throw new Error("The disease content could not be loaded.");
   if (!disease) notFound();
-  const artworkUrl = disease.id === "melon-thrips"
-    ? "/disease-artwork/melon-thrips-v2.jpg"
-    : disease.artwork_path ? supabase.storage.from("disease-catalog-artwork").getPublicUrl(disease.artwork_path).data.publicUrl : null;
+  const remoteArtworkUrl = disease.artwork_path ? supabase.storage.from("disease-catalog-artwork").getPublicUrl(disease.artwork_path).data.publicUrl : null;
+  const artworkUrl = getCatalogArtworkUrl(disease.id, remoteArtworkUrl);
+  const displayCategory = getCatalogDisplayCategory(disease.id, disease.category);
   const english = disease.disease_localizations?.find((row) => row.language_tag === "en");
 
   return (
@@ -130,6 +131,7 @@ export default async function DiseaseContentEditor({ params, searchParams }: { p
       <header className="mt-4 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold capitalize">{disease.id.replaceAll("-", " ")}</h1>
+          <p className="page-kicker mt-3">{displayCategory.replaceAll("_", " ")}</p>
           <p className="mt-1 text-sm text-[#647166]">Edit bilingual educational content, symptoms, and citations.</p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-3">

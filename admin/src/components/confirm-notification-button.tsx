@@ -2,9 +2,19 @@
 
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
+import { createPortal } from "react-dom";
+import { useSyncExternalStore } from "react";
 
-export function ConfirmNotificationButton() {
+const noopSubscribe = (onStoreChange: () => void) => {
+  void onStoreChange;
+  return () => {};
+};
+const mountedSnapshot = () => true;
+const serverSnapshot = () => false;
+
+export function ConfirmNotificationButton({ formId }: { formId: string }) {
   const [open, setOpen] = useState(false);
+  const mounted = useSyncExternalStore(noopSubscribe, mountedSnapshot, serverSnapshot);
   const { pending } = useFormStatus();
 
   return (
@@ -17,8 +27,8 @@ export function ConfirmNotificationButton() {
       >
         Review and publish
       </button>
-      {open && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-[#10251a]/70 p-4 backdrop-blur-[2px]" role="presentation">
+      {open && mounted && createPortal(
+        <div className="publish-dialog-backdrop" role="presentation">
           <section
             role="dialog"
             aria-modal="true"
@@ -45,6 +55,7 @@ export function ConfirmNotificationButton() {
               </button>
               <button
                 type="submit"
+                form={formId}
                 className="focus-ring h-11 rounded-xl bg-[#278b3d] px-4 font-semibold text-white disabled:cursor-wait disabled:opacity-60"
                 disabled={pending}
               >
@@ -52,7 +63,8 @@ export function ConfirmNotificationButton() {
               </button>
             </div>
           </section>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );

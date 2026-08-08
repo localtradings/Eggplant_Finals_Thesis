@@ -80,7 +80,7 @@ export default async function NotificationsPage({
         </p>
       )}
 
-      <form action={publishNotification} className="mt-6 grid gap-5">
+      <form id="publish-notification-form" action={publishNotification} className="mt-6 grid gap-5">
         <input type="hidden" name="idempotency_key" value={randomUUID()} />
         <section className="surface p-5 sm:p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
@@ -110,7 +110,7 @@ export default async function NotificationsPage({
 
         <div className="surface flex flex-wrap items-center justify-between gap-4 p-5">
           <p className="max-w-2xl text-sm leading-6 text-[#647166]">The app keeps the message locally once it syncs, so users can read it even if they go offline later.</p>
-          <ConfirmNotificationButton />
+          <ConfirmNotificationButton formId="publish-notification-form" />
         </div>
       </form>
 
