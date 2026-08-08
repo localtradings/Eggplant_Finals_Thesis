@@ -9,8 +9,12 @@ import com.eggplant.detector.detection.ncnn.ModelMetadata
 import com.eggplant.detector.detection.api.NormalizedBox
 import com.eggplant.detector.detection.api.RgbFrame
 import com.eggplant.detector.detection.api.StabilityResult
+import com.eggplant.detector.domain.model.ScanCategory
 import com.eggplant.detector.domain.model.ScanOutcome
+import com.eggplant.detector.domain.model.ScanResult
 import com.eggplant.detector.domain.model.ShareEligibility
+import java.io.File
+import java.time.LocalDateTime
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertFalse
@@ -67,14 +71,13 @@ class EggplantAppViewModelTest {
     }
 
     @Test
-    fun `saving current result is idempotent`() {
+    fun `completed capture result is saved automatically and only once`() {
         val viewModel = EggplantAppViewModel(initialHistory = emptyList())
         val (scene, primary) = diseaseScene(5, InputSource.CAPTURE)
 
         viewModel.openDetectionScene(scene, primary)
-        assertTrue(viewModel.saveCurrentResult())
-        assertTrue(!viewModel.saveCurrentResult())
         assertEquals(1, viewModel.history.value.size)
+        assertEquals(SaveState.SAVED, viewModel.saveState.value)
     }
 
     @Test
@@ -92,7 +95,7 @@ class EggplantAppViewModelTest {
     }
 
     @Test
-    fun `confirmed live healthy result does not create disease history`() {
+    fun `confirmed live healthy result is saved to history`() {
         val healthy = DetectionBox(
             ModelMetadata.EGGPLANT_YOLO26M.classFor(2)!!,
             0.91f,
@@ -107,7 +110,7 @@ class EggplantAppViewModelTest {
 
         viewModel.finalizeLiveDetectionScene(scene, healthy)
 
-        assertTrue(viewModel.history.value.isEmpty())
+        assertEquals(1, viewModel.history.value.size)
         assertEquals(ScanOutcome.HEALTHY_CONFIRMED, viewModel.currentResult.value?.outcome)
     }
 
@@ -117,7 +120,6 @@ class EggplantAppViewModelTest {
         val (scene, primary) = diseaseScene(1, InputSource.GALLERY)
 
         viewModel.openDetectionScene(scene, primary)
-        viewModel.saveCurrentResult()
 
         assertEquals("Fruit Borer", viewModel.lastScan.value?.name)
     }
@@ -151,7 +153,7 @@ class EggplantAppViewModelTest {
     }
 
     @Test
-    fun `healthy result opens with its class name but cannot be saved`() {
+    fun `healthy result opens with its class name and is saved automatically`() {
         val healthyLeaf = DetectionBox(
             ModelMetadata.EGGPLANT_YOLO26M.classFor(2)!!,
             0.91f,
@@ -176,12 +178,12 @@ class EggplantAppViewModelTest {
         assertEquals("Healthy Leaf", viewModel.currentResult.value?.name)
         assertEquals(ScanOutcome.HEALTHY_CONFIRMED, viewModel.currentResult.value?.outcome)
         assertEquals(com.eggplant.detector.domain.model.ScanCategory.NO_DISEASE_DETECTED, viewModel.currentResult.value?.category)
-        assertFalse(viewModel.saveCurrentResult())
-        assertTrue(viewModel.history.value.isEmpty())
+        assertEquals(1, viewModel.history.value.size)
+        assertEquals(SaveState.SAVED, viewModel.saveState.value)
     }
 
     @Test
-    fun `no match scene opens a result without enabling save`() {
+    fun `no match scene is saved to history automatically`() {
         val rgb = RgbFrame(2, 2, ByteArray(12), 10, InputSource.GALLERY, 1)
         val scene = CameraScene(
             rgb,
@@ -200,7 +202,54 @@ class EggplantAppViewModelTest {
 
         assertEquals(ScanOutcome.NO_MATCH, viewModel.currentResult.value?.outcome)
         assertEquals(com.eggplant.detector.domain.model.ScanCategory.NO_DISEASE_DETECTED, viewModel.currentResult.value?.category)
-        assertFalse(viewModel.saveCurrentResult())
+        assertEquals(1, viewModel.history.value.size)
+        assertEquals(SaveState.SAVED, viewModel.saveState.value)
+    }
+
+    @Test
+    fun `gallery result can start a disease request`() {
+        val photo = File.createTempFile("planta-gallery-request", ".jpg")
+        photo.writeBytes(byteArrayOf(1, 2, 3))
+        try {
+            val result = ScanResult(
+                id = "gallery-request",
+                name = "No disease detected",
+                category = ScanCategory.NO_DISEASE_DETECTED,
+                outcome = ScanOutcome.NO_MATCH,
+                confidence = 0,
+                scannedAt = LocalDateTime.of(2026, 8, 6, 0, 0),
+                signs = emptyList(),
+                treatment = "",
+                source = "gallery",
+                imagePath = photo.absolutePath,
+            )
+            val viewModel = EggplantAppViewModel(initialHistory = emptyList())
+
+            viewModel.openHistoryResult(result)
+            viewModel.beginDiseaseRequest()
+
+            assertEquals(listOf(photo.absolutePath), viewModel.diseaseRequestDraft.value.photoPaths)
+            assertEquals(listOf("gallery"), viewModel.diseaseRequestDraft.value.photoSources)
+            assertEquals(null, viewModel.diseaseRequestDraft.value.error)
+        } finally {
+            photo.delete()
+        }
+    }
+
+    @Test
+    fun `favorite can be toggled and a local history item can be deleted`() {
+        val viewModel = EggplantAppViewModel(initialHistory = emptyList())
+        val (scene, primary) = diseaseScene(5, InputSource.CAPTURE)
+
+        viewModel.openDetectionScene(scene, primary)
+        val saved = requireNotNull(viewModel.history.value.single())
+
+        viewModel.toggleHistoryFavorite(saved.id)
+        assertTrue(viewModel.history.value.single().isFavorite)
+
+        var deleted = false
+        viewModel.deleteHistory(saved.id) { deleted = true }
+        assertTrue(deleted)
         assertTrue(viewModel.history.value.isEmpty())
     }
 }

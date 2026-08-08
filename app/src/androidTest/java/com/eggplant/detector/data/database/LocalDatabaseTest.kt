@@ -15,6 +15,7 @@ import com.eggplant.detector.data.database.migration.MIGRATION_2_TO_3
 import com.eggplant.detector.data.database.migration.MIGRATION_3_TO_4
 import com.eggplant.detector.data.database.migration.MIGRATION_4_TO_5
 import com.eggplant.detector.data.database.migration.MIGRATION_5_TO_6
+import com.eggplant.detector.data.database.migration.MIGRATION_6_TO_7
 import com.eggplant.detector.data.database.entity.NotificationStateEntity
 import com.eggplant.detector.data.database.entity.ScanDetectionEntity
 import com.eggplant.detector.data.database.entity.LegacyScanRecordEntity
@@ -338,5 +339,87 @@ class LocalDatabaseTest {
                 assertEquals(1, cursor.getInt(0))
             }
         }
+    }
+
+    @Test
+    fun migrationSixToSevenAddsLocalFavoriteAndResultMetadata() {
+        val databaseName = "migration-6-7"
+        migrationHelper.createDatabase(databaseName, 6).apply { close() }
+
+        migrationHelper.runMigrationsAndValidate(databaseName, 7, true, MIGRATION_6_TO_7).use { migrated ->
+            migrated.query(
+                "SELECT name FROM pragma_table_info('scan_sessions') " +
+                    "WHERE name IN ('isFavorite', 'resultName', 'resultCategory', 'resultOutcome', 'resultConfidence', 'resultDiseaseId')",
+            ).use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                var count = 0
+                do { count += 1 } while (cursor.moveToNext())
+                assertEquals(6, count)
+            }
+            migrated.query(
+                "SELECT COUNT(*) FROM sqlite_master " +
+                    "WHERE type = 'index' AND name = 'index_scan_sessions_savedAt_isFavorite'",
+            ).use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals(1, cursor.getInt(0))
+            }
+        }
+    }
+
+    @Test
+    fun repositorySavesHealthyResultsAndKeepsFavoritesPastThirtyDays() = runBlocking {
+        val repository = EggplantRepository(database)
+        repository.ensureCatalog()
+        val now = LocalDateTime.of(2026, 8, 7, 12, 0)
+        val diseaseDetection = ScanDetectionResult(
+            id = "old-disease:0",
+            diseaseId = "leaf-spot",
+            name = "Leaf Spot",
+            modelClassIndex = 5,
+            modelLabel = "Leaf-Spot",
+            confidence = 87,
+            bounds = NormalizedBox(.1f, .1f, .8f, .8f),
+        )
+        fun disease(id: String, scannedAt: LocalDateTime) = ScanResult(
+            id = id,
+            name = "Leaf Spot",
+            category = ScanCategory.LEAF_DISEASE,
+            outcome = ScanOutcome.DISEASE,
+            confidence = 87,
+            scannedAt = scannedAt,
+            signs = emptyList(),
+            treatment = "",
+            diseaseId = "leaf-spot",
+            source = "capture",
+            detections = listOf(diseaseDetection.copy(id = "$id:0")),
+        )
+
+        repository.saveScan(
+            ScanResult(
+                id = "healthy",
+                name = "Healthy Leaf",
+                category = ScanCategory.NO_DISEASE_DETECTED,
+                outcome = ScanOutcome.HEALTHY_CONFIRMED,
+                confidence = 91,
+                scannedAt = now.minusDays(5),
+                signs = emptyList(),
+                treatment = "",
+                diseaseId = "healthy-leaf",
+                source = "gallery",
+            ),
+        )
+        repository.saveScan(disease("expired", now.minusDays(31)))
+        repository.saveScan(disease("favorite", now.minusDays(31)))
+        repository.setHistoryFavorite("favorite", true)
+
+        assertEquals(3, repository.history.first().size)
+        assertEquals(1, repository.cleanupExpiredHistory(now))
+
+        val remaining = repository.history.first().map { it.id }.toSet()
+        assertEquals(setOf("healthy", "favorite"), remaining)
+        assertTrue(repository.history.first().first { it.id == "favorite" }.isFavorite)
+
+        repository.deleteHistory("healthy")
+        assertEquals(setOf("favorite"), repository.history.first().map { it.id }.toSet())
     }
 }

@@ -1,11 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Eggplant Disease Detector</string>
+    <string name="app_name">Planta</string>
     <string name="nav_home">Home</string>
     <string name="nav_library">Library</string>
     <string name="nav_camera">Camera</string>
     <string name="nav_history">Scans</string>
     <string name="nav_settings">Settings</string>
+    <string name="startup_preparing_plants">Preparing your plants</string>
+    <string name="startup_loading_message">Getting everything ready for your next scan…</string>
+    <string name="startup_loading_content_description">Preparing the app for your next plant scan</string>
     <string name="navigate_to">Navigate to %1$s</string>
     <string name="open_camera">Open camera</string>
     <string name="back">Back</string>
@@ -14,11 +17,11 @@
     <string name="leaf_disease">Leaf Disease</string>
     <string name="fruit_disease">Fruit Disease</string>
 
-    <string name="home_eggplant">Eggplant</string>
+    <string name="home_eggplant">Planta</string>
     <string name="home_detector">Disease Detector</string>
-    <string name="home_headline">Detect eggplant diseases.\nProtect your crop.</string>
-    <string name="home_description">Scan your eggplant leaves\nto detect diseases early and\nget treatment advice.</string>
-    <string name="scan_leaf_now">Scan Leaf Now</string>
+    <string name="home_headline">Keep your\neggplants healthy\nnaturally.</string>
+    <string name="home_description">Detect diseases early and\nget expert care advice.</string>
+    <string name="home_scan_cta">Scan a Leaf</string>
     <string name="home_status">Offline • Private • Live detection</string>
     <string name="learn_diseases">Learn Diseases</string>
     <string name="learn_diseases_body">Identify and learn\nabout diseases</string>
@@ -28,11 +31,18 @@
     <string name="care_guide_body">Treatment and\nprevention tips</string>
     <string name="offline_use">Offline Use</string>
     <string name="offline_use_body">How local data\nand features work</string>
+    <string name="home_scan_history">Scan History</string>
+    <string name="home_offline_mode">Offline Mode</string>
+    <string name="quick_access">Quick Access</string>
     <string name="last_scan">Last Scan</string>
     <string name="view_all">View All ›</string>
+    <string name="no_recent_scans_title">No recent scans yet</string>
+    <string name="no_recent_scans_body">Start scanning your eggplant leaves to detect diseases and keep your plants healthy.</string>
     <string name="open_notifications">Open notifications</string>
-    <string name="home_tip">Tip: Use clear, even lighting and hold steady until the detection box stabilizes.</string>
-    <string name="logo_description">Eggplant Disease Detector logo</string>
+    <string name="daily_plant_care_tip">Daily Plant Care Tip</string>
+    <string name="home_tip">Regularly check your leaves and remove affected parts to keep your plants healthy.</string>
+    <string name="logo_description">Planta logo</string>
+    <string name="home_logo_description">Planta home logo</string>
     <string name="hero_description">Eggplant leaf disease hero photo</string>
 
     <string name="library_title">Library</string>
@@ -72,7 +82,7 @@
     <string name="motion_full">Full</string>
     <string name="motion_reduced">Reduced</string>
     <string name="global_sharing">Global sharing</string>
-    <string name="global_sharing_description">Off by default. You choose which eligible camera scans to publish anonymously.</string>
+    <string name="global_sharing_description">Off by default. You choose which eligible camera, captured, or gallery scans to publish anonymously.</string>
     <string name="cloud_unavailable_build">Cloud features are unavailable in this APK. Install a cloud-enabled build to use Global Scans, disease requests, and live catalog updates.</string>
     <string name="enable_global_sharing">Enable global sharing?</string>
     <string name="global_sharing_consent" formatted="false">Shared photos become public without your name or profile. Disease scans from live camera, captured photos, and gallery photos can be shared after validation. You can turn this off and request deletion later.</string>
@@ -114,6 +124,8 @@
     <string name="save_history_succeeded">Saved to History. You can find this scan in My Scans.</string>
     <string name="save_history_already_saved">This scan is already in My Scans.</string>
     <string name="save_history_failed">Could not save this scan. Your existing history is unchanged. Check available device storage and try again.</string>
+    <string name="saving_scan_automatically">Saving this scan to My Scans…</string>
+    <string name="saved_scan_automatically">Saved automatically to My Scans.</string>
     <string name="scan_again">Scan Again</string>
     <string name="signs_detected">Signs Detected</string>
     <string name="recommended_action">Recommended Action</string>
@@ -136,6 +148,13 @@
     <string name="history_search">Search scan history…</string>
     <string name="no_history">No scan history found</string>
     <string name="history_detail">History Detail</string>
+    <string name="favorites">Favorites</string>
+    <string name="no_favorites">No favorite scans yet</string>
+    <string name="favorite_scan">Favorite scan</string>
+    <string name="add_to_favorites">Add to favorites</string>
+    <string name="remove_from_favorites">Remove from favorites</string>
+    <string name="delete_history_scan">Delete scan</string>
+    <string name="delete_history_scan_confirmation">Delete this scan from My Scans? A scan already shared to Global Scans will remain there.</string>
     <string name="your_scans">Your scans</string>
     <string name="my_scans">My Scans</string>
     <string name="global_scans">Global Scans</string>
@@ -161,6 +180,7 @@
     <string name="when_to_act">When to act</string>
     <string name="disclaimer">Disclaimer</string>
     <string name="references">References</string>
+    <string name="description">Description</string>
     <string name="report_incorrect_scan">Report this scan</string>
     <string name="report_scan_title">Report this scan?</string>
     <string name="report_scan_message">Your anonymous report helps us check this shared scan. You cannot report a scan that you shared yourself. If several people report another user’s scan, we may hide it while we review it.</string>
@@ -189,7 +209,7 @@
     <string name="request_photo_count">%1$d of %2$d real photos selected</string>
     <string name="add_request_photos">Add gallery photos</string>
     <string name="adding_photos">Adding photos…</string>
-    <string name="request_camera_only_photo">Only the real photo captured in this app is accepted. Gallery photos cannot be submitted.</string>
+    <string name="request_camera_only_photo">Only a real plant photo captured in this app or chosen from the gallery is accepted.</string>
     <string name="retry">Retry</string>
 
     <string name="capture_scan">Capture scan</string>
@@ -202,6 +222,8 @@
     <string name="no_disease_detected">No disease detected</string>
     <string name="disease_detected_tap">Disease detected</string>
     <string name="point_camera">Tap to capture. Hold the shutter for live preview.</string>
+    <string name="camera_ready">Ready to scan</string>
+    <string name="camera_intro_message">Point the camera at an eggplant leaf or fruit to start scanning.</string>
     <string name="save_scan">Save scan</string>
     <string name="camera_permission_required">Camera permission required</string>
     <string name="camera_permission_body">Camera access is needed for live disease detection.</string>

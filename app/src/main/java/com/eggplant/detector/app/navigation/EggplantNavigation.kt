@@ -44,6 +44,10 @@ import com.eggplant.detector.R
 import com.eggplant.detector.core.ui.motion.LocalEggplantMotion
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.core.tween
 
 private val bottomRoutes = setOf(Routes.HOME, Routes.LIBRARY, Routes.HISTORY, Routes.SETTINGS)
@@ -119,10 +123,38 @@ fun EggplantNavigation(viewModel: EggplantAppViewModel) {
             navController = navController,
             startDestination = Routes.HOME,
             modifier = Modifier.padding(padding).consumeWindowInsets(padding),
-            enterTransition = { fadeIn(tween(motion.standardMillis)) },
-            exitTransition = { fadeOut(tween(motion.fastMillis)) },
-            popEnterTransition = { fadeIn(tween(motion.standardMillis)) },
-            popExitTransition = { fadeOut(tween(motion.fastMillis)) },
+            enterTransition = {
+                fadeIn(tween(motion.standardMillis)) +
+                    scaleIn(initialScale = 0.98f, animationSpec = tween(motion.standardMillis)) +
+                    slideInHorizontally(
+                        initialOffsetX = { fullWidth -> fullWidth / 12 },
+                        animationSpec = tween(motion.standardMillis),
+                    )
+            },
+            exitTransition = {
+                fadeOut(tween(motion.fastMillis)) +
+                    scaleOut(targetScale = 0.98f, animationSpec = tween(motion.fastMillis)) +
+                    slideOutHorizontally(
+                        targetOffsetX = { fullWidth -> -fullWidth / 12 },
+                        animationSpec = tween(motion.fastMillis),
+                    )
+            },
+            popEnterTransition = {
+                fadeIn(tween(motion.standardMillis)) +
+                    scaleIn(initialScale = 0.98f, animationSpec = tween(motion.standardMillis)) +
+                    slideInHorizontally(
+                        initialOffsetX = { fullWidth -> -fullWidth / 12 },
+                        animationSpec = tween(motion.standardMillis),
+                    )
+            },
+            popExitTransition = {
+                fadeOut(tween(motion.fastMillis)) +
+                    scaleOut(targetScale = 0.98f, animationSpec = tween(motion.fastMillis)) +
+                    slideOutHorizontally(
+                        targetOffsetX = { fullWidth -> fullWidth / 12 },
+                        animationSpec = tween(motion.fastMillis),
+                    )
+            },
         ) {
             composable(Routes.HOME) {
                 HomeScreen(
@@ -163,16 +195,6 @@ fun EggplantNavigation(viewModel: EggplantAppViewModel) {
                     viewModel = viewModel,
                     title = stringResource(R.string.scan_result),
                     onBack = navController::popBackStack,
-                    onSave = {
-                        viewModel.saveCurrentResult { saved ->
-                            if (saved) {
-                                navController.navigate(Routes.HISTORY) {
-                                    popUpTo(Routes.HOME)
-                                    launchSingleTop = true
-                                }
-                            }
-                        }
-                    },
                     onScanAgain = {
                         navController.navigate(Routes.CAMERA) {
                             popUpTo(Routes.CAMERA) { inclusive = true }
@@ -193,7 +215,16 @@ fun EggplantNavigation(viewModel: EggplantAppViewModel) {
             composable(Routes.HISTORY_DETAIL) { entry ->
                 val id = entry.arguments?.getString("resultId")
                 val result = history.firstOrNull { it.id == id } ?: currentResult?.takeIf { it.id == id }
-                MyScanDetailPager(results = history, initialId = result?.id ?: id, onBack = navController::popBackStack)
+                MyScanDetailPager(
+                    results = history,
+                    diseases = catalog,
+                    initialId = result?.id ?: id,
+                    onBack = navController::popBackStack,
+                    onToggleFavorite = viewModel::toggleHistoryFavorite,
+                    onDelete = { resultId ->
+                        viewModel.deleteHistory(resultId) { navController.popBackStack() }
+                    },
+                )
             }
             composable(Routes.GLOBAL_SCAN_DETAIL) { entry ->
                 val id = entry.arguments?.getString("scanId")

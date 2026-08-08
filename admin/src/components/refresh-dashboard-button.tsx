@@ -4,20 +4,20 @@ import { RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 
-export function RefreshDashboardButton() {
+export function RefreshDashboardButton({ label = "Refresh overview", pendingLabel = "Refreshing overview" }: { label?: string; pendingLabel?: string }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   return (
     <button
       type="button"
-      className="focus-ring action-button inline-flex min-h-11 items-center gap-2 rounded-xl border border-[#d9d3e4] bg-white px-3.5 text-sm font-semibold text-[#512b91]"
+      className="focus-ring action-button inline-flex min-h-11 items-center gap-2 rounded-xl border border-[#d6e3d2] bg-white px-3.5 text-sm font-semibold text-[#1f6b3a]"
       onClick={() => startTransition(() => router.refresh())}
       disabled={isPending}
       aria-busy={isPending}
     >
       <RefreshCw size={16} className={isPending ? "animate-spin" : undefined} aria-hidden="true" />
-      {isPending ? "Refreshing overview" : "Refresh overview"}
+      {isPending ? pendingLabel : label}
     </button>
   );
 }

@@ -8,18 +8,19 @@ type SkeletonKind =
   | "request-detail"
   | "catalog-detail"
   | "settings"
+  | "notifications"
   | "members";
 
 function Bar({ className = "" }: { className?: string }) {
   return <div className={`pulse-soft rounded-lg bg-[#e7e7e2] ${className}`} />;
 }
 
-function PageHeader({ action = false }: { action?: boolean }) {
+function PageHeader({ action = false, description = false }: { action?: boolean; description?: boolean }) {
   return (
     <header className="flex flex-wrap items-end justify-between gap-4">
       <div className="min-w-0">
         <Bar className="h-9 w-56 max-w-full" />
-        <Bar className="mt-3 h-4 w-[28rem] max-w-full" />
+        {description && <Bar className="mt-3 h-4 w-[28rem] max-w-full" />}
       </div>
       {action && <Bar className="h-10 w-32" />}
     </header>
@@ -29,23 +30,24 @@ function PageHeader({ action = false }: { action?: boolean }) {
 function OverviewWorkspace() {
   return (
     <>
-      <div className="mt-6 grid overflow-hidden rounded-[20px] border border-[#e2e2dc] bg-[#fffefa] sm:grid-cols-2 xl:grid-cols-4">
+      <div className="metric-grid mt-5">
         {Array.from({ length: 4 }, (_, index) => (
-          <div className="border-b border-[#ece9e2] p-5 last:border-0 sm:border-b-0 sm:border-r xl:last:border-r-0" key={index}>
+          <div className="metric-card" key={index}>
             <Bar className="h-3 w-28" />
             <Bar className="mt-3 h-8 w-16" />
           </div>
         ))}
       </div>
-      <div className="mt-5 grid overflow-hidden rounded-[20px] border border-[#e2e2dc] bg-[#fffefa] sm:grid-cols-3">
+      <div className="status-panel mt-5">
         {Array.from({ length: 3 }, (_, index) => (
-          <div className="border-b border-[#ece9e2] p-4 last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0" key={index}>
+          <div className="status-cell" key={index}>
             <Bar className="h-3 w-24" />
-            <Bar className="mt-2 h-4 w-32" />
+            <Bar className="mt-2 h-5 w-32" />
+            <Bar className="mt-2 h-3 w-44 max-w-full" />
           </div>
         ))}
       </div>
-      <div className="mt-5 grid gap-5 xl:grid-cols-[1fr_1.15fr]">
+      <div className="workspace-layout mt-5">
         <div className="surface min-h-[19rem] p-5">
           <Bar className="h-5 w-40" />
           <div className="mt-6 grid gap-5">{Array.from({ length: 4 }, (_, index) => <Bar className="h-7 w-full" key={index} />)}</div>
@@ -88,22 +90,32 @@ function RequestsWorkspace() {
           <div className="surface p-4" key={index}><div className="flex gap-3"><Bar className="h-20 w-24 shrink-0" /><div className="min-w-0 flex-1"><Bar className="h-5 w-2/3" /><Bar className="mt-3 h-4 w-full" /><Bar className="mt-2 h-4 w-4/5" /></div></div><Bar className="mt-4 h-8 w-full" /></div>
         ))}
       </div>
-      <div className="surface mt-6 hidden overflow-hidden p-5 md:block"><div className="grid grid-cols-[5rem_1.1fr_1.5fr_7rem_9rem_8rem] gap-4 border-b border-[#ece7f1] pb-3">{Array.from({ length: 6 }, (_, index) => <Bar className="h-3 w-full" key={index} />)}</div><div className="divide-y divide-[#ece7f1]">{Array.from({ length: 5 }, (_, index) => <div className="grid grid-cols-[5rem_1.1fr_1.5fr_7rem_9rem_8rem] items-center gap-4 py-4" key={index}>{Array.from({ length: 6 }, (_, cell) => <Bar className={`${cell === 0 ? "h-14" : "h-5"} w-full`} key={cell} />)}</div>)}</div></div>
+      <div className="surface mt-6 hidden overflow-hidden p-5 md:block"><div className="grid grid-cols-[5rem_1.1fr_1.5fr_7rem_9rem_8rem] gap-4 border-b border-[#e5ece2] pb-3">{Array.from({ length: 6 }, (_, index) => <Bar className="h-3 w-full" key={index} />)}</div><div className="divide-y divide-[#e5ece2]">{Array.from({ length: 5 }, (_, index) => <div className="grid grid-cols-[5rem_1.1fr_1.5fr_7rem_9rem_8rem] items-center gap-4 py-4" key={index}>{Array.from({ length: 6 }, (_, cell) => <Bar className={`${cell === 0 ? "h-14" : "h-5"} w-full`} key={cell} />)}</div>)}</div></div>
     </>
   );
 }
 
 function ReportsWorkspace() {
-  return <div className="mt-6 grid gap-3">{Array.from({ length: 6 }, (_, index) => <div className="surface min-w-0 p-4 sm:p-5" key={index}><div className="flex min-w-0 flex-col gap-4 sm:flex-row"><Bar className="h-24 w-full shrink-0 sm:w-32"/><div className="min-w-0 flex-1"><Bar className="h-3 w-28"/><Bar className="mt-3 h-6 w-2/5 max-w-full"/><Bar className="mt-4 h-4 w-full"/><Bar className="mt-2 h-4 w-3/4"/><Bar className="mt-4 h-8 w-32"/></div></div></div>)}</div>;
+  return <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{Array.from({ length: 6 }, (_, index) => <div className="surface min-w-0 overflow-hidden" key={index}><Bar className="aspect-[16/10] w-full rounded-none"/><div className="grid gap-3 p-4"><Bar className="h-3 w-28"/><Bar className="h-6 w-3/5 max-w-full"/><Bar className="h-4 w-full"/><Bar className="h-8 w-32"/></div></div>)}</div>;
 }
 
 function CatalogWorkspace() {
   return (
     <>
-      <div className="mt-6 grid gap-4 lg:grid-cols-2">{Array.from({ length: 6 }, (_, index) => <div className="surface p-5" key={index}><Bar className="h-4 w-24" /><Bar className="mt-3 h-6 w-1/2" /><Bar className="mt-5 h-4 w-full" /><Bar className="mt-2 h-4 w-4/5" /><Bar className="mt-5 h-3 w-1/3" /></div>)}</div>
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{Array.from({ length: 6 }, (_, index) => <div className="surface overflow-hidden" key={index}><Bar className="h-[190px] w-full rounded-none" /><div className="p-5"><Bar className="h-4 w-24" /><Bar className="mt-3 h-6 w-1/2" /><Bar className="mt-5 h-4 w-full" /><Bar className="mt-2 h-4 w-4/5" /></div></div>)}</div>
       <div className="mt-5 rounded-xl border border-[#e2e2dc] bg-[#f4f4f0] p-4"><Bar className="h-4 w-4/5" /><Bar className="mt-2 h-4 w-3/5" /></div>
     </>
   );
+}
+
+function NotificationsWorkspace() {
+  return <>
+    <div className="mt-6 grid gap-5">
+      <div className="surface min-h-[26rem] p-6"><Bar className="h-6 w-40" /><div className="mt-6 grid gap-5 sm:grid-cols-2"><div><Bar className="h-4 w-20" /><Bar className="mt-2 h-11 w-full" /></div><div><Bar className="h-4 w-20" /><Bar className="mt-2 h-11 w-full" /></div></div><Bar className="mt-5 h-28 w-full" /><Bar className="mt-5 h-11 w-36" /></div>
+      <div className="surface min-h-[5rem] p-5"><Bar className="h-4 w-3/5" /><Bar className="mt-4 h-11 w-36" /></div>
+    </div>
+    <div className="mt-8"><div className="flex items-end justify-between gap-3"><div><Bar className="h-3 w-28" /><Bar className="mt-2 h-6 w-48" /></div><Bar className="h-4 w-28" /></div><div className="mt-4 grid gap-3">{Array.from({ length: 3 }, (_, index) => <div className="surface p-5" key={index}><Bar className="h-5 w-2/3" /><Bar className="mt-3 h-4 w-full" /><Bar className="mt-2 h-4 w-4/5" /></div>)}</div></div>
+  </>;
 }
 
 function DetailWorkspace({ kind }: { kind: "scan-detail" | "request-detail" }) {
@@ -136,7 +148,7 @@ export function AdminPageSkeleton({ kind = "overview" }: { kind?: SkeletonKind }
   const isDetail = kind.includes("detail");
   return (
     <div aria-busy="true" aria-label="Loading admin workspace" className="mx-auto max-w-[1240px]">
-      {kind === "scan-detail" ? <div className="flex flex-wrap items-center justify-between gap-3"><Bar className="h-4 w-28" /><div className="flex gap-2"><Bar className="h-10 w-28" /><Bar className="h-10 w-24" /></div></div> : isDetail ? <Bar className="h-4 w-28" /> : <PageHeader action={kind === "overview" || kind === "scans" || kind === "requests"} />}
+      {kind === "scan-detail" ? <div className="flex flex-wrap items-center justify-between gap-3"><Bar className="h-4 w-28" /><div className="flex gap-2"><Bar className="h-10 w-28" /><Bar className="h-10 w-24" /></div></div> : isDetail ? <Bar className="h-4 w-28" /> : <PageHeader action={kind === "overview" || kind === "scans" || kind === "requests" || kind === "catalog"} description={kind === "requests" || kind === "catalog"} />}
       {kind === "overview" && <OverviewWorkspace />}
       {kind === "scans" && <ScansWorkspace />}
       {kind === "requests" && <RequestsWorkspace />}
@@ -146,6 +158,7 @@ export function AdminPageSkeleton({ kind = "overview" }: { kind?: SkeletonKind }
       {kind === "request-detail" && <DetailWorkspace kind="request-detail" />}
       {kind === "catalog-detail" && <CatalogDetailWorkspace />}
       {kind === "settings" && <SettingsWorkspace />}
+      {kind === "notifications" && <NotificationsWorkspace />}
       {kind === "members" && <SettingsWorkspace members />}
       <span className="sr-only">Loading live production data</span>
     </div>

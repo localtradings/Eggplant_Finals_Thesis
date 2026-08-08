@@ -21,13 +21,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items as gridItems
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.outlined.Public
-import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -62,6 +67,7 @@ import com.eggplant.detector.R
 import com.eggplant.detector.app.CloudActionState
 import com.eggplant.detector.app.EggplantAppViewModel
 import com.eggplant.detector.core.ui.components.DiseaseArtwork
+import com.eggplant.detector.core.ui.components.AnimatedRefreshIcon
 import com.eggplant.detector.core.ui.components.FilterChips
 import com.eggplant.detector.core.ui.components.HistoryCard
 import com.eggplant.detector.core.ui.components.ResponsiveContent
@@ -92,7 +98,6 @@ fun ScanHistoryScreen(
         Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
             Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 10.dp)) {
                 Text(stringResource(R.string.history_title), style = MaterialTheme.typography.headlineMedium)
-                Text(stringResource(R.string.history_subtitle), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             PrimaryTabRow(selectedTabIndex = pagerState.currentPage) {
                 tabs.forEachIndexed { index, title ->
@@ -117,31 +122,65 @@ private fun MyScansPage(viewModel: EggplantAppViewModel, onResultClick: (ScanRes
     val allLabel = stringResource(R.string.all)
     val leafLabel = stringResource(R.string.leaf_disease)
     val fruitLabel = stringResource(R.string.fruit_disease)
+    val favoritesLabel = stringResource(R.string.favorites)
     var query by rememberSaveable { mutableStateOf("") }
     var selectedFilter by rememberSaveable { mutableStateOf(allLabel) }
-    val category = when (selectedFilter) { leafLabel -> ScanCategory.LEAF_DISEASE; fruitLabel -> ScanCategory.FRUIT_DISEASE; else -> null }
-    val results = history.filter { result -> (category == null || result.category == category) && (query.isBlank() || result.name.contains(query.trim(), true)) }
-    LazyColumn(
-        state = rememberLazyListState(),
+    val category = when (selectedFilter) {
+        leafLabel -> ScanCategory.LEAF_DISEASE
+        fruitLabel -> ScanCategory.FRUIT_DISEASE
+        else -> null
+    }
+    val favoritesOnly = selectedFilter == favoritesLabel
+    val results = history.filter { result ->
+        (!favoritesOnly || result.isFavorite) &&
+            (category == null || result.category == category) &&
+            (query.isBlank() || result.name.contains(query.trim(), true))
+    }
+    LazyVerticalGrid(
+        state = rememberLazyGridState(),
+        columns = GridCells.Fixed(2),
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(20.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        item { SearchBar(query, { query = it }, stringResource(R.string.history_search)) }
-        item { FilterChips(listOf(allLabel, leafLabel, fruitLabel), selectedFilter, { selectedFilter = it }) }
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            SearchBar(query, { query = it }, stringResource(R.string.history_search))
+        }
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            FilterChips(listOf(allLabel, leafLabel, fruitLabel, favoritesLabel), selectedFilter, { selectedFilter = it })
+        }
         if (results.isNotEmpty()) {
-            items(results, key = { "scan-${it.id}" }) { result -> HistoryCard(result, { onResultClick(result) }, Modifier.animateItem()) }
+            gridItems(
+                results,
+                key = { "scan-${it.id}" },
+            ) { result ->
+                HistoryCard(result, { onResultClick(result) }, Modifier.animateItem())
+            }
         } else {
-            item {
+            item(span = { GridItemSpan(maxLineSpan) }) {
                 Column(Modifier.fillMaxWidth().padding(vertical = 48.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     DiseaseArtwork("empty-history", Modifier.fillMaxWidth(.46f))
-                    Text(stringResource(R.string.no_history), style = MaterialTheme.typography.titleLarge)
+                    Text(
+                        stringResource(if (favoritesOnly) R.string.no_favorites else R.string.no_history),
+                        style = MaterialTheme.typography.titleLarge,
+                    )
                 }
             }
         }
         if (requests.isNotEmpty()) {
-            item { Text(stringResource(R.string.request_this_disease), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 12.dp)) }
-            items(requests, key = { "request-${it.id}" }) { request ->
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Text(
+                    stringResource(R.string.request_this_disease),
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(top = 12.dp),
+                )
+            }
+            gridItems(
+                requests,
+                key = { "request-${it.id}" },
+                span = { GridItemSpan(maxLineSpan) },
+            ) { request ->
                 Card(shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                     Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -241,7 +280,14 @@ private fun GlobalScansPage(viewModel: EggplantAppViewModel, onGlobalClick: (Glo
             item {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.global_scans), style = MaterialTheme.typography.titleLarge)
-                    TextButton(onClick = viewModel::refreshGlobalScans) { Icon(Icons.Outlined.Refresh, null); Text(stringResource(R.string.refresh)) }
+                    TextButton(onClick = viewModel::refreshGlobalScans) {
+                        AnimatedRefreshIcon(
+                            isRefreshing = feedState.isLoading,
+                            contentDescription = stringResource(R.string.refresh),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                        Text(stringResource(R.string.refresh))
+                    }
                 }
             }
             when {

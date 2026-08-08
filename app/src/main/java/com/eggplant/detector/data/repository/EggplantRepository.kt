@@ -4,6 +4,7 @@ import com.eggplant.detector.data.catalog.DiseaseCatalogSeed
 import com.eggplant.detector.data.database.EggplantDatabase
 import com.eggplant.detector.data.database.entity.AppSettingsEntity
 import com.eggplant.detector.data.database.entity.DiseaseCatalogBundle
+import com.eggplant.detector.data.database.entity.LibraryDiseaseCatalogBundle
 import com.eggplant.detector.data.database.entity.NotificationStateEntity
 import com.eggplant.detector.data.database.mapper.ScanSessionMapper
 import com.eggplant.detector.data.files.ScanSnapshotStore
@@ -17,6 +18,7 @@ import com.eggplant.detector.domain.model.DiseaseRequest
 import com.eggplant.detector.domain.model.DiseaseReference
 import com.eggplant.detector.domain.model.CloudDeletionState
 import com.eggplant.detector.domain.model.GlobalFeedState
+import com.eggplant.detector.domain.model.RemoteNotification
 import com.eggplant.detector.domain.model.SyncOutboxEvent
 import com.eggplant.detector.domain.model.SyncOutboxState
 import com.eggplant.detector.data.cloud.diseaseRequestPayload
@@ -27,8 +29,10 @@ import com.eggplant.detector.data.cloud.SharePhotoRevalidator
 import com.eggplant.detector.data.database.entity.DiseaseRequestEntity
 import com.eggplant.detector.data.database.entity.DiseaseRequestPhotoEntity
 import com.eggplant.detector.data.database.entity.SyncOutboxEntity
+import com.eggplant.detector.data.history.historyExpiryCutoff
 import java.io.File
 import java.time.Instant
+import java.time.LocalDateTime
 import java.util.UUID
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
@@ -54,6 +58,7 @@ class EggplantRepository(
     private val snapshotStore: ScanSnapshotStore? = null,
     private val cloudSync: (() -> Unit)? = null,
     private val cloudSyncLoadMore: (() -> Unit)? = null,
+    private val cloudSyncGlobalScans: (() -> Unit)? = null,
     private val cloudConfigured: (() -> Boolean)? = null,
     private val cloudConfiguredState: StateFlow<Boolean>? = null,
     private val sharePhotoRevalidator: SharePhotoRevalidator? = null,
@@ -156,12 +161,35 @@ class EggplantRepository(
         states.filter(NotificationStateEntity::isRead).mapTo(mutableSetOf(), NotificationStateEntity::notificationKey)
     }
 
+    val remoteNotifications: Flow<List<RemoteNotification>> = database.notificationDao().observeRemoteNotifications().map { rows ->
+        rows.map { row ->
+            RemoteNotification(
+                id = row.id,
+                category = row.category,
+                titleEn = row.titleEn,
+                bodyEn = row.bodyEn,
+                titleFil = row.titleFil,
+                bodyFil = row.bodyFil,
+                publishedAt = row.publishedAt,
+            )
+        }
+    }
+
     init {
-        scope.launch { ensureCatalog() }
+        scope.launch {
+            ensureCatalog()
+            cleanupExpiredHistory()
+        }
     }
 
     fun catalog(languageTag: String): Flow<List<Disease>> =
-        database.catalogDao().observeCatalog().map { rows -> rows.map { it.toDomain(languageTag) } }
+        combine(
+            database.catalogDao().observeCatalog(),
+            database.libraryDiseaseCatalogDao().observeCatalog(),
+        ) { detectorRows, libraryRows ->
+            (detectorRows.map { it.toDomain(languageTag) } + libraryRows.map { it.toDomain(languageTag) })
+                .sortedWith(compareBy<Disease>({ it.type.name }, { it.name.lowercase() }))
+        }
 
     suspend fun saveScan(result: ScanResult): ScanResult {
         ensureCatalog()
@@ -188,6 +216,28 @@ class EggplantRepository(
             throw error
         }
         return committedResult
+    }
+
+    suspend fun setHistoryFavorite(id: String, favorite: Boolean) {
+        database.scanSessionDao().setFavorite(id, favorite)
+    }
+
+    suspend fun deleteHistory(id: String) {
+        val session = database.scanSessionDao().sessionById(id) ?: return
+        database.withTransaction {
+            database.scanSessionDao().deleteSession(id)
+        }
+        snapshotStore?.removeCommitted(session.imagePath)
+    }
+
+    suspend fun cleanupExpiredHistory(now: LocalDateTime = LocalDateTime.now()): Int {
+        val expired = database.scanSessionDao().expiredSessions(historyExpiryCutoff(now).toString())
+        if (expired.isEmpty()) return 0
+        database.withTransaction {
+            expired.forEach { database.scanSessionDao().deleteSession(it.id) }
+        }
+        expired.forEach { snapshotStore?.removeCommitted(it.imagePath) }
+        return expired.size
     }
 
     suspend fun stageSnapshot(frame: com.eggplant.detector.detection.api.RgbFrame): String? =
@@ -310,6 +360,7 @@ class EggplantRepository(
         photoPaths: List<String>,
         photoSources: List<String>,
         rightsConsent: Boolean,
+        clientRequestId: String? = null,
     ): String {
         requireCloudConfigured()
         val normalizedName = requestedName?.trim()?.takeIf(String::isNotEmpty)
@@ -318,10 +369,12 @@ class EggplantRepository(
         require(normalizedNotes == null || normalizedNotes.length <= DISEASE_REQUEST_NOTES_MAX_LENGTH)
         require(photoPaths.size in 1..3)
         require(photoSources.size == photoPaths.size && photoSources.all { it in CAMERA_REQUEST_SOURCES }) {
-            "Disease-request photos must come from the in-app camera."
+            "Disease-request photos must come from the camera or gallery."
         }
         require(rightsConsent)
-        val id = UUID.randomUUID().toString()
+        val id = clientRequestId?.takeIf(String::isNotBlank) ?: UUID.randomUUID().toString()
+        val idempotencyKey = "request:$id"
+        if (database.cloudDao().outboxByIdempotencyKey(idempotencyKey) != null) return id
         val now = Instant.now().toString()
         val store = requireNotNull(snapshotStore) { "Cloud photo storage is unavailable." }
         val staged = mutableListOf<String>()
@@ -339,7 +392,7 @@ class EggplantRepository(
                 database.cloudDao().upsertOutbox(
                     SyncOutboxEntity(
                         id = UUID.randomUUID().toString(), eventType = "DISEASE_REQUEST", version = 1,
-                        idempotencyKey = "request:$id", payloadJson = diseaseRequestPayload(id, normalizedName, normalizedNotes, "eggplant-yolo26m-v3-clean-768-20260707", staged, photoSources, rightsConsent, false).toString(),
+                        idempotencyKey = idempotencyKey, payloadJson = diseaseRequestPayload(id, normalizedName, normalizedNotes, "eggplant-yolo26m-v3-clean-768-20260707", staged, photoSources, rightsConsent, false).toString(),
                         state = "PENDING", attempts = 0, nextAttemptAt = now, createdAt = now, updatedAt = now,
                     ),
                 )
@@ -409,6 +462,8 @@ class EggplantRepository(
     }
 
     fun refreshCloud() = cloudSync?.invoke()
+
+    fun refreshGlobalScans() = (cloudSyncGlobalScans ?: cloudSync)?.invoke()
 
     fun loadMoreGlobalScans() = cloudSyncLoadMore?.invoke()
 
@@ -591,7 +646,7 @@ private fun SyncOutboxEntity.photoPathsOrEmpty(): List<String> = runCatching {
 private const val SHARING_CONSENT_IDEMPOTENCY_KEY = "sharing-consent"
 private const val REVALIDATED_SHARE_EVENT_VERSION = 3
 private const val DISEASE_REQUEST_NOTES_MAX_LENGTH = 200
-private val CAMERA_REQUEST_SOURCES = setOf("live", "capture")
+private val CAMERA_REQUEST_SOURCES = setOf("live", "capture", "gallery")
 private val GLOBAL_SHARE_SOURCES = setOf("live", "capture", "gallery")
 
 internal fun isGlobalShareSource(source: String): Boolean = source in GLOBAL_SHARE_SOURCES
@@ -637,6 +692,7 @@ private fun DiseaseCatalogBundle.toDomain(languageTag: String): Disease {
         name = localization.name,
         type = DiseaseType.valueOf(disease.category),
         symptomPreview = localization.symptomPreview,
+        description = localization.description,
         signs = localizedSigns.map { it.text },
         treatment = treatment?.procedures.orEmpty(),
         prevention = localization.prevention,
@@ -647,5 +703,35 @@ private fun DiseaseCatalogBundle.toDomain(languageTag: String): Disease {
         references = localizedReferences.map {
             com.eggplant.detector.domain.model.DiseaseReference(it.publisher, it.title, it.url)
         },
+        isDetectorSupported = true,
+        artworkPath = null,
+    )
+}
+
+private fun LibraryDiseaseCatalogBundle.toDomain(languageTag: String): Disease {
+    val normalizedLanguage = if (languageTag in setOf("fil", "tl")) "fil" else "en"
+    val localization = localizations.firstOrNull { it.languageTag == normalizedLanguage }
+        ?: localizations.first { it.languageTag == "en" }
+    val localizedSigns = signs.filter { it.languageTag == localization.languageTag }.sortedBy { it.position }
+    val treatment = treatments.firstOrNull { it.languageTag == localization.languageTag }
+    val localizedReferences = references.filter { it.languageTag == localization.languageTag }.sortedBy { it.position }
+    return Disease(
+        id = disease.id,
+        name = localization.name,
+        type = DiseaseType.valueOf(disease.category),
+        symptomPreview = localization.symptomPreview,
+        description = localization.description,
+        signs = localizedSigns.map { it.text },
+        treatment = treatment?.procedures.orEmpty(),
+        prevention = localization.prevention,
+        causes = localization.causes,
+        guidance = localization.guidance,
+        whenToAct = localization.whenToAct,
+        disclaimer = localization.disclaimer,
+        references = localizedReferences.map {
+            DiseaseReference(it.publisher, it.title, it.url)
+        },
+        isDetectorSupported = false,
+        artworkPath = disease.artworkPath,
     )
 }

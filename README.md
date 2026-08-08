@@ -1,6 +1,6 @@
-# Eggplant Disease Detector
+# Planta
 
-Eggplant Disease Detector is an Android app that helps identify common eggplant diseases from photos. The app analyzes images on the phone, so basic scanning works without an internet connection.
+Planta is an Android app that helps identify common eggplant diseases from photos. The app analyzes images on the phone, so basic scanning works without an internet connection.
 
 ## For app users
 
@@ -18,6 +18,10 @@ Basic scanning, the disease guide, and My Scans work offline. Global Scans, dise
 ## Download the demo APK
 
 [Download the latest demo APK from GitHub Releases](https://github.com/localtradings/Eggplant_Finals_Thesis/releases/latest)
+
+The current demo release is **v1.5.32**.
+
+This version keeps the calm green Planta design, shows the latest saved scan on Home, and keeps the disease guide synchronized with the admin catalog. Scan results are saved to My Scans automatically, can be favorited, and old non-favorite history is cleaned up after 30 days. Global Scan sharing and private disease requests are protected from duplicate submissions, and a successful Global Scan upload shows a one-time confirmation animation. Admin-published notifications and catalog changes are downloaded by the app when it refreshes its online data.
 
 The demo APK is made for testing and thesis demonstrations. It is debug-signed and is not a Google Play Store release. Android may ask you to allow installation from the browser or file manager.
 

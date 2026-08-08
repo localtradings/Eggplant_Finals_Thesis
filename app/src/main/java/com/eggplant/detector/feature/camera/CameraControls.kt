@@ -14,8 +14,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
@@ -49,6 +53,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.input.pointer.pointerInput
 import com.eggplant.detector.R
+import com.eggplant.detector.core.ui.motion.LocalEggplantMotion
 import com.eggplant.detector.detection.api.DetectionStatus
 import com.eggplant.detector.detection.api.EngineState
 
@@ -73,6 +78,13 @@ internal fun CameraTopBar(state: CameraAnalysisState, onBack: () -> Unit, onTogg
 
 @Composable
 internal fun CameraStatus(state: CameraAnalysisState, modifier: Modifier = Modifier) {
+    val motion = LocalEggplantMotion.current
+    val statusPulse = rememberInfiniteTransition(label = "cameraStatusPulse").animateFloat(
+        initialValue = 0.78f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(950), RepeatMode.Reverse),
+        label = "cameraStatusPulseValue",
+    ).value
     val text = when {
         state.error != null -> state.error
         state.qualityHint == FrameQualityHint.LOW_LIGHT -> stringResource(R.string.quality_low_light)
@@ -86,10 +98,29 @@ internal fun CameraStatus(state: CameraAnalysisState, modifier: Modifier = Modif
         state.livePreviewActive && state.status == DetectionStatus.DISEASE_DETECTED -> stringResource(R.string.live_preview_disease)
         state.livePreviewActive -> stringResource(R.string.live_preview_active)
         state.status == DetectionStatus.HEALTHY -> stringResource(R.string.no_disease_detected)
-        else -> stringResource(R.string.point_camera)
+        else -> stringResource(R.string.camera_ready)
     }
     Surface(modifier = modifier.padding(horizontal = 24.dp), color = Color.Black.copy(alpha = .62f), shape = RoundedCornerShape(18.dp)) {
-        Text(text, Modifier.padding(horizontal = 16.dp, vertical = 10.dp), color = Color.White)
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .graphicsLayer {
+                        val scale = if (motion.spatialMovement) statusPulse else 1f
+                        scaleX = scale
+                        scaleY = scale
+                    }
+                    .background(
+                        color = if (state.error != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                        shape = CircleShape,
+                    ),
+            )
+            Spacer(Modifier.size(8.dp))
+            Text(text, color = Color.White)
+        }
     }
 }
 
@@ -98,12 +129,20 @@ internal fun CameraBottomBar(
     processing: Boolean,
     engineState: EngineState,
     livePreviewActive: Boolean,
+    showGestureHint: Boolean = false,
     onGallery: () -> Unit,
     onCapture: () -> Unit,
     onStartLivePreview: () -> Unit,
     onStopLivePreview: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val motion = LocalEggplantMotion.current
+    val guidancePulse = rememberInfiniteTransition(label = "cameraGuidancePulse").animateFloat(
+        initialValue = 0.92f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(1200), RepeatMode.Reverse),
+        label = "cameraGuidancePulseValue",
+    ).value
     val captureDescription = stringResource(R.string.capture_scan)
     val livePreviewDescription = stringResource(R.string.hold_for_live_preview)
     val shutterCoordinator = remember { ShutterActionCoordinator() }
@@ -116,78 +155,117 @@ internal fun CameraBottomBar(
         animationSpec = tween(durationMillis = 120),
         label = "shutterScale",
     )
-    Row(
-        modifier = modifier.fillMaxWidth().background(Color.Black.copy(alpha = .55f)).padding(horizontal = 22.dp, vertical = 20.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(Color.Black.copy(alpha = .55f))
+            .padding(horizontal = 18.dp, vertical = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        CameraControl(
-            Icons.Outlined.Collections,
-            stringResource(R.string.choose_gallery),
-            onGallery,
-            enabled = !processing && engineState == EngineState.READY && !livePreviewActive,
-        )
-        Surface(
-            modifier = Modifier
-                .size(76.dp)
-                .graphicsLayer {
-                    scaleX = shutterScale
-                    scaleY = shutterScale
+        if (showGestureHint && !processing) {
+            Surface(
+                color = Color.Black.copy(alpha = .32f),
+                shape = RoundedCornerShape(50),
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 13.dp, vertical = 7.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        Icons.Filled.CameraAlt,
+                        contentDescription = null,
+                        tint = Color.White.copy(alpha = .92f),
+                        modifier = Modifier
+                            .size(16.dp)
+                            .graphicsLayer {
+                                val scale = if (motion.spatialMovement) guidancePulse else 1f
+                                scaleX = scale
+                                scaleY = scale
+                            },
+                    )
+                    Spacer(Modifier.size(6.dp))
+                    Text(
+                        text = stringResource(R.string.point_camera),
+                        color = Color.White.copy(alpha = .92f),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
                 }
-                .border(4.dp, Color.White.copy(alpha = .7f), CircleShape)
-                .pointerInput(processing, engineState) {
-                    if (!processing && engineState == EngineState.READY) {
-                        detectTapGestures(
-                            onPress = {
-                                isPressed = true
-                                tryAwaitRelease()
-                                isPressed = false
-                                if (shutterCoordinator.onPressedChanged(false) == ShutterAction.STOP_LIVE_PREVIEW) {
-                                    currentOnStopLivePreview()
-                                }
-                            },
-                            onTap = {
-                                if (shutterCoordinator.onTap(processing, engineState) == ShutterAction.CAPTURE) {
-                                    currentOnCapture()
-                                }
-                            },
-                            onLongPress = {
-                                if (shutterCoordinator.onLongPress(processing, engineState) == ShutterAction.START_LIVE_PREVIEW) {
-                                    currentOnStartLivePreview()
-                                }
-                            },
-                        )
-                    }
-                }
-                .semantics {
-                    role = Role.Button
-                    contentDescription = captureDescription
-                    onClick(captureDescription) {
-                        if (shutterCoordinator.onTap(processing, engineState) == ShutterAction.CAPTURE) {
-                            onCapture()
-                            true
-                        } else {
-                            false
-                        }
-                    }
-                    onLongClick(livePreviewDescription) {
-                        if (shutterCoordinator.onLongPress(processing, engineState) == ShutterAction.START_LIVE_PREVIEW) {
-                            onStartLivePreview()
-                            true
-                        } else {
-                            false
-                        }
-                    }
-                },
-            color = if (livePreviewActive) MaterialTheme.colorScheme.primary else Color.White,
-            contentColor = if (livePreviewActive) Color.White else MaterialTheme.colorScheme.primary,
-            shape = CircleShape,
-        ) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Icon(Icons.Filled.CameraAlt, contentDescription = null, modifier = Modifier.size(34.dp))
             }
+            Spacer(Modifier.size(10.dp))
         }
-        Spacer(Modifier.size(52.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            CameraControl(
+                Icons.Outlined.Collections,
+                stringResource(R.string.choose_gallery),
+                onGallery,
+                enabled = !processing && engineState == EngineState.READY && !livePreviewActive,
+            )
+            Surface(
+                modifier = Modifier
+                    .size(76.dp)
+                    .graphicsLayer {
+                        scaleX = shutterScale
+                        scaleY = shutterScale
+                    }
+                    .border(4.dp, Color.White.copy(alpha = .7f), CircleShape)
+                    .pointerInput(processing, engineState) {
+                        if (!processing && engineState == EngineState.READY) {
+                            detectTapGestures(
+                                onPress = {
+                                    isPressed = true
+                                    tryAwaitRelease()
+                                    isPressed = false
+                                    if (shutterCoordinator.onPressedChanged(false) == ShutterAction.STOP_LIVE_PREVIEW) {
+                                        currentOnStopLivePreview()
+                                    }
+                                },
+                                onTap = {
+                                    if (shutterCoordinator.onTap(processing, engineState) == ShutterAction.CAPTURE) {
+                                        currentOnCapture()
+                                    }
+                                },
+                                onLongPress = {
+                                    if (shutterCoordinator.onLongPress(processing, engineState) == ShutterAction.START_LIVE_PREVIEW) {
+                                        currentOnStartLivePreview()
+                                    }
+                                },
+                            )
+                        }
+                    }
+                    .semantics {
+                        role = Role.Button
+                        contentDescription = captureDescription
+                        onClick(captureDescription) {
+                            if (shutterCoordinator.onTap(processing, engineState) == ShutterAction.CAPTURE) {
+                                onCapture()
+                                true
+                            } else {
+                                false
+                            }
+                        }
+                        onLongClick(livePreviewDescription) {
+                            if (shutterCoordinator.onLongPress(processing, engineState) == ShutterAction.START_LIVE_PREVIEW) {
+                                onStartLivePreview()
+                                true
+                            } else {
+                                false
+                            }
+                        }
+                    },
+                color = if (livePreviewActive) MaterialTheme.colorScheme.primary else Color.White,
+                contentColor = if (livePreviewActive) Color.White else MaterialTheme.colorScheme.primary,
+                shape = CircleShape,
+            ) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Filled.CameraAlt, contentDescription = null, modifier = Modifier.size(34.dp))
+                }
+            }
+            Spacer(Modifier.size(52.dp))
+        }
     }
 }
 

@@ -38,7 +38,7 @@ export type DiseaseRequestInput = {
   photos: Array<{
     contentLength: number;
     sha256: string;
-    source: "live" | "capture";
+    source: ShareSource;
   }>;
 };
 
@@ -238,7 +238,7 @@ export function validateDiseaseRequest(
         photo.contentLength <= maximumBytes &&
         typeof photo.sha256 === "string" &&
         SHA256_PATTERN.test(photo.sha256) &&
-        (photo.source === "live" || photo.source === "capture"),
+        photo.source === "live" || photo.source === "capture" || photo.source === "gallery",
     );
   if (
     typeof value.clientRequestId !== "string" ||
@@ -263,7 +263,7 @@ export function validateDiseaseRequest(
       photos: photos.map((photo) => ({
         contentLength: Number((photo as Record<string, unknown>).contentLength),
         sha256: String((photo as Record<string, unknown>).sha256).toLowerCase(),
-        source: (photo as Record<string, unknown>).source as "live" | "capture",
+        source: (photo as Record<string, unknown>).source as ShareSource,
       })),
     },
   };

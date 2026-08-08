@@ -71,7 +71,12 @@ fun DiseaseDetailsScreen(disease: Disease?, onBack: () -> Unit, showTopBar: Bool
                     Text(stringResource(R.string.disease_detail), style = MaterialTheme.typography.titleLarge)
                 }
             }
-            DiseaseArtwork(disease.id, Modifier.fillMaxWidth().height(240.dp))
+            DiseaseArtwork(
+                artworkKey = disease.id,
+                modifier = Modifier.fillMaxWidth().height(240.dp),
+                localArtworkPath = disease.artworkPath,
+                contentDescriptionOverride = disease.name,
+            )
             Text(disease.name, style = MaterialTheme.typography.headlineMedium)
             Surface(
                 shape = RoundedCornerShape(50),
@@ -142,12 +147,6 @@ fun DiseaseDetailsPager(diseases: List<Disease>, initialId: String?, onBack: () 
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    Text(
-                        stringResource(R.string.item_position, pager.currentPage + 1, diseases.size),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.SemiBold,
-                    )
                 }
             }
             HorizontalPager(pager, Modifier.weight(1f), key = { diseases[it].id }) { page ->

@@ -2,6 +2,7 @@ package com.eggplant.detector.feature.camera
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Matrix
 import android.os.Build
 import android.os.SystemClock
 import android.util.Log
@@ -310,6 +311,7 @@ class CameraController(
 
     fun capturePhoto(
         emitScene: Boolean = true,
+        onPreviewReady: ((Bitmap) -> Unit)? = null,
         onComplete: (Result<CameraScene>) -> Unit,
     ) {
         if (closed) {
@@ -339,6 +341,18 @@ class CameraController(
                                 image.toBitmap()
                             } finally {
                                 image.close()
+                            }
+                            val previewCopy = onPreviewReady?.let {
+                                bitmap.createPreviewCopy(rotationDegrees)
+                            }
+                            if (previewCopy != null) {
+                                mainExecutor.execute {
+                                    if (isCurrentStillRequest(requestToken)) {
+                                        onPreviewReady.invoke(previewCopy)
+                                    } else if (!previewCopy.isRecycled) {
+                                        previewCopy.recycle()
+                                    }
+                                }
                             }
                             try {
                                 detectBitmap(bitmap, InputSource.CAPTURE, rotationDegrees)
@@ -392,6 +406,25 @@ class CameraController(
     }
 
     private fun isCurrentStillRequest(requestToken: Long): Boolean = !closed && stillRequestToken.get() == requestToken
+
+    private fun Bitmap.createPreviewCopy(rotationDegrees: Int): Bitmap? = runCatching {
+        val rotated = if (rotationDegrees == 0) {
+            this
+        } else {
+            Bitmap.createBitmap(
+                this,
+                0,
+                0,
+                width,
+                height,
+                Matrix().apply { postRotate(rotationDegrees.toFloat()) },
+                true,
+            )
+        }
+        rotated.copy(Bitmap.Config.ARGB_8888, false).also {
+            if (rotated !== this && !rotated.isRecycled) rotated.recycle()
+        }
+    }.getOrNull()
 
     private fun enqueueAnalysis(onRejected: () -> Unit, task: () -> Unit): Boolean {
         if (closed || analysisExecutor.isShutdown || analysisExecutor.isTerminated) {

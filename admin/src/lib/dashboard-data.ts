@@ -1,4 +1,5 @@
 import "server-only";
+import { unstable_noStore as noStore } from "next/cache";
 import { getAdminClient } from "@/lib/supabase/admin";
 
 export type DashboardData = {
@@ -36,6 +37,7 @@ function dashboardQueriesFailed(queries: DashboardQueries) {
 }
 
 export async function getDashboardData(): Promise<DashboardData> {
+  noStore();
   const supabase = getAdminClient();
   let queries = await readDashboardQueries(supabase);
   if (dashboardQueriesFailed(queries)) {

@@ -9,13 +9,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -42,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import com.eggplant.detector.R
 import com.eggplant.detector.domain.model.GlobalScan
 import com.eggplant.detector.domain.model.ScanResult
+import com.eggplant.detector.domain.model.Disease
 import com.eggplant.detector.data.cloud.SafeJpeg
 import java.io.File
 import kotlinx.coroutines.Dispatchers
@@ -49,11 +54,23 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.eggplant.detector.core.ui.motion.LocalEggplantMotion
 import com.eggplant.detector.core.ui.components.ResponsiveContent
+import com.eggplant.detector.core.ui.components.ReportArtworkKind
+import com.eggplant.detector.core.ui.components.ReportSectionArtwork
 import com.eggplant.detector.core.ui.stablePageForId
 
 @Composable
-fun MyScanDetailPager(results: List<ScanResult>, initialId: String?, onBack: () -> Unit) {
-    if (results.isEmpty()) { ScanHistoryDetailsScreen(null, onBack); return }
+fun MyScanDetailPager(
+    results: List<ScanResult>,
+    diseases: List<Disease>,
+    initialId: String?,
+    onBack: () -> Unit,
+    onToggleFavorite: (String) -> Unit,
+    onDelete: (String) -> Unit,
+) {
+    if (results.isEmpty()) {
+        ScanHistoryDetailsScreen(null, null, onBack)
+        return
+    }
     val ids = results.map(ScanResult::id)
     var selectedId by rememberSaveable(initialId) { mutableStateOf(initialId?.takeIf(ids::contains) ?: ids.first()) }
     val initial = stablePageForId(ids, selectedId, 0)
@@ -68,8 +85,16 @@ fun MyScanDetailPager(results: List<ScanResult>, initialId: String?, onBack: () 
     LaunchedEffect(state.settledPage) { ids.getOrNull(state.settledPage)?.let { selectedId = it } }
     ResponsiveContent {
         Column(Modifier.fillMaxSize()) {
-            Text(stringResource(R.string.item_position, state.currentPage + 1, results.size), Modifier.padding(horizontal = 20.dp, vertical = 8.dp), style = MaterialTheme.typography.labelLarge)
-            HorizontalPager(state, Modifier.weight(1f), key = { results[it].id }) { page -> ScanHistoryDetailsScreen(results[page], onBack) }
+            HorizontalPager(state, Modifier.weight(1f), key = { results[it].id }) { page ->
+                val result = results[page]
+                ScanHistoryDetailsScreen(
+                    result = result,
+                    disease = diseases.firstOrNull { it.id == result.diseaseId },
+                    onBack = onBack,
+                    onToggleFavorite = { onToggleFavorite(result.id) },
+                    onDelete = { onDelete(result.id) },
+                )
+            }
             DetailControls(
                 state.currentPage,
                 results.size,
@@ -124,11 +149,6 @@ fun GlobalScanDetailPager(
                     modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    stringResource(R.string.item_position, state.currentPage + 1, scans.size),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             HorizontalPager(state, Modifier.weight(1f), key = { scans[it].id }) { page ->
@@ -197,13 +217,13 @@ private fun GlobalScanDetail(scan: GlobalScan, onReport: (String) -> Unit, repor
             color = MaterialTheme.colorScheme.secondary,
             fontWeight = FontWeight.SemiBold,
         )
-        DetailSection(stringResource(R.string.symptoms), scan.symptoms.joinToString("\n") { "• $it" })
-        DetailSection(stringResource(R.string.causes), scan.causes)
-        DetailSection(stringResource(R.string.prevention), scan.prevention)
-        DetailSection(stringResource(R.string.guidance), scan.guidance)
-        DetailSection(stringResource(R.string.when_to_act), scan.whenToAct)
-        DetailSection(stringResource(R.string.disclaimer), scan.disclaimer)
-        DetailSection(stringResource(R.string.references), scan.references.joinToString("\n") { "${it.publisher}: ${it.title}\n${it.url}" })
+        DetailSection(stringResource(R.string.symptoms), scan.symptoms.joinToString("\n") { "• $it" }, ReportArtworkKind.SYMPTOMS)
+        DetailSection(stringResource(R.string.causes), scan.causes, ReportArtworkKind.CAUSES)
+        DetailSection(stringResource(R.string.prevention), scan.prevention, ReportArtworkKind.PREVENTION)
+        DetailSection(stringResource(R.string.guidance), scan.guidance, ReportArtworkKind.GUIDANCE)
+        DetailSection(stringResource(R.string.when_to_act), scan.whenToAct, ReportArtworkKind.WHEN_TO_ACT)
+        DetailSection(stringResource(R.string.disclaimer), scan.disclaimer, ReportArtworkKind.DISCLAIMER)
+        DetailSection(stringResource(R.string.references), scan.references.joinToString("\n") { "${it.publisher}: ${it.title}\n${it.url}" }, ReportArtworkKind.REFERENCES)
         OutlinedButton(onClick = { showReport = true }, Modifier.fillMaxWidth()) { Text(stringResource(R.string.report_incorrect_scan)) }
         reportStatus?.let { status ->
             Text(status, color = if (reportStatusIsError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodySmall)
@@ -222,4 +242,23 @@ private fun GlobalScanDetail(scan: GlobalScan, onReport: (String) -> Unit, repor
 }
 
 @Composable
-private fun DetailSection(title: String, body: String) { if (body.isNotBlank()) Column(verticalArrangement = Arrangement.spacedBy(4.dp)) { Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold); Text(body) } }
+private fun DetailSection(title: String, body: String, artwork: ReportArtworkKind) {
+    if (body.isBlank()) return
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalAlignment = Alignment.Top,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(body)
+            }
+            ReportSectionArtwork(artwork, Modifier.size(76.dp))
+        }
+    }
+}

@@ -15,7 +15,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
-import androidx.compose.material.icons.outlined.Spa
+import androidx.compose.material.icons.outlined.Eco
+import androidx.compose.material.icons.outlined.LocalFlorist
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -35,76 +36,136 @@ import com.eggplant.detector.R
 import com.eggplant.detector.domain.model.Disease
 
 @Composable
-fun DiseaseCard(disease: Disease, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun DiseaseCard(
+    disease: Disease,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    compact: Boolean = false,
+) {
     val description = stringResource(R.string.open_disease_details, disease.name)
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .heightIn(min = 70.dp)
+            .then(if (compact) Modifier else Modifier.heightIn(min = 70.dp))
             .semantics { contentDescription = description }
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(if (compact) 16.dp else 14.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (compact) 1.dp else 2.dp),
     ) {
-        Row(
-            modifier = Modifier.padding(6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            DiseaseArtwork(
-                artworkKey = disease.id,
-                modifier = Modifier
-                    .size(width = 88.dp, height = 58.dp)
-                    .aspectRatio(1.52f),
-            )
-            Spacer(Modifier.width(11.dp))
+        if (compact) {
             Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(1.dp),
+                modifier = Modifier.padding(8.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                Text(
-                    disease.name,
-                    style = MaterialTheme.typography.titleMedium.copy(fontSize = 12.sp, lineHeight = 14.sp),
+                DiseaseArtwork(
+                    artworkKey = disease.id,
+                    localArtworkPath = disease.artworkPath,
+                    contentDescriptionOverride = "${disease.name} disease photo",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1.45f),
                 )
+                Row(verticalAlignment = Alignment.Top) {
+                    Text(
+                        disease.name,
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontSize = 12.sp,
+                            lineHeight = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        ),
+                        maxLines = 2,
+                    )
+                    Icon(
+                        Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
                 Text(
                     disease.symptomPreview,
-                    style = MaterialTheme.typography.bodyMedium.copy(fontSize = 9.sp, lineHeight = 10.5.sp),
+                    style = MaterialTheme.typography.bodyMedium.copy(fontSize = 9.sp, lineHeight = 11.sp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,
                 )
-                Surface(
-                    shape = RoundedCornerShape(50),
-                    color = if (disease.type.name.startsWith("LEAF"))
-                        com.eggplant.detector.core.ui.theme.LeafGreenSoft
-                    else com.eggplant.detector.core.ui.theme.EggplantLavender,
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(3.dp),
-                    ) {
-                        val tagColor = if (disease.type.name.startsWith("LEAF"))
-                            com.eggplant.detector.core.ui.theme.LeafGreenDark
-                        else com.eggplant.detector.core.ui.theme.EggplantPurple
-                        Icon(Icons.Outlined.Spa, null, tint = tagColor, modifier = Modifier.size(10.dp))
-                        Text(
-                            stringResource(if (disease.type.name.startsWith("LEAF")) R.string.leaf_disease else R.string.fruit_disease),
-                            color = tagColor,
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 8.sp,
-                                lineHeight = 9.sp,
-                            ),
-                        )
-                    }
-                }
+                DiseaseTypeTag(disease)
             }
+        } else {
+            Row(
+                modifier = Modifier.padding(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                DiseaseArtwork(
+                    artworkKey = disease.id,
+                    localArtworkPath = disease.artworkPath,
+                    contentDescriptionOverride = "${disease.name} disease photo",
+                    modifier = Modifier
+                        .size(width = 88.dp, height = 58.dp)
+                        .aspectRatio(1.52f),
+                )
+                Spacer(Modifier.width(11.dp))
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(1.dp),
+                ) {
+                    Text(
+                        disease.name,
+                        style = MaterialTheme.typography.titleMedium.copy(fontSize = 12.sp, lineHeight = 14.sp),
+                    )
+                    Text(
+                        disease.symptomPreview,
+                        style = MaterialTheme.typography.bodyMedium.copy(fontSize = 9.sp, lineHeight = 10.5.sp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                    )
+                    DiseaseTypeTag(disease)
+                }
+                Icon(
+                    Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(22.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DiseaseTypeTag(disease: Disease) {
+    val isLeaf = disease.type.name.startsWith("LEAF")
+    val tagColor = if (isLeaf) {
+        com.eggplant.detector.core.ui.theme.LeafGreenDark
+    } else {
+        com.eggplant.detector.core.ui.theme.PrimaryGreenDark
+    }
+    Surface(
+        shape = RoundedCornerShape(50),
+        color = if (isLeaf) com.eggplant.detector.core.ui.theme.LeafGreenSoft
+        else com.eggplant.detector.core.ui.theme.PrimaryGreenSoft,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(3.dp),
+        ) {
             Icon(
-                Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(22.dp),
+                if (isLeaf) Icons.Outlined.Eco else Icons.Outlined.LocalFlorist,
+                null,
+                tint = tagColor,
+                modifier = Modifier.size(10.dp),
+            )
+            Text(
+                stringResource(if (isLeaf) R.string.leaf_disease else R.string.fruit_disease),
+                color = tagColor,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 8.sp,
+                    lineHeight = 9.sp,
+                ),
             )
         }
     }

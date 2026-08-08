@@ -1,6 +1,6 @@
-# Eggplant Disease Detector Admin
+# Planta Admin
 
-Private Next.js administration and mobile API service for the Eggplant Disease Detector. The dashboard reads live Supabase data, protects every administrative page and mutation with both Supabase authentication and `admin_members` authorization, and never substitutes placeholder production metrics.
+Private Next.js administration and mobile API service for Planta. The dashboard reads live Supabase data, protects every administrative page and mutation with both Supabase authentication and `admin_members` authorization, and never substitutes placeholder production metrics.
 
 ## Runtime configuration
 

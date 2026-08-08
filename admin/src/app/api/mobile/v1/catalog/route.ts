@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     { data: references, error: referencesError },
   ] = await Promise.all([
     supabase.from("app_config").select("catalog_version").eq("id", true).single(),
-    supabase.from("disease_catalog").select("id,model_class_index,model_label,category,artwork_key,content_version,updated_at").order("model_class_index"),
+    supabase.from("disease_catalog").select("id,detector_supported,model_class_index,model_label,category,artwork_key,artwork_path,content_version,updated_at").order("model_class_index"),
     supabase.from("disease_localizations").select("disease_id,name,description,symptom_preview,causes,recommended_action,prevention,guidance,when_to_act,disclaimer,updated_at").eq("language_tag", languageTag),
     supabase.from("disease_signs").select("disease_id,position,text").eq("language_tag", languageTag).order("position"),
     supabase.from("disease_references").select("disease_id,position,publisher,title,url").eq("language_tag", languageTag).order("position"),
@@ -31,11 +31,16 @@ export async function GET(request: Request) {
       headers: { ETag: etag, "Cache-Control": "private, no-cache" },
     });
   }
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/+$/, "");
+  const artworkUrl = (path: string | null) => path && supabaseUrl
+    ? `${supabaseUrl}/storage/v1/object/public/disease-catalog-artwork/${path.split("/").map(encodeURIComponent).join("/")}`
+    : null;
   return NextResponse.json({
     version,
     languageTag,
     diseases: (diseases ?? []).map((disease) => ({
       ...disease,
+      artwork_url: artworkUrl(disease.artwork_path),
       content: content?.find((entry) => entry.disease_id === disease.id) ?? null,
       signs: signs?.filter((entry) => entry.disease_id === disease.id).map((entry) => entry.text) ?? [],
       references: references?.filter((entry) => entry.disease_id === disease.id) ?? [],

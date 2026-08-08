@@ -27,7 +27,7 @@ export function RequestReviewActions({ action, requestId, currentStatus, planned
         <input type="hidden" name="idempotency_key" value={plannedIdempotencyKey} />
         <input type="hidden" name="return_to" value="list" />
         <FormSubmitButton
-          label="Mark planned"
+          label="Done"
           pendingLabel="Updating"
           iconOnly={compact}
           icon={<Check size={16} aria-hidden="true" />}
@@ -41,7 +41,7 @@ export function RequestReviewActions({ action, requestId, currentStatus, planned
         <input type="hidden" name="idempotency_key" value={unsupportedIdempotencyKey} />
         <input type="hidden" name="return_to" value="list" />
         <FormSubmitButton
-          label="Mark not supported"
+          label="Not supported"
           pendingLabel="Updating"
           iconOnly={compact}
           icon={<X size={16} aria-hidden="true" />}

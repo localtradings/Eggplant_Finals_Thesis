@@ -1,7 +1,9 @@
 package com.eggplant.detector.feature.history
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -33,12 +35,12 @@ class GlobalScanPagerInstrumentedTest {
             }
         }
 
-        composeRule.onNodeWithText("1 of 2").assertIsDisplayed()
+        composeRule.onAllNodesWithText("1 of 2", substring = false).assertCountEquals(0)
         composeRule.onNodeWithText("Next").performClick()
-        composeRule.onNodeWithText("2 of 2").assertIsDisplayed()
+        composeRule.onAllNodesWithText("2 of 2", substring = false).assertCountEquals(0)
         composeRule.onNodeWithText("Fruit Rot").assertIsDisplayed()
         composeRule.onNodeWithText("Previous").performClick()
-        composeRule.onNodeWithText("1 of 2").assertIsDisplayed()
+        composeRule.onAllNodesWithText("1 of 2", substring = false).assertCountEquals(0)
         composeRule.onNodeWithText("Leaf Spot").assertIsDisplayed()
     }
 

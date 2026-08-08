@@ -9,9 +9,11 @@ import com.eggplant.detector.data.catalog.DiseaseCatalog
 import com.eggplant.detector.domain.model.ScanCategory
 import com.eggplant.detector.domain.model.ScanResult
 import com.eggplant.detector.domain.model.ScanDetectionResult
+import com.eggplant.detector.domain.model.ScanOutcome
 import com.eggplant.detector.detection.api.NormalizedBox
 import java.time.LocalDateTime
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PersistenceMappingTest {
@@ -100,5 +102,30 @@ class PersistenceMappingTest {
         val (_, detections) = ScanSessionMapper.fromDomain(result)
 
         assertEquals(listOf("leaf-spot"), detections.map { it.diseaseId })
+    }
+
+    @Test
+    fun `healthy and no-match summaries restore without detection rows`() {
+        val session = ScanSessionEntity(
+            id = "healthy-session",
+            source = "GALLERY",
+            startedAt = "2026-08-07T10:00:00",
+            savedAt = "2026-08-07T10:00:01",
+            imagePath = "/private/healthy.jpg",
+            modelVersion = "model",
+            saveMode = "GALLERY",
+            resultName = "Healthy Leaf",
+            resultCategory = ScanCategory.NO_DISEASE_DETECTED.name,
+            resultOutcome = ScanOutcome.HEALTHY_CONFIRMED.name,
+            resultConfidence = 91,
+            resultDiseaseId = "healthy-leaf",
+        )
+
+        val result = ScanSessionMapper.toDomain(ScanSessionWithDetections(session, emptyList()))
+
+        assertEquals("Healthy Leaf", result.name)
+        assertEquals(ScanOutcome.HEALTHY_CONFIRMED, result.outcome)
+        assertEquals(91, result.confidence)
+        assertTrue(result.detections.isEmpty())
     }
 }

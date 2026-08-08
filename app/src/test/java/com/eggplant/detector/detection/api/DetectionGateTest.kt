@@ -16,9 +16,9 @@ class DetectionGateTest {
     }
 
     @Test
-    fun `live uses low confidence threshold for non fruit borer diseases`() {
-        val rejected = DetectionGate.evaluate(detection(classIndex = 5, confidence = 0.119f), InputSource.LIVE)
-        val accepted = DetectionGate.evaluate(detection(classIndex = 5, confidence = 0.12f), InputSource.LIVE)
+    fun `live uses 0_15 confidence threshold for non fruit borer diseases`() {
+        val rejected = DetectionGate.evaluate(detection(classIndex = 5, confidence = 0.149f), InputSource.LIVE)
+        val accepted = DetectionGate.evaluate(detection(classIndex = 5, confidence = 0.15f), InputSource.LIVE)
 
         assertFalse(rejected.accepted)
         assertTrue(accepted.accepted)
@@ -26,10 +26,10 @@ class DetectionGateTest {
 
     @Test
     fun `capture and gallery use the model floor for disease detection`() {
-        val captureLow = DetectionGate.evaluate(detection(classIndex = 5, confidence = 0.119f), InputSource.CAPTURE)
-        val captureValid = DetectionGate.evaluate(detection(classIndex = 5, confidence = 0.12f), InputSource.CAPTURE)
-        val galleryLow = DetectionGate.evaluate(detection(classIndex = 5, confidence = 0.119f), InputSource.GALLERY)
-        val galleryValid = DetectionGate.evaluate(detection(classIndex = 5, confidence = 0.12f), InputSource.GALLERY)
+        val captureLow = DetectionGate.evaluate(detection(classIndex = 5, confidence = 0.149f), InputSource.CAPTURE)
+        val captureValid = DetectionGate.evaluate(detection(classIndex = 5, confidence = 0.15f), InputSource.CAPTURE)
+        val galleryLow = DetectionGate.evaluate(detection(classIndex = 5, confidence = 0.149f), InputSource.GALLERY)
+        val galleryValid = DetectionGate.evaluate(detection(classIndex = 5, confidence = 0.15f), InputSource.GALLERY)
 
         assertFalse(captureLow.accepted)
         assertTrue(captureValid.accepted)
@@ -38,10 +38,10 @@ class DetectionGateTest {
     }
 
     @Test
-    fun `fruit borer requires 0_25 confidence for all sources`() {
+    fun `fruit borer requires 0_15 confidence for all sources`() {
         InputSource.entries.forEach { source ->
-            val belowOverride = DetectionGate.evaluate(detection(classIndex = 1, confidence = 0.249f), source)
-            val validOverride = DetectionGate.evaluate(detection(classIndex = 1, confidence = 0.25f), source)
+            val belowOverride = DetectionGate.evaluate(detection(classIndex = 1, confidence = 0.149f), source)
+            val validOverride = DetectionGate.evaluate(detection(classIndex = 1, confidence = 0.15f), source)
 
             assertFalse("Fruit borer below override should be rejected for $source", belowOverride.accepted)
             assertEquals("confidence_below_fruit_borer_override", belowOverride.reason)
@@ -108,7 +108,7 @@ class DetectionGateTest {
     fun `filter returns only detections accepted for the source`() {
         val frame = DetectionFrame(
             detections = listOf(
-                detection(classIndex = 1, confidence = 0.249f),
+                detection(classIndex = 1, confidence = 0.149f),
                 detection(classIndex = 5, confidence = 0.15f),
             ),
             timestampMillis = 1L,
@@ -150,7 +150,7 @@ class DetectionGateTest {
             sceneToken = 1L,
         )
         val lowConfidence = empty.copy(
-            detections = listOf(detection(classIndex = 5, confidence = 0.119f)),
+            detections = listOf(detection(classIndex = 5, confidence = 0.149f)),
         )
 
         assertTrue(DetectionGate.filter(empty).detections.isEmpty())

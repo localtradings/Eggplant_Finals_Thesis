@@ -25,6 +25,12 @@ import com.eggplant.detector.data.database.entity.CloudDeletionStateEntity
 import com.eggplant.detector.data.database.entity.GlobalFeedStateEntity
 import com.eggplant.detector.data.database.entity.DiseaseSignEntity
 import com.eggplant.detector.data.database.entity.TreatmentEntity
+import com.eggplant.detector.data.database.entity.LibraryDiseaseEntity
+import com.eggplant.detector.data.database.entity.LibraryDiseaseLocalizationEntity
+import com.eggplant.detector.data.database.entity.LibraryDiseaseReferenceEntity
+import com.eggplant.detector.data.database.entity.LibraryDiseaseSignEntity
+import com.eggplant.detector.data.database.entity.LibraryTreatmentEntity
+import com.eggplant.detector.data.database.entity.RemoteNotificationEntity
 import com.eggplant.detector.detection.ncnn.ModelMetadata
 import com.eggplant.detector.domain.model.DiseaseType
 import java.io.File
@@ -64,7 +70,8 @@ class CloudSyncWorker(context: Context, parameters: WorkerParameters) : Coroutin
             return if (runAttemptCount < MAX_WORKER_ATTEMPTS) Result.retry() else Result.failure()
         }
         val dao = application.database.cloudDao()
-        val events = dao.pendingEvents(Instant.now().toString())
+        val refreshOnly = inputData.getBoolean(INPUT_REFRESH_ONLY, false)
+        val events = if (refreshOnly) emptyList() else dao.pendingEvents(Instant.now().toString())
         val loadMoreGlobalFeed = inputData.getBoolean(INPUT_LOAD_MORE_GLOBAL_FEED, false)
         var retryNeeded = false
         eventLoop@ for (event in events) {
@@ -182,6 +189,7 @@ class CloudSyncWorker(context: Context, parameters: WorkerParameters) : Coroutin
         }
         val languageTag = normalizedLanguage(application.database.settingsDao().current()?.languageTag)
         retryNeeded = refreshSafely(retryNeeded) { refreshCatalog(client, languageTag) }
+        retryNeeded = refreshSafely(retryNeeded) { refreshNotifications(client) }
         retryNeeded = refreshSafely(retryNeeded) { refreshDiseaseRequests(client) }
         retryNeeded = refreshSafely(retryNeeded) { refreshGlobalFeed(client, languageTag, loadMoreGlobalFeed) }
         retryNeeded = refreshSafely(retryNeeded) { refreshDeletionStatus(client) }
@@ -243,7 +251,7 @@ class CloudSyncWorker(context: Context, parameters: WorkerParameters) : Coroutin
         val photos = payload.photoPaths().map(::File)
         val sources = payload.photoSources()
         check(photos.size in 1..3 && photos.all { it.isFile && it.length() in 1..8_388_608 }) { "Disease-request photos are unavailable or too large." }
-        check(sources.size == photos.size && sources.all { it in CAMERA_REQUEST_SOURCES }) { "Disease-request photos must be captured in-app." }
+        check(sources.size == photos.size && sources.all { it in CAMERA_REQUEST_SOURCES }) { "Disease-request photos must come from the camera or gallery." }
         if (!isCurrentEvent(event, "UPLOADING")) return null
         val response = client.post("/api/mobile/v1/disease-requests", buildJsonObject {
             listOf("clientRequestId", "modelVersion", "rightsConsent", "trainingConsent").forEach { key -> put(key, payload.getValue(key)) }
@@ -364,7 +372,11 @@ class CloudSyncWorker(context: Context, parameters: WorkerParameters) : Coroutin
             .filterNot { it.isHealthy }
             .associateBy { requireNotNull(it.diseaseId) }
         val rows = body.getValue("diseases").jsonArray.map { element -> element.jsonObject }
-        check(rows.size == expectedClasses.size && rows.map { it.getValue("id").jsonPrimitive.content }.toSet() == expectedClasses.keys) {
+        val rowIds = rows.map { it.getValue("id").jsonPrimitive.content }
+        check(rowIds.distinct().size == rowIds.size) { "Catalog contains duplicate disease IDs." }
+        val detectorRows = rows.filter { it["detector_supported"]?.jsonPrimitive?.contentOrNull != "false" }
+        val libraryRows = rows.filter { it["detector_supported"]?.jsonPrimitive?.contentOrNull == "false" }
+        check(detectorRows.size == expectedClasses.size && detectorRows.map { it.getValue("id").jsonPrimitive.content }.toSet() == expectedClasses.keys) {
             "Catalog model mappings are incomplete."
         }
         val diseases = mutableListOf<DiseaseEntity>()
@@ -372,7 +384,7 @@ class CloudSyncWorker(context: Context, parameters: WorkerParameters) : Coroutin
         val signs = mutableListOf<DiseaseSignEntity>()
         val treatments = mutableListOf<TreatmentEntity>()
         val references = mutableListOf<DiseaseReferenceEntity>()
-        rows.forEach { row ->
+        detectorRows.forEach { row ->
             val id = row.getValue("id").jsonPrimitive.content
             val expected = requireNotNull(expectedClasses[id])
             val modelClassIndex = row.getValue("model_class_index").jsonPrimitive.content.toInt()
@@ -426,6 +438,76 @@ class CloudSyncWorker(context: Context, parameters: WorkerParameters) : Coroutin
             }
         }
         check(diseases.map(DiseaseEntity::modelClassIndex).distinct().size == diseases.size)
+        val existingLibraryArtwork = application.database.libraryDiseaseCatalogDao().allDiseases().associateBy { it.id }
+        val catalogArtworkRoot = File(application.filesDir, "catalog-artwork").apply { mkdirs() }
+        val libraryDiseases = mutableListOf<LibraryDiseaseEntity>()
+        val libraryLocalizations = mutableListOf<LibraryDiseaseLocalizationEntity>()
+        val librarySigns = mutableListOf<LibraryDiseaseSignEntity>()
+        val libraryTreatments = mutableListOf<LibraryTreatmentEntity>()
+        val libraryReferences = mutableListOf<LibraryDiseaseReferenceEntity>()
+        libraryRows.forEach { row ->
+            val id = row.getValue("id").jsonPrimitive.content
+            check(id.matches(Regex("^[a-z0-9]+(?:-[a-z0-9]+)*$"))) { "Library disease ID is invalid." }
+            check(id !in expectedClasses) { "A library entry cannot reuse a detector disease ID." }
+            check(row["model_class_index"]?.jsonPrimitive?.contentOrNull == null && row["model_label"]?.jsonPrimitive?.contentOrNull == null) {
+                "Library-only entries cannot define model mappings."
+            }
+            val category = row.getValue("category").jsonPrimitive.content
+            check(DiseaseType.entries.any { it.name == category }) { "Library catalog category is invalid." }
+            val artworkKey = row.getValue("artwork_key").jsonPrimitive.content
+            check(artworkKey.isNotBlank()) { "Library catalog artwork key is missing." }
+            val artworkUrl = row.requiredText("artwork_url")
+            val artworkPath = cacheCatalogArtwork(
+                client = client,
+                url = artworkUrl,
+                destination = File(catalogArtworkRoot, "$id.jpg"),
+                previousPath = existingLibraryArtwork[id]?.artworkPath,
+            )
+            val content = row["content"]?.jsonObject ?: error("Library catalog content is missing.")
+            libraryDiseases += LibraryDiseaseEntity(id, category, artworkKey, artworkPath)
+            libraryLocalizations += LibraryDiseaseLocalizationEntity(
+                diseaseId = id,
+                languageTag = languageTag,
+                name = content.requiredText("name"),
+                description = content.requiredText("description"),
+                symptomPreview = content.requiredText("symptom_preview"),
+                prevention = content.requiredText("prevention"),
+                causes = content.requiredText("causes"),
+                guidance = content.requiredText("guidance"),
+                whenToAct = content.requiredText("when_to_act"),
+                disclaimer = content.requiredText("disclaimer"),
+            )
+            libraryTreatments += LibraryTreatmentEntity(
+                diseaseId = id,
+                languageTag = languageTag,
+                title = if (languageTag == "fil") "Paggamot" else "Recommended action",
+                treatmentType = "RECOMMENDED_ACTION",
+                procedures = content.requiredText("recommended_action"),
+            )
+            val rowSigns = row["signs"]?.jsonArray ?: error("Library catalog symptoms are missing.")
+            check(rowSigns.isNotEmpty() && rowSigns.size <= 20) { "Library catalog symptoms are invalid." }
+            rowSigns.forEachIndexed { index, sign ->
+                val text = sign.jsonPrimitive.content.trim()
+                check(text.length in 2..500) { "Library catalog symptom is invalid." }
+                librarySigns += LibraryDiseaseSignEntity(id, languageTag, index, text)
+            }
+            val rowReferences = row["references"]?.jsonArray ?: error("Library catalog references are missing.")
+            check(rowReferences.isNotEmpty()) { "Library catalog reference is missing." }
+            rowReferences.forEach { referenceElement ->
+                val reference = referenceElement.jsonObject
+                val position = reference.getValue("position").jsonPrimitive.content.toInt()
+                val url = reference.requiredText("url")
+                check(url.startsWith("https://")) { "Library catalog reference URL is not secure." }
+                libraryReferences += LibraryDiseaseReferenceEntity(
+                    diseaseId = id,
+                    languageTag = languageTag,
+                    position = position,
+                    publisher = reference.requiredText("publisher"),
+                    title = reference.requiredText("title"),
+                    url = url,
+                )
+            }
+        }
         application.database.withTransaction {
             application.database.catalogDao().replaceLocalizedContent(
                 languageTag,
@@ -434,6 +516,14 @@ class CloudSyncWorker(context: Context, parameters: WorkerParameters) : Coroutin
                 signs,
                 treatments,
                 references,
+            )
+            application.database.libraryDiseaseCatalogDao().replaceLocalizedContent(
+                languageTag,
+                libraryDiseases,
+                libraryLocalizations,
+                librarySigns,
+                libraryTreatments,
+                libraryReferences,
             )
             val latest = settingsDao.current() ?: previous
             settingsDao.upsert(
@@ -478,6 +568,42 @@ class CloudSyncWorker(context: Context, parameters: WorkerParameters) : Coroutin
                     ),
                 )
             }
+        }
+    }
+
+    private suspend fun refreshNotifications(client: CloudApiClient) {
+        val response = try {
+            client.get("/api/mobile/v1/notifications")
+        } catch (error: CloudApiException) {
+            // Older admin deployments do not have this optional endpoint yet.
+            // Keep their cached notices until the endpoint is available.
+            if (error.status == 404) return else throw error
+        }
+        val rows = response.getValue("items").jsonArray.map { it.jsonObject }
+        check(rows.size <= 100) { "Notification response is too large." }
+        val notifications = rows.map { row ->
+            val id = UUID.fromString(row.getValue("id").jsonPrimitive.content).toString()
+            val category = row.requiredNotificationText("category", 32)
+            check(category in REMOTE_NOTIFICATION_CATEGORIES) { "Notification category is invalid." }
+            val titleEn = row.requiredNotificationText("title_en", 120)
+            val bodyEn = row.requiredNotificationText("body_en", 2_000)
+            val titleFil = row.optionalNotificationText("title_fil", 120) ?: titleEn
+            val bodyFil = row.optionalNotificationText("body_fil", 2_000) ?: bodyEn
+            RemoteNotificationEntity(
+                id = id,
+                category = category,
+                titleEn = titleEn,
+                bodyEn = bodyEn,
+                titleFil = titleFil,
+                bodyFil = bodyFil,
+                publishedAt = row.requiredNotificationText("published_at", 100),
+                expiresAt = row.optionalNotificationText("expires_at", 100),
+            )
+        }
+        application.database.withTransaction {
+            val dao = application.database.notificationDao()
+            dao.clearRemoteNotifications()
+            dao.upsertRemoteNotifications(notifications)
         }
     }
 
@@ -578,6 +704,31 @@ class CloudSyncWorker(context: Context, parameters: WorkerParameters) : Coroutin
         }.getOrElse { previous }
     }
 
+    private suspend fun cacheCatalogArtwork(
+        client: CloudApiClient,
+        url: String,
+        destination: File,
+        previousPath: String?,
+    ): String? {
+        val previous = previousPath?.let(::File)?.takeIf(SafeJpeg::validate)?.absolutePath
+        // Catalog artwork is immutable after a library entry is published. Reusing
+        // a validated local copy prevents every catalog refresh from downloading
+        // all existing artwork before the newly added disease can be published to
+        // Room and displayed by the Library screen.
+        if (previous != null && previous == destination.absolutePath) return previous
+        val temporary = File(destination.parentFile, "${destination.nameWithoutExtension}.tmp")
+        return try {
+            client.download(url, temporary, MAXIMUM_JPEG_BYTES)
+            check(SafeJpeg.validate(temporary)) { "Catalog artwork is not a safe JPEG." }
+            moveReplacing(temporary, destination)
+            destination.absolutePath
+        } catch (_: Exception) {
+            previous
+        } finally {
+            temporary.delete()
+        }
+    }
+
     private suspend fun refreshDeletionStatus(client: CloudApiClient) {
         // Do not poll an endpoint until the user has actually requested this
         // operation; a brand-new anonymous identity has nothing to reconcile.
@@ -663,14 +814,27 @@ object CloudSyncScheduler {
                 .build(),
         )
     }
+
+    fun refreshGlobalScans(context: Context) {
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            "eggplant-global-scans-refresh",
+            ExistingWorkPolicy.REPLACE,
+            OneTimeWorkRequestBuilder<CloudSyncWorker>()
+                .setConstraints(constraints)
+                .setInputData(workDataOf(INPUT_REFRESH_ONLY to true))
+                .build(),
+        )
+    }
 }
 
 private const val MAX_EVENT_ATTEMPTS = 8
 private const val MAX_WORKER_ATTEMPTS = 8
 private const val SHARING_CONSENT_KEY = "sharing-consent"
 private const val INPUT_LOAD_MORE_GLOBAL_FEED = "load_more_global_feed"
+private const val INPUT_REFRESH_ONLY = "refresh_only"
 private const val MAXIMUM_LEGACY_NOTE_LENGTH = 20_000
-private val CAMERA_REQUEST_SOURCES = setOf("live", "capture")
+private val CAMERA_REQUEST_SOURCES = setOf("live", "capture", "gallery")
+private val REMOTE_NOTIFICATION_CATEGORIES = setOf("announcement", "update", "tip", "alert")
 
 private val REMOTE_REQUEST_STATES = setOf(
     "upload_pending",
@@ -695,6 +859,15 @@ private fun JsonObject.requiredText(key: String): String {
 
 private fun JsonObject.optionalText(key: String): String? =
     runCatching { get(key)?.jsonPrimitive?.contentOrNull?.trim()?.takeIf(String::isNotEmpty) }.getOrNull()
+
+private fun JsonObject.requiredNotificationText(key: String, maximum: Int): String {
+    val value = optionalNotificationText(key, maximum)
+    check(!value.isNullOrBlank()) { "Cloud notification field $key is invalid." }
+    return value
+}
+
+private fun JsonObject.optionalNotificationText(key: String, maximum: Int): String? =
+    optionalText(key)?.takeIf { it.length <= maximum }
 
 private fun errorCode(error: Throwable): String = when (error) {
     is CloudApiException -> error.code

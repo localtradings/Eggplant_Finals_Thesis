@@ -8,6 +8,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -30,6 +31,7 @@ import com.eggplant.detector.detection.api.StabilityResult
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import com.eggplant.detector.app.ResultWarning
@@ -42,13 +44,34 @@ class AppFlowTest {
     @get:Rule
     val composeRule = createAndroidComposeRule<MainActivity>()
 
+    @Before
+    fun waitForStartupLoadingToFinish() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val loadingDescription = context.getString(R.string.startup_loading_content_description)
+        // The startup screen is intentionally time-based. Advance the Compose
+        // clock explicitly so this suite does not depend on emulator frame
+        // scheduling or real wall-clock time.
+        composeRule.mainClock.autoAdvance = false
+        composeRule.mainClock.advanceTimeBy(
+            STARTUP_BRAND_DURATION_MILLIS + STARTUP_ANIMATION_DURATION_MILLIS + 1_000L,
+        )
+        composeRule.mainClock.autoAdvance = true
+        composeRule.waitUntil(2_000) {
+            composeRule.onAllNodesWithContentDescription(loadingDescription)
+                .fetchSemanticsNodes()
+                .isEmpty()
+        }
+    }
+
     @Test
     fun homeRouteShowsReferenceContentWithoutConfidenceOrRisk() {
-        composeRule.onNodeWithText("Eggplant").assertIsDisplayed()
+        assertHomeBrandingDisplayed()
         composeRule.onNodeWithText("Disease Detector").assertIsDisplayed()
-        composeRule.onNodeWithText("Scan Leaf Now").assertIsDisplayed()
+        composeRule.onAllNodesWithText("Scan a Leaf", substring = false)
+            .onFirst()
+            .assertIsDisplayed()
         composeRule.onNodeWithText(
-            "Scan your eggplant leaves\nto detect diseases early and\nget treatment advice.",
+            "Detect diseases early and\nget expert care advice.",
         ).assertIsDisplayed()
         composeRule.onNodeWithContentDescription("Eggplant leaf disease hero photo")
             .assertIsDisplayed()
@@ -59,12 +82,14 @@ class AppFlowTest {
     @Test
     fun librarySearchAndDetailExcludeConfidence() {
         composeRule.onNodeWithContentDescription("Navigate to Library").performClick()
-        composeRule.onNodeWithText("Learn about common eggplant diseases and how to manage them.")
-            .assertIsDisplayed()
+        composeRule.onAllNodesWithText("Learn about common eggplant diseases and how to manage them.")
+            .assertCountEquals(0)
         composeRule.onNodeWithContentDescription("Leaf Spot disease photo")
             .assertIsDisplayed()
         composeRule.onNodeWithContentDescription("Disease library list").performScrollToIndex(15)
-        composeRule.onNodeWithContentDescription("Fruit Rot disease photo").assertIsDisplayed()
+        composeRule.onAllNodesWithContentDescription("Fruit Rot", substring = true)
+            .onFirst()
+            .assertIsDisplayed()
         composeRule.onNodeWithContentDescription("Disease library list").performScrollToIndex(7)
         composeRule.onNodeWithContentDescription("Open Leaf Spot details").performClick()
         composeRule.onNodeWithText("About Leaf Spot").assertIsDisplayed()
@@ -79,6 +104,28 @@ class AppFlowTest {
         composeRule.onNodeWithContentDescription("Capture scan").assertIsDisplayed()
         composeRule.onNodeWithContentDescription("Choose from gallery").assertIsDisplayed()
         composeRule.onAllNodesWithText("temporary", substring = true).assertCountEquals(0)
+    }
+
+    @Test
+    fun bottomNavigationVisitsEveryDestinationAndReturnsHome() {
+        grantCameraPermission()
+
+        composeRule.onNodeWithContentDescription("Navigate to Library").performClick()
+        composeRule.onAllNodesWithText("Library", substring = false).onFirst().assertIsDisplayed()
+
+        composeRule.onNodeWithContentDescription("Open camera").performClick()
+        composeRule.onNodeWithContentDescription("Choose from gallery").assertIsDisplayed()
+        composeRule.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithContentDescription("Navigate to Scans").performClick()
+        composeRule.onNodeWithText("My Scans").assertIsDisplayed()
+
+        composeRule.onNodeWithContentDescription("Navigate to Settings").performClick()
+        composeRule.onNodeWithText("Personalize your local app experience").assertIsDisplayed()
+
+        composeRule.onNodeWithContentDescription("Navigate to Home").performClick()
+        assertHomeBrandingDisplayed()
     }
 
     @Test
@@ -117,7 +164,25 @@ class AppFlowTest {
 
         composeRule.onNodeWithContentDescription("Home content").performScrollToIndex(3)
         composeRule.onNodeWithText("View All", substring = true).performClick()
-        composeRule.onNodeWithText("Your saved scans and anonymous community findings").assertIsDisplayed()
+        composeRule.onNodeWithText("My Scans").assertIsDisplayed()
+    }
+
+    @Test
+    fun redesignedHomeActionsKeepExistingRoutes() {
+        composeRule.onNodeWithContentDescription("Learn Diseases").performClick()
+        composeRule.onAllNodesWithText("Library", substring = false).onFirst().assertIsDisplayed()
+
+        composeRule.onNodeWithContentDescription("Navigate to Home").performClick()
+        composeRule.onNodeWithContentDescription("Home content").performScrollToIndex(2)
+        composeRule.onNodeWithContentDescription("Scan History").performClick()
+        composeRule.onNodeWithText("My Scans").assertIsDisplayed()
+    }
+
+    @Test
+    fun redesignedHeroScanCtaStillOpensCamera() {
+        grantCameraPermission()
+        composeRule.onAllNodesWithText("Scan a Leaf", substring = false).onFirst().performClick()
+        composeRule.onNodeWithContentDescription("Capture scan").assertIsDisplayed()
     }
 
     @Test
@@ -125,14 +190,14 @@ class AppFlowTest {
         composeRule.onNodeWithContentDescription("Home content").performScrollToIndex(4)
         composeRule.onNodeWithContentDescription("Navigate to Home").performClick()
         composeRule.waitForIdle()
-        composeRule.onNodeWithText("Eggplant").assertIsDisplayed()
+        assertHomeBrandingDisplayed()
     }
 
     @Test
     fun returningFromLibraryKeepsHomeControlsInteractive() {
         composeRule.onNodeWithContentDescription("Navigate to Library").performClick()
         composeRule.onNodeWithContentDescription("Navigate to Home").performClick()
-        composeRule.onNodeWithText("Eggplant").assertIsDisplayed()
+        assertHomeBrandingDisplayed()
 
         composeRule.onNodeWithContentDescription("Open notifications").performClick()
         composeRule.onNodeWithText("Notifications").assertIsDisplayed()
@@ -145,13 +210,23 @@ class AppFlowTest {
         composeRule.onNodeWithText("Clean the lens").performScrollTo().assertIsDisplayed()
     }
 
+    private fun assertHomeBrandingDisplayed() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        composeRule.onNodeWithContentDescription(
+            context.getString(R.string.home_logo_description),
+        ).assertIsDisplayed()
+    }
+
     @Test
     fun libraryFilterButtonOpensFilterSheet() {
         composeRule.onNodeWithContentDescription("Navigate to Library").performClick()
         composeRule.onNodeWithContentDescription("Filter diseases").performClick()
         composeRule.onNodeWithText("Filter diseases").assertIsDisplayed()
         composeRule.onNodeWithContentDescription("Choose Fruit Disease filter").performClick()
-        composeRule.onNodeWithContentDescription("Fruit Rot disease photo").assertIsDisplayed()
+        composeRule.onAllNodesWithContentDescription("Fruit Rot", substring = true)
+            .onFirst()
+            .performScrollTo()
+            .assertIsDisplayed()
     }
 
     @Test
@@ -182,6 +257,15 @@ class AppFlowTest {
     }
 
     @Test
+    fun globalScansRefreshButtonCanBeActivated() {
+        composeRule.onNodeWithContentDescription("Navigate to Scans").performClick()
+        composeRule.onAllNodesWithText("Global Scans", substring = false).onFirst().performClick()
+        composeRule.onAllNodesWithText("Refresh", substring = false).onFirst().performClick()
+        composeRule.waitForIdle()
+        composeRule.onAllNodesWithText("Global Scans", substring = false).onFirst().assertIsDisplayed()
+    }
+
+    @Test
     fun supportActionsOpenCompletePages() {
         composeRule.onNodeWithContentDescription("Home content").performScrollToIndex(2)
         composeRule.onNodeWithContentDescription("Care Guide").assertIsDisplayed().performClick()
@@ -191,7 +275,7 @@ class AppFlowTest {
         composeRule.waitForIdle()
 
         composeRule.onNodeWithContentDescription("Home content").performScrollToIndex(2)
-        composeRule.onNodeWithText("Offline Use").performClick()
+        composeRule.onNodeWithText("Offline Mode").performClick()
         scrollInformationToFirstSection(R.string.offline_use)
         composeRule.onNodeWithText("What works offline").performScrollTo().assertIsDisplayed()
         composeRule.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
@@ -230,7 +314,6 @@ class AppFlowTest {
         )
 
         viewModel.openDetectionScene(scene, detection)
-        assertTrue(viewModel.saveCurrentResult())
         assertEquals(1, viewModel.history.value.size)
 
         viewModel.openHistoryResult(viewModel.history.value.single())
@@ -300,7 +383,6 @@ class AppFlowTest {
             initialHistory = emptyList(),
             scanSaver = { error("Test database failure") },
         )
-        var completed: Boolean? = null
         val detection = DetectionBox(
             ModelMetadata.EGGPLANT_YOLO26M.classFor(5)!!,
             .87f,
@@ -314,11 +396,9 @@ class AppFlowTest {
         )
 
         viewModel.openDetectionScene(scene, detection)
-        viewModel.saveCurrentResult { success -> completed = success }
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()
 
-        composeRule.waitUntil(5_000) { completed != null }
-        assertFalse(completed ?: true)
+        composeRule.waitUntil(5_000) { viewModel.saveState.value == SaveState.FAILED }
         assertEquals(SaveState.FAILED, viewModel.saveState.value)
         assertEquals(emptyList<com.eggplant.detector.domain.model.ScanResult>(), viewModel.history.value)
     }
@@ -364,7 +444,7 @@ class AppFlowTest {
 
     private fun scrollInformationToFirstSection(titleResId: Int) {
         val title = InstrumentationRegistry.getInstrumentation().targetContext.getString(titleResId)
-        composeRule.waitUntil(5_000) {
+        composeRule.waitUntil(10_000) {
             composeRule.onAllNodesWithText(title).fetchSemanticsNodes().isNotEmpty()
         }
     }

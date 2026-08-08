@@ -23,7 +23,6 @@ import androidx.compose.material.icons.outlined.Yard
 import androidx.compose.material.icons.outlined.Animation
 import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.DeleteForever
-import androidx.compose.material.icons.outlined.Save
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -64,7 +63,6 @@ fun SettingsScreen(
     val language by viewModel.languagePreference.collectAsState()
     val detectHealthyLeafEnabled by viewModel.detectHealthyLeafEnabled.collectAsState()
     val detectHealthyPlantEnabled by viewModel.detectHealthyPlantEnabled.collectAsState()
-    val autoSaveEnabled by viewModel.autoSaveEnabled.collectAsState()
     val globalSharingEnabled by viewModel.globalSharingEnabled.collectAsState()
     val motionPreference by viewModel.motionPreference.collectAsState()
     val cloudDeletionState by viewModel.cloudDeletionState.collectAsState()
@@ -132,16 +130,6 @@ fun SettingsScreen(
                 enabledLabel = stringResource(R.string.on),
                 disabledLabel = stringResource(R.string.off),
                 enabled = cloudConfigured,
-            )
-            HorizontalDivider()
-            SettingsSwitchRow(
-                title = stringResource(R.string.history_saving),
-                description = stringResource(R.string.automatic_save),
-                icon = Icons.Outlined.Save,
-                checked = autoSaveEnabled,
-                onCheckedChange = viewModel::setAutoSave,
-                enabledLabel = stringResource(R.string.on),
-                disabledLabel = stringResource(R.string.off),
             )
             HorizontalDivider()
             SettingsSwitchRow(

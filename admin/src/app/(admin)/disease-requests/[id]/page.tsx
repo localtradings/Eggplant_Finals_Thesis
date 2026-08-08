@@ -1,9 +1,9 @@
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import { randomUUID } from "node:crypto";
 import { notFound } from "next/navigation";
 import { FormSubmitButton } from "@/components/form-submit-button";
+import { ImageZoomViewer } from "@/components/image-zoom-viewer";
 import { requireAdmin } from "@/lib/auth";
 import { adminActionLabel, requestStatusLabel } from "@/lib/admin-copy";
 import { getAdminClient } from "@/lib/supabase/admin";
@@ -62,10 +62,10 @@ export default async function RequestReview({
   );
 
   return (
-    <div className="fade-up mx-auto max-w-6xl">
+    <div className="fade-up mx-auto max-w-[1320px]">
       <Link
         href="/disease-requests"
-        className="inline-flex items-center gap-2 text-sm font-semibold text-[#512b91]"
+        className="inline-flex items-center gap-2 text-sm font-semibold text-[#1f6b3a]"
       >
         <ArrowLeft size={17} />
         Back to requests
@@ -81,29 +81,17 @@ export default async function RequestReview({
             : `Request marked ${reviewed}.`}
         </p>
       )}
-      <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(19rem,.8fr)]">
+      <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1.7fr)_minmax(19rem,.7fr)]">
         <section className="min-w-0">
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4">
             {signed.map((photo, index) => (
-              <div
-                className="surface relative aspect-[4/3] overflow-hidden"
+              <ImageZoomViewer
                 key={photos[index]?.object_path}
-              >
-                {photo.signedUrl ? (
-                  <Image
-                    src={photo.signedUrl}
-                    alt={`Private plant photo ${index + 1}`}
-                    fill
-                    sizes="(min-width: 640px) 50vw, 100vw"
-                    unoptimized
-                    className="object-contain"
-                  />
-                ) : (
-                  <div className="grid h-full place-items-center text-sm text-[#777286]">
-                    Photo unavailable
-                  </div>
-                )}
-              </div>
+                url={photo.signedUrl ?? null}
+                alt={`Private plant photo ${index + 1}`}
+                sizes="(min-width: 1024px) 68vw, 100vw"
+                className="surface h-[32rem] max-h-[68svh] min-h-[22rem] w-full"
+              />
             ))}
           </div>
           <section className="surface mt-5 p-5">
@@ -113,7 +101,7 @@ export default async function RequestReview({
             <h1 className="mt-1 text-2xl font-bold">
               {request.requested_name || "Name not provided"}
             </h1>
-            <p className="safe-long-content mt-3 whitespace-pre-wrap text-sm leading-6 text-[#625e72]">
+            <p className="safe-long-content mt-3 whitespace-pre-wrap text-sm leading-6 text-[#5e6d61]">
               {request.notes || "No notes supplied."}
             </p>
             <dl className="mt-4 text-sm">
@@ -133,7 +121,7 @@ export default async function RequestReview({
             <input type="hidden" name="id" value={id} />
             <input type="hidden" name="idempotency_key" value={randomUUID()} />
             <h2 className="font-bold">Review decision</h2>
-            <p className="mt-1 text-xs leading-5 text-[#777286]">
+            <p className="mt-1 text-xs leading-5 text-[#68766b]">
               Changes are recorded after the server confirms them.
             </p>
             <label className="mt-4 grid gap-1.5 text-sm font-semibold">
@@ -141,7 +129,7 @@ export default async function RequestReview({
               <select
                 name="status"
                 defaultValue={request.status === "submitted" ? "under_review" : request.status}
-                className="focus-ring h-11 rounded-xl border border-[#dcd8e4] px-3"
+                className="focus-ring h-11 rounded-xl border border-[#d5e2d3] px-3"
               >
                 {REQUEST_REVIEW_STATUSES.map((status) => (
                   <option value={status} key={status}>
@@ -157,29 +145,29 @@ export default async function RequestReview({
                 maxLength={2_000}
                 defaultValue={request.admin_note ?? ""}
                 rows={4}
-                className="focus-ring safe-long-content rounded-xl border border-[#dcd8e4] p-3 font-normal"
+                className="focus-ring safe-long-content rounded-xl border border-[#d5e2d3] p-3 font-normal"
               />
             </label>
             <input type="hidden" name="return_to" value="detail" />
             <FormSubmitButton
               label="Save review"
               pendingLabel="Saving review"
-              className="mt-4 w-full bg-[#512b91] px-4 text-white"
+              className="mt-4 w-full bg-[#1f6b3a] px-4 text-white"
             />
           </form>
           <section className="surface p-5">
             <h2 className="font-bold">Timeline</h2>
             <div className="mt-3 grid gap-3">
               {timeline.length === 0 ? (
-                <p className="mt-3 text-sm text-[#777286]">No review actions yet.</p>
+                <p className="mt-3 text-sm text-[#68766b]">No review actions yet.</p>
               ) : (
                 timeline.map((event) => (
                   <div
-                    className="safe-long-content border-l-2 border-[#bda8dd] pl-3 text-sm"
+                    className="safe-long-content border-l-2 border-[#9fc9a4] pl-3 text-sm"
                     key={event.id}
                   >
                     <p className="font-semibold">{adminActionLabel(event.action)}</p>
-                    <p className="text-xs text-[#777286]">
+                    <p className="text-xs text-[#68766b]">
                       {new Date(event.created_at).toLocaleString()}
                     </p>
                     {event.reason && (

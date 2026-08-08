@@ -1,6 +1,13 @@
 package com.eggplant.detector.app
 
 import android.os.Bundle
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -9,7 +16,14 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.core.os.LocaleListCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.eggplant.detector.app.navigation.EggplantNavigation
@@ -20,6 +34,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent { EggplantDetectorApp() }
@@ -39,6 +54,14 @@ fun EggplantDetectorApp(
         ),
     ),
 ) {
+    val application = (LocalContext.current.applicationContext as EggplantApplication)
+    var startupAnimationFinished by remember { mutableStateOf(application.startupAnimationShown) }
+    val startupVisible = !startupAnimationFinished
+    val homeAlpha by animateFloatAsState(
+        targetValue = if (startupAnimationFinished) 1f else 0f,
+        animationSpec = tween(420),
+        label = "startupHomeAlpha",
+    )
     val theme by appViewModel.themePreference.collectAsStateWithLifecycle()
     val language by appViewModel.languagePreference.collectAsStateWithLifecycle()
     val motion by appViewModel.motionPreference.collectAsStateWithLifecycle()
@@ -56,7 +79,29 @@ fun EggplantDetectorApp(
     }
     EggplantDetectorTheme(darkTheme = darkTheme) {
         CompositionLocalProvider(LocalEggplantMotion provides EggplantMotion.forPreference(motion)) {
-            EggplantNavigation(viewModel = appViewModel)
+            Box(Modifier.fillMaxSize()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer { alpha = homeAlpha },
+                ) {
+                    EggplantNavigation(viewModel = appViewModel)
+                }
+                AnimatedVisibility(
+                    visible = startupVisible,
+                    enter = fadeIn(animationSpec = tween(180)),
+                    exit = fadeOut(animationSpec = tween(420)),
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    StartupLoadingScreen(
+                        modifier = Modifier.fillMaxSize(),
+                        onFinished = {
+                            application.startupAnimationShown = true
+                            startupAnimationFinished = true
+                        },
+                    )
+                }
+            }
         }
     }
 }

@@ -1,11 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Tagatukoy ng Sakit ng Talong</string>
+    <string name="app_name">Planta</string>
     <string name="nav_home">Home</string>
     <string name="nav_library">Aklatan</string>
     <string name="nav_camera">Kamera</string>
     <string name="nav_history">Mga Scan</string>
     <string name="nav_settings">Mga Setting</string>
+    <string name="startup_preparing_plants">Inihahanda ang iyong mga halaman</string>
+    <string name="startup_loading_message">Inihahanda ang lahat para sa susunod mong scan…</string>
+    <string name="startup_loading_content_description">Inihahanda ang app para sa susunod na scan ng halaman</string>
     <string name="navigate_to">Pumunta sa %1$s</string>
     <string name="open_camera">Buksan ang kamera</string>
     <string name="back">Bumalik</string>
@@ -14,11 +17,11 @@
     <string name="leaf_disease">Sakit sa Dahon</string>
     <string name="fruit_disease">Sakit sa Bunga</string>
 
-    <string name="home_eggplant">Talong</string>
+    <string name="home_eggplant">Planta</string>
     <string name="home_detector">Tagatukoy ng Sakit</string>
-    <string name="home_headline">Tukuyin ang sakit ng talong.\nProtektahan ang iyong pananim.</string>
-    <string name="home_description">I-scan ang dahon ng talong\nupang maagang matukoy ang sakit\nat makita ang gabay sa paggamot.</string>
-    <string name="scan_leaf_now">I-scan ang Dahon</string>
+    <string name="home_headline">Panatilihing malusog\nang iyong mga talong\nnang natural.</string>
+    <string name="home_description">Tukuyin agad ang mga sakit\nat alamin ang gabay sa pag-aalaga.</string>
+    <string name="home_scan_cta">I-scan ang Dahon</string>
     <string name="home_status">Offline • Pribado • Live detection</string>
     <string name="learn_diseases">Alamin ang Sakit</string>
     <string name="learn_diseases_body">Kilalanin at alamin\nang mga sakit</string>
@@ -28,11 +31,18 @@
     <string name="care_guide_body">Mga payo sa paggamot\nat pag-iwas</string>
     <string name="offline_use">Paggamit Offline</string>
     <string name="offline_use_body">Lokal na datos\nat mga tampok</string>
+    <string name="home_scan_history">Kasaysayan ng Scan</string>
+    <string name="home_offline_mode">Offline Mode</string>
+    <string name="quick_access">Mabilis na Access</string>
     <string name="last_scan">Huling Scan</string>
     <string name="view_all">Tingnan Lahat ›</string>
+    <string name="no_recent_scans_title">Wala pang bagong scan</string>
+    <string name="no_recent_scans_body">Magsimulang mag-scan ng dahon ng talong para matukoy ang sakit at mapanatiling malusog ang iyong mga halaman.</string>
     <string name="open_notifications">Buksan ang mga abiso</string>
-    <string name="home_tip">Payo: Gumamit ng malinaw at pantay na ilaw at panatilihing matatag hanggang maging stable ang detection box.</string>
-    <string name="logo_description">Logo ng Tagatukoy ng Sakit ng Talong</string>
+    <string name="daily_plant_care_tip">Araw-araw na Gabay sa Halaman</string>
+    <string name="home_tip">Regular na suriin ang mga dahon at alisin ang mga apektadong bahagi upang manatiling malusog ang mga halaman.</string>
+    <string name="logo_description">Logo ng Planta</string>
+    <string name="home_logo_description">Logo ng Planta sa home</string>
     <string name="hero_description">Larawan ng may sakit na dahon ng talong</string>
 
     <string name="library_title">Aklatan</string>
@@ -72,7 +82,7 @@
     <string name="motion_full">Buong animation</string>
     <string name="motion_reduced">Bawas na galaw</string>
     <string name="global_sharing">Pandaigdigang pagbabahagi</string>
-    <string name="global_sharing_description">Naka-off bilang default. Ikaw ang pipili ng kwalipikadong camera scan na ipo-post nang anonymous.</string>
+    <string name="global_sharing_description">Naka-off bilang default. Ikaw ang pipili ng kwalipikadong camera, captured, o gallery scan na ipo-post nang anonymous.</string>
     <string name="cloud_unavailable_build">Hindi available ang cloud features sa APK na ito. Mag-install ng cloud-enabled build para magamit ang Global Scans, disease requests, at live catalog updates.</string>
     <string name="enable_global_sharing">I-enable ang global sharing?</string>
     <string name="global_sharing_consent" formatted="false">Magiging pampubliko ang ibinahaging larawan nang walang pangalan o profile. Maaaring i-share ang disease scan mula sa live camera, kinuhang larawan, o gallery matapos ang validation. Maaari itong i-off at hilinging burahin ang datos.</string>
@@ -114,6 +124,8 @@
     <string name="save_history_succeeded">Naka-save sa Kasaysayan. Makikita ang scan na ito sa Aking mga Scan.</string>
     <string name="save_history_already_saved">Nasa Aking mga Scan na ang scan na ito.</string>
     <string name="save_history_failed">Hindi ma-save ang scan na ito. Hindi nabago ang dati mong kasaysayan. Tingnan ang available na storage ng device at subukang muli.</string>
+    <string name="saving_scan_automatically">Sine-save ang scan na ito sa Aking mga Scan…</string>
+    <string name="saved_scan_automatically">Awtomatikong naka-save sa Aking mga Scan.</string>
     <string name="scan_again">Mag-scan Muli</string>
     <string name="signs_detected">Mga Palatandaang Natukoy</string>
     <string name="recommended_action">Inirerekomendang Gawin</string>
@@ -136,6 +148,13 @@
     <string name="history_search">Maghanap sa kasaysayan…</string>
     <string name="no_history">Walang kasaysayan ng scan</string>
     <string name="history_detail">Detalye ng Kasaysayan</string>
+    <string name="favorites">Mga Paborito</string>
+    <string name="no_favorites">Wala pang paboritong scan</string>
+    <string name="favorite_scan">Paboritong scan</string>
+    <string name="add_to_favorites">Idagdag sa mga paborito</string>
+    <string name="remove_from_favorites">Alisin sa mga paborito</string>
+    <string name="delete_history_scan">Burahin ang scan</string>
+    <string name="delete_history_scan_confirmation">Burahin ang scan na ito sa Aking mga Scan? Mananatili rito ang scan na naibahagi na sa Global Scans.</string>
     <string name="your_scans">Iyong mga scan</string>
     <string name="my_scans">Aking mga Scan</string>
     <string name="global_scans">Global Scans</string>
@@ -161,6 +180,7 @@
     <string name="when_to_act">Kailan dapat kumilos</string>
     <string name="disclaimer">Paalaala</string>
     <string name="references">Mga sanggunian</string>
+    <string name="description">Paglalarawan</string>
     <string name="report_incorrect_scan">I-report ang scan na ito</string>
     <string name="report_scan_title">I-report ang scan na ito?</string>
     <string name="report_scan_message">Makakatulong ang anonymous mong report para masuri namin ang shared scan. Hindi puwedeng i-report ang scan na ikaw mismo ang nag-share. Kapag maraming nag-report ng scan ng ibang user, maaari muna namin itong itago habang sinusuri.</string>
@@ -189,7 +209,7 @@
     <string name="request_photo_count">%1$d sa %2$d tunay na larawan ang napili</string>
     <string name="add_request_photos">Magdagdag mula sa gallery</string>
     <string name="adding_photos">Nagdaragdag ng mga larawan…</string>
-    <string name="request_camera_only_photo">Tanging tunay na larawang kinunan sa app na ito ang tatanggapin. Hindi maaaring isumite ang gallery photos.</string>
+    <string name="request_camera_only_photo">Tanging tunay na larawan ng halaman mula sa camera ng app na ito o gallery ang tatanggapin.</string>
     <string name="retry">Subukan muli</string>
 
     <string name="capture_scan">Kumuha ng scan</string>
@@ -202,6 +222,8 @@
     <string name="no_disease_detected">Walang natukoy na sakit</string>
     <string name="disease_detected_tap">May natukoy na sakit</string>
     <string name="point_camera">I-tap para kumuha. Pindutin nang matagal ang shutter para sa live preview.</string>
+    <string name="camera_ready">Handa nang mag-scan</string>
+    <string name="camera_intro_message">Itutok ang camera sa dahon o bunga ng talong para magsimulang mag-scan.</string>
     <string name="save_scan">I-save ang scan</string>
     <string name="camera_permission_required">Kailangan ang pahintulot sa kamera</string>
     <string name="camera_permission_body">Kailangan ang camera access para sa live disease detection.</string>
