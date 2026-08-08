@@ -1,4 +1,4 @@
-import { Cloud, LockKeyhole } from "lucide-react";
+import { Cloud } from "lucide-react";
 import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -60,9 +60,6 @@ export default async function SettingsPage({
   return (
     <div className="admin-page settings-page fade-up mx-auto max-w-3xl">
       <h1 className="text-3xl font-bold tracking-[-.03em]">Settings</h1>
-      <p className="mt-1 text-sm text-[#68766b]">
-        Control mobile submissions and review the audit log.
-      </p>
       {statusChanged && (
         <p
           role="status"
@@ -105,20 +102,6 @@ export default async function SettingsPage({
                 Only the owner can change this safety switch.
               </p>
             )}
-          </div>
-        </div>
-      </section>
-      <section className="settings-security surface mt-5 p-6">
-        <div className="flex items-start gap-4">
-          <span className="rounded-full bg-[#eaf4e8] p-3 text-[#1f6b3a]">
-            <LockKeyhole />
-          </span>
-          <div>
-            <h2 className="text-lg font-bold">Security</h2>
-            <p className="mt-1 text-sm leading-6 text-[#68766b]">
-              Private storage, owner-scoped data, server-only credentials, audited moderation, and Row Level Security.
-              Catalog version: {data.catalog_version ?? 1}.
-            </p>
           </div>
         </div>
       </section>

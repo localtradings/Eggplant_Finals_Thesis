@@ -1,14 +1,18 @@
 package com.eggplant.detector.core.ui.components
 
 import android.graphics.Bitmap
+import android.util.LruCache
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.produceState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
@@ -24,6 +28,28 @@ import com.eggplant.detector.core.ui.theme.PrimaryGreenSoft
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
+import kotlin.math.max
+
+private const val DISEASE_ARTWORK_MAX_DIMENSION = 768
+
+private sealed interface DiseaseArtworkLoadState {
+    data object NotRequested : DiseaseArtworkLoadState
+    data object Loading : DiseaseArtworkLoadState
+    data class Loaded(val bitmap: Bitmap) : DiseaseArtworkLoadState
+    data object Failed : DiseaseArtworkLoadState
+}
+
+private object DiseaseArtworkBitmapCache {
+    private val cache = object : LruCache<String, Bitmap>(8 * 1024) {
+        override fun sizeOf(key: String, value: Bitmap): Int = max(1, value.byteCount / 1024)
+    }
+
+    fun get(key: String): Bitmap? = cache.get(key)
+
+    fun put(key: String, bitmap: Bitmap) {
+        cache.put(key, bitmap)
+    }
+}
 
 @Composable
 fun DiseaseArtwork(
@@ -34,11 +60,41 @@ fun DiseaseArtwork(
 ) {
     val resource = diseaseDrawable(artworkKey)
     val description = contentDescriptionOverride ?: diseaseDescription(artworkKey)
-    val localBitmap = produceState<Bitmap?>(initialValue = null, localArtworkPath) {
-        value = withContext(Dispatchers.IO) {
-            localArtworkPath?.let(::File)?.takeIf(File::isFile)?.let { SafeJpeg.decodeSampled(it, 1_280) }
+    val artworkCacheKey = localArtworkPath?.let { path ->
+        val file = File(path)
+        "$path:${file.lastModified()}"
+    }
+    val cachedBitmap = artworkCacheKey?.let(DiseaseArtworkBitmapCache::get)
+    val artworkState = produceState<DiseaseArtworkLoadState>(
+        initialValue = when {
+            localArtworkPath == null -> DiseaseArtworkLoadState.NotRequested
+            cachedBitmap != null -> DiseaseArtworkLoadState.Loaded(cachedBitmap)
+            else -> DiseaseArtworkLoadState.Loading
+        },
+        artworkCacheKey,
+    ) {
+        val path = localArtworkPath
+        val cacheKey = artworkCacheKey
+        if (path == null || cacheKey == null) {
+            value = DiseaseArtworkLoadState.NotRequested
+            return@produceState
+        }
+        DiseaseArtworkBitmapCache.get(cacheKey)?.let {
+            value = DiseaseArtworkLoadState.Loaded(it)
+            return@produceState
+        }
+        value = DiseaseArtworkLoadState.Loading
+        val decoded = withContext(Dispatchers.IO) {
+            File(path).takeIf(File::isFile)?.let { SafeJpeg.decodeSampled(it, DISEASE_ARTWORK_MAX_DIMENSION) }
+        }
+        if (decoded != null) {
+            DiseaseArtworkBitmapCache.put(cacheKey, decoded)
+            value = DiseaseArtworkLoadState.Loaded(decoded)
+        } else {
+            value = DiseaseArtworkLoadState.Failed
         }
     }.value
+    val localBitmap = (artworkState as? DiseaseArtworkLoadState.Loaded)?.bitmap
 
     if (localBitmap != null) {
         Image(
@@ -63,7 +119,12 @@ fun DiseaseArtwork(
                         listOf(Color(0xFFE9F5E8), PrimaryGreenSoft),
                     ),
                 ),
-        )
+            contentAlignment = Alignment.Center,
+        ) {
+            if (artworkState is DiseaseArtworkLoadState.Loading) {
+                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+            }
+        }
     }
 }
 
@@ -90,7 +151,7 @@ private fun diseaseDrawable(artworkKey: String): Int? = when (artworkKey) {
     "white-molds" -> R.drawable.disease_white_molds
     "wilt" -> R.drawable.disease_wilt
     "insect-pest" -> R.drawable.disease_insect_pest
-    "melon-thrips" -> R.drawable.disease_melon_thrips
+    "melon-thrips" -> R.drawable.disease_melon_thrips_v2
     "fruit-rot" -> R.drawable.disease_fruit_rot
     "fruit-borer" -> R.drawable.disease_fruit_borer
     else -> null

@@ -118,7 +118,9 @@ export default async function DiseaseContentEditor({ params, searchParams }: { p
   const { data: disease, error } = await supabase.from("disease_catalog").select("id,detector_supported,model_class_index,model_label,category,artwork_path,content_version,disease_localizations(*),disease_signs(*),disease_references(*)").eq("id", id).maybeSingle();
   if (error) throw new Error("The disease content could not be loaded.");
   if (!disease) notFound();
-  const artworkUrl = disease.artwork_path ? supabase.storage.from("disease-catalog-artwork").getPublicUrl(disease.artwork_path).data.publicUrl : null;
+  const artworkUrl = disease.id === "melon-thrips"
+    ? "/disease-artwork/melon-thrips-v2.jpg"
+    : disease.artwork_path ? supabase.storage.from("disease-catalog-artwork").getPublicUrl(disease.artwork_path).data.publicUrl : null;
   const english = disease.disease_localizations?.find((row) => row.language_tag === "en");
 
   return (
@@ -145,7 +147,7 @@ export default async function DiseaseContentEditor({ params, searchParams }: { p
             <span className="rounded-full bg-[#edf7ee] px-3 py-1 text-xs font-semibold text-[#247936]">JPEG · library asset</span>
           </div>
           <div className="mt-4 overflow-hidden rounded-2xl border border-[#d5e2d3] bg-[#f2f7ef] p-3">
-            <Image src={artworkUrl} alt={`${english?.name ?? disease.id} artwork`} width={1200} height={900} unoptimized className="mx-auto max-h-[34rem] w-full rounded-xl object-contain" />
+            <Image src={artworkUrl} alt={`${english?.name ?? disease.id} artwork`} width={1200} height={900} priority unoptimized className="mx-auto max-h-[34rem] w-full rounded-xl object-contain" />
           </div>
         </section>
       )}

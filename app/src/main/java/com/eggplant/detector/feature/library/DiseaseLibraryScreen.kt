@@ -18,8 +18,8 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
-import androidx.compose.material.icons.outlined.Spa
-import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Eco
+import androidx.compose.material.icons.outlined.LocalFlorist
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -30,6 +30,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -46,12 +47,16 @@ import com.eggplant.detector.core.ui.components.DiseaseCard
 import com.eggplant.detector.core.ui.components.FilterChips
 import com.eggplant.detector.core.ui.components.ResponsiveContent
 import com.eggplant.detector.core.ui.components.SearchBar
+import com.eggplant.detector.core.ui.components.AnimatedRefreshIcon
 import com.eggplant.detector.R
 import com.eggplant.detector.data.catalog.DiseaseCatalog
 import com.eggplant.detector.domain.model.Disease
 import com.eggplant.detector.domain.model.DiseaseType
 import com.eggplant.detector.core.ui.theme.LeafGreen
 import com.eggplant.detector.core.ui.theme.PrimaryGreen
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import androidx.compose.ui.graphics.vector.ImageVector
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
@@ -68,6 +73,17 @@ fun DiseaseLibraryScreen(
     var query by rememberSaveable { mutableStateOf("") }
     var selectedFilter by rememberSaveable(allLabel) { mutableStateOf(allLabel) }
     var showFilterSheet by rememberSaveable { mutableStateOf(false) }
+    var isRefreshing by rememberSaveable { mutableStateOf(false) }
+    val refreshScope = rememberCoroutineScope()
+    fun requestRefresh() {
+        if (isRefreshing) return
+        isRefreshing = true
+        onRefresh()
+        refreshScope.launch {
+            delay(900)
+            isRefreshing = false
+        }
+    }
     val selectedType = when (selectedFilter) {
         leafLabel -> DiseaseType.LEAF_DISEASE
         fruitLabel -> DiseaseType.FRUIT_DISEASE
@@ -88,7 +104,7 @@ fun DiseaseLibraryScreen(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            item(span = { GridItemSpan(maxLineSpan) }) { LibraryHeader(onHelp, onRefresh) }
+            item(span = { GridItemSpan(maxLineSpan) }) { LibraryHeader(onHelp, ::requestRefresh, isRefreshing) }
             item(span = { GridItemSpan(maxLineSpan) }) { Spacer(Modifier.height(2.dp)) }
             item(span = { GridItemSpan(maxLineSpan) }) {
                 SearchBar(
@@ -122,22 +138,24 @@ fun DiseaseLibraryScreen(
             } else {
                 if (leafDiseases.isNotEmpty()) {
                     item(span = { GridItemSpan(maxLineSpan) }) { Spacer(Modifier.height(2.dp)) }
-                    item(span = { GridItemSpan(maxLineSpan) }) { SectionHeader(leafLabel, LeafGreen) }
+                    item(span = { GridItemSpan(maxLineSpan) }) { SectionHeader(leafLabel, LeafGreen, Icons.Outlined.Eco) }
                     items(leafDiseases, key = { it.id }) { disease ->
                         DiseaseCard(
                             disease = disease,
                             onClick = { onDiseaseClick(disease) },
+                            modifier = Modifier.animateItem(),
                             compact = true,
                         )
                     }
                 }
                 if (fruitDiseases.isNotEmpty()) {
                     item(span = { GridItemSpan(maxLineSpan) }) { Spacer(Modifier.height(2.dp)) }
-                    item(span = { GridItemSpan(maxLineSpan) }) { SectionHeader(fruitLabel, PrimaryGreen) }
+                    item(span = { GridItemSpan(maxLineSpan) }) { SectionHeader(fruitLabel, PrimaryGreen, Icons.Outlined.LocalFlorist) }
                     items(fruitDiseases, key = { it.id }) { disease ->
                         DiseaseCard(
                             disease = disease,
                             onClick = { onDiseaseClick(disease) },
+                            modifier = Modifier.animateItem(),
                             compact = true,
                         )
                     }
@@ -170,7 +188,7 @@ fun DiseaseLibraryScreen(
 }
 
 @Composable
-private fun LibraryHeader(onHelp: () -> Unit, onRefresh: () -> Unit) {
+private fun LibraryHeader(onHelp: () -> Unit, onRefresh: () -> Unit, isRefreshing: Boolean) {
     Row(
         modifier = Modifier.fillMaxWidth().height(46.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -187,12 +205,11 @@ private fun LibraryHeader(onHelp: () -> Unit, onRefresh: () -> Unit) {
                 style = MaterialTheme.typography.headlineMedium.copy(fontSize = 24.sp, lineHeight = 28.sp),
             )
         }
-        IconButton(onClick = onRefresh, modifier = Modifier.size(48.dp)) {
-            Icon(
-                Icons.Outlined.Refresh,
+        IconButton(onClick = onRefresh, modifier = Modifier.size(48.dp), enabled = !isRefreshing) {
+            AnimatedRefreshIcon(
+                isRefreshing = isRefreshing,
                 contentDescription = stringResource(R.string.refresh),
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(22.dp),
             )
         }
         IconButton(onClick = onHelp, modifier = Modifier.size(48.dp)) {
@@ -207,13 +224,13 @@ private fun LibraryHeader(onHelp: () -> Unit, onRefresh: () -> Unit) {
 }
 
 @Composable
-private fun SectionHeader(title: String, tint: Color) {
+private fun SectionHeader(title: String, tint: Color, icon: ImageVector) {
     Row(
         modifier = Modifier.fillMaxWidth().height(30.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Icon(Icons.Outlined.Spa, contentDescription = null, tint = tint, modifier = Modifier.size(14.dp))
+        Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(14.dp))
         Text(
             title,
             style = MaterialTheme.typography.titleLarge.copy(fontSize = 13.5.sp, lineHeight = 17.sp, fontWeight = FontWeight.Bold),

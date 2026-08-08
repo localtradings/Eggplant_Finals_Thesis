@@ -1,4 +1,4 @@
-import { Bell, CheckCircle2, Megaphone, ShieldCheck } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { randomUUID } from "node:crypto";
@@ -57,7 +57,7 @@ export default async function NotificationsPage({
 }: {
   searchParams: Promise<{ published?: string }>;
 }) {
-  const admin = await requireAdmin(["owner", "admin"]);
+  await requireAdmin(["owner", "admin"]);
   const supabase = getAdminClient();
   const { data, error } = await supabase
     .from("admin_notifications")
@@ -69,22 +69,9 @@ export default async function NotificationsPage({
   const params = await searchParams;
 
   return (
-    <div className="admin-page fade-up mx-auto max-w-[1240px]">
+    <div className="admin-page notifications-page fade-up mx-auto max-w-[1240px]">
       <header className="flex flex-wrap items-end justify-between gap-5">
-        <div>
-          <div className="flex items-center gap-3">
-            <span className="rounded-full bg-[#eaf4e8] p-2.5 text-[#1f6b3a]"><Bell size={20} /></span>
-            <div>
-              <p className="page-kicker">Audience updates</p>
-              <h1 className="mt-2 text-3xl font-bold tracking-[-.03em]">Notifications</h1>
-            </div>
-          </div>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-[#647166]">Publish a short update that installed app users will see in their Notifications area after the next cloud refresh.</p>
-          <p className="mt-2 text-xs font-semibold text-[#399d4c]">Signed in as {admin.loginName || "admin"}</p>
-        </div>
-        <div className="inline-flex items-center gap-2 rounded-xl border border-[#dbe7d8] bg-[#f7fbf5] px-3 py-2 text-sm font-semibold text-[#31563a]">
-          <ShieldCheck size={16} /> Audience: all app users
-        </div>
+        <h1 className="text-3xl font-bold tracking-[-.03em]">Notifications</h1>
       </header>
 
       {params.published === "1" && (
@@ -98,11 +85,9 @@ export default async function NotificationsPage({
         <section className="surface p-5 sm:p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="page-kicker">New message</p>
-              <h2 className="mt-2 text-xl font-bold">Write an update</h2>
-              <p className="mt-1 max-w-2xl text-sm leading-6 text-[#647166]">Keep it useful and easy to read. English is required; Filipino is optional.</p>
+              <h2 className="text-xl font-bold">Write an update</h2>
+              <p className="mt-1 max-w-2xl text-sm leading-6 text-[#647166]">English is required; Filipino is optional.</p>
             </div>
-            <Megaphone className="text-[#399d4c]" size={24} aria-hidden="true" />
           </div>
 
           <div className="mt-5 grid gap-4 sm:grid-cols-[minmax(0,240px)_1fr]">
@@ -142,7 +127,6 @@ export default async function NotificationsPage({
           <p role="alert" className="mt-4 rounded-xl bg-[#fff0f2] p-4 text-sm text-[#a92f40]">Notifications are temporarily unavailable. Apply the notification database migration, then refresh this page.</p>
         ) : notifications.length === 0 ? (
           <div className="surface mt-4 grid place-items-center p-10 text-center">
-            <Bell size={38} className="text-[#9fc9a4]" />
             <h3 className="mt-4 text-lg font-bold">No notifications yet</h3>
             <p className="mt-1 max-w-md text-sm leading-6 text-[#647166]">Your first published update will appear here and in the app after its next cloud refresh.</p>
           </div>

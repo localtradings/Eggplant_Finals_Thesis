@@ -1,8 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Flag, RefreshCw } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { RefreshDashboardButton } from "@/components/refresh-dashboard-button";
 import { requireAdmin } from "@/lib/auth";
-import { adminRoleLabel, reportReasonLabel, scanStatusLabel, scanStatusTone } from "@/lib/admin-copy";
+import { reportReasonLabel, scanStatusLabel, scanStatusTone } from "@/lib/admin-copy";
 import { getAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
@@ -31,7 +32,7 @@ function pageHref(page: number) {
 }
 
 export default async function ReportsPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
-  const admin = await requireAdmin(["owner", "admin", "reviewer"]);
+  await requireAdmin(["owner", "admin", "reviewer"]);
   const supabase = getAdminClient();
   const query = await searchParams;
   const { count, error: countError } = await supabase.from("content_reports").select("id", { count: "exact", head: true });
@@ -60,33 +61,27 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
 
   return <div className="admin-page reports-page fade-up mx-auto max-w-[1240px]">
     <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-        <div className="flex items-center gap-3"><span className="rounded-full bg-[#eaf4e8] p-2.5 text-[#1f6b3a]"><Flag size={20}/></span><div><p className="page-kicker">Moderation queue</p><h1 className="mt-2 text-3xl font-bold tracking-[-.03em]">Reports</h1></div></div>
-        <p className="mt-2 max-w-2xl text-sm text-[#647166]">When someone flags a shared scan, it appears here. Open the scan to check the photo and decide whether it should stay public.</p>
-        <p className="mt-2 text-xs font-semibold text-[#399d4c]">Signed in as {adminRoleLabel(admin.role)}{admin.loginName ? ` · ${admin.loginName}` : ""}</p>
-      </div>
+      <h1 className="text-3xl font-bold tracking-[-.03em]">Reports</h1>
       <div className="flex flex-wrap items-center gap-2">
         <p className="rounded-xl border border-[#dbe7d8] bg-[#fffdfd] px-3 py-2 text-sm font-semibold text-[#5b695f]">{count ?? 0} report{count === 1 ? "" : "s"} received</p>
-        <Link href={pageHref(page)} className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-xl border border-[#d5e2d3] bg-white px-3 text-sm font-semibold text-[#1f6b3a]"><RefreshCw size={16}/>Refresh reports</Link>
+        <RefreshDashboardButton label="Refresh reports" pendingLabel="Refreshing reports" />
       </div>
     </header>
 
-    {error ? <p role="alert" className="mt-6 rounded-xl bg-[#fff0f2] p-4 text-sm text-[#a92f40]">Reports are temporarily unavailable. Refresh to try again.</p> : reports.length === 0 ? <div className="surface mt-6 grid place-items-center p-10 text-center sm:p-14"><Flag size={42} className="text-[#9fc9a4]"/><h2 className="mt-4 text-lg font-bold">No reports yet</h2><p className="mt-1 max-w-md text-sm text-[#647166]">Reports from the mobile app will appear here when a user flags a shared scan.</p></div> : <>
-      <section className="mt-6 grid gap-3" aria-label="Reports received">
+    {error ? <p role="alert" className="mt-6 rounded-xl bg-[#fff0f2] p-4 text-sm text-[#a92f40]">Reports are temporarily unavailable. Refresh to try again.</p> : reports.length === 0 ? <div className="surface mt-6 grid place-items-center p-10 text-center sm:p-14"><h2 className="text-lg font-bold">No reports yet</h2><p className="mt-1 max-w-md text-sm text-[#647166]">Reports from the mobile app will appear here when a user flags a shared scan.</p></div> : <>
+      <section className="report-grid mt-6" aria-label="Reports received">
         {reports.map((report) => {
           const scan = scanById.get(report.contribution_id);
           const photoUrl = scan ? signedByPath.get(scan.photo_path) : "";
-          return <article className="report-card surface min-w-0 p-4 sm:p-5" key={report.id}>
-            <div className="flex min-w-0 flex-col gap-4 sm:flex-row">
-              {scan && (photoUrl ? <div className="relative h-48 w-full shrink-0 overflow-hidden rounded-xl bg-[#eaf4e8] sm:w-72"><Image src={photoUrl} alt="Reported shared scan" fill sizes="(min-width: 640px) 18rem, 100vw" unoptimized className="object-cover" /></div> : <div className="grid h-48 w-full shrink-0 place-items-center rounded-xl bg-[#eaf4e8] text-sm text-[#68766b] sm:w-72">Photo unavailable</div>)}
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div><p className="text-xs font-semibold uppercase tracking-[.08em] text-[#68766b]">{reportReasonLabel(report.reason)}</p><h2 className="safe-long-content mt-1 text-lg font-bold">{scan ? scan.disease_id.replaceAll("-", " ") : "Scan unavailable"}</h2></div>
-                  {scan && <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${scanStatusTone(scan.status)}`}>{scanStatusLabel(scan.status)}</span>}
-                </div>
-                {report.details && <p className="safe-long-content mt-3 whitespace-pre-wrap text-sm leading-6 text-[#5e6d61]">{report.details}</p>}
-                <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-[#e5ece2] pt-3 text-xs text-[#68766b]"><span>{new Date(report.created_at).toLocaleString()}</span>{scan ? <Link href={`/global-scans/${scan.id}`} className="focus-ring inline-flex min-h-10 items-center gap-1 font-semibold text-[#1f6b3a] hover:underline">Open scan <ChevronRight size={16}/></Link> : <span>This scan is no longer available.</span>}</div>
+          return <article className="report-card surface min-w-0 overflow-hidden" key={report.id}>
+            {scan && (photoUrl ? <div className="report-card-image"><Image src={photoUrl} alt="Reported shared scan" fill sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 100vw" unoptimized /></div> : <div className="report-card-image grid place-items-center text-sm text-[#68766b]">Photo unavailable</div>)}
+            <div className="report-card-body">
+              <div className="report-card-meta">
+                <div className="min-w-0"><p className="text-xs font-semibold uppercase tracking-[.08em] text-[#68766b]">{reportReasonLabel(report.reason)}</p><h2 className="safe-long-content mt-1">{scan ? scan.disease_id.replaceAll("-", " ") : "Scan unavailable"}</h2></div>
+                {scan && <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${scanStatusTone(scan.status)}`}>{scanStatusLabel(scan.status)}</span>}
               </div>
+              {report.details && <p className="safe-long-content line-clamp-4 whitespace-pre-wrap text-sm leading-6 text-[#5e6d61]">{report.details}</p>}
+              <div className="report-card-footer"><span>{new Date(report.created_at).toLocaleString()}</span>{scan ? <Link href={`/global-scans/${scan.id}`} className="focus-ring inline-flex min-h-9 items-center gap-1 font-semibold text-[#1f6b3a] hover:underline">Open scan <ChevronRight size={16}/></Link> : <span>This scan is no longer available.</span>}</div>
             </div>
           </article>;
         })}

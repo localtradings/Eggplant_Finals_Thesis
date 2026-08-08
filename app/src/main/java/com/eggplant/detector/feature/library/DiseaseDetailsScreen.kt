@@ -147,12 +147,6 @@ fun DiseaseDetailsPager(diseases: List<Disease>, initialId: String?, onBack: () 
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    Text(
-                        stringResource(R.string.item_position, pager.currentPage + 1, diseases.size),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.SemiBold,
-                    )
                 }
             }
             HorizontalPager(pager, Modifier.weight(1f), key = { diseases[it].id }) { page ->

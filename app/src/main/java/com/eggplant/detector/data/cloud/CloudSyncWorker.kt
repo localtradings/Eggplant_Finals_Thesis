@@ -711,6 +711,11 @@ class CloudSyncWorker(context: Context, parameters: WorkerParameters) : Coroutin
         previousPath: String?,
     ): String? {
         val previous = previousPath?.let(::File)?.takeIf(SafeJpeg::validate)?.absolutePath
+        // Catalog artwork is immutable after a library entry is published. Reusing
+        // a validated local copy prevents every catalog refresh from downloading
+        // all existing artwork before the newly added disease can be published to
+        // Room and displayed by the Library screen.
+        if (previous != null && previous == destination.absolutePath) return previous
         val temporary = File(destination.parentFile, "${destination.nameWithoutExtension}.tmp")
         return try {
             client.download(url, temporary, MAXIMUM_JPEG_BYTES)

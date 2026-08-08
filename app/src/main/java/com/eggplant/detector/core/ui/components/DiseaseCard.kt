@@ -15,7 +15,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
-import androidx.compose.material.icons.outlined.Spa
+import androidx.compose.material.icons.outlined.Eco
+import androidx.compose.material.icons.outlined.LocalFlorist
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -151,7 +152,12 @@ private fun DiseaseTypeTag(disease: Disease) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(3.dp),
         ) {
-            Icon(Icons.Outlined.Spa, null, tint = tagColor, modifier = Modifier.size(10.dp))
+            Icon(
+                if (isLeaf) Icons.Outlined.Eco else Icons.Outlined.LocalFlorist,
+                null,
+                tint = tagColor,
+                modifier = Modifier.size(10.dp),
+            )
             Text(
                 stringResource(if (isLeaf) R.string.leaf_disease else R.string.fruit_disease),
                 color = tagColor,

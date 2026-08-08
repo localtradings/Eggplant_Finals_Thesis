@@ -44,6 +44,8 @@ import com.eggplant.detector.R
 import com.eggplant.detector.core.ui.motion.LocalEggplantMotion
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.core.tween
@@ -123,6 +125,7 @@ fun EggplantNavigation(viewModel: EggplantAppViewModel) {
             modifier = Modifier.padding(padding).consumeWindowInsets(padding),
             enterTransition = {
                 fadeIn(tween(motion.standardMillis)) +
+                    scaleIn(initialScale = 0.98f, animationSpec = tween(motion.standardMillis)) +
                     slideInHorizontally(
                         initialOffsetX = { fullWidth -> fullWidth / 12 },
                         animationSpec = tween(motion.standardMillis),
@@ -130,6 +133,7 @@ fun EggplantNavigation(viewModel: EggplantAppViewModel) {
             },
             exitTransition = {
                 fadeOut(tween(motion.fastMillis)) +
+                    scaleOut(targetScale = 0.98f, animationSpec = tween(motion.fastMillis)) +
                     slideOutHorizontally(
                         targetOffsetX = { fullWidth -> -fullWidth / 12 },
                         animationSpec = tween(motion.fastMillis),
@@ -137,6 +141,7 @@ fun EggplantNavigation(viewModel: EggplantAppViewModel) {
             },
             popEnterTransition = {
                 fadeIn(tween(motion.standardMillis)) +
+                    scaleIn(initialScale = 0.98f, animationSpec = tween(motion.standardMillis)) +
                     slideInHorizontally(
                         initialOffsetX = { fullWidth -> -fullWidth / 12 },
                         animationSpec = tween(motion.standardMillis),
@@ -144,6 +149,7 @@ fun EggplantNavigation(viewModel: EggplantAppViewModel) {
             },
             popExitTransition = {
                 fadeOut(tween(motion.fastMillis)) +
+                    scaleOut(targetScale = 0.98f, animationSpec = tween(motion.fastMillis)) +
                     slideOutHorizontally(
                         targetOffsetX = { fullWidth -> fullWidth / 12 },
                         animationSpec = tween(motion.fastMillis),

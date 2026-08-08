@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, BookOpen, ChevronDown, CircleHelp, ClipboardList, Flag, Globe2, LayoutDashboard, LogOut, Search, Settings, ShieldCheck } from "lucide-react";
+import { Bell, BookOpen, ClipboardList, Flag, Globe2, LayoutDashboard, LogOut, Settings, ShieldCheck } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { adminRoleLabel } from "@/lib/admin-copy";
@@ -34,7 +34,7 @@ export function AdminShell({ children, role, loginName, reportCount = 0 }: { chi
       <aside className="admin-rail">
         <Link href="/overview" className="admin-brand focus-ring">
           <span className="admin-brand-mark"><Image src="/planta-logo.png" alt="" width={42} height={42} priority className="object-contain" /></span>
-          <span className="admin-brand-copy"><strong>Planta</strong><small>Disease monitoring</small></span>
+          <span className="admin-brand-copy"><strong>Planta</strong></span>
         </Link>
         <nav className="admin-nav" aria-label="Admin navigation">
           {items.filter(([, , , visibility]) => canSeeNavItem(visibility, role)).map(([label, href, Icon]) => {
@@ -43,17 +43,11 @@ export function AdminShell({ children, role, loginName, reportCount = 0 }: { chi
           })}
         </nav>
         <div className="admin-rail-footer">
-          <div className="admin-workspace-switcher"><span className="admin-status-dot" aria-hidden="true" /><div><small>Workspace</small><strong>Planta Admin</strong></div><ChevronDown size={15} aria-hidden="true" /></div>
-          <div className="admin-account-row"><span className="admin-account-avatar">{(loginName || "A").slice(0, 1).toUpperCase()}</span><div className="min-w-0"><strong className="block truncate">{loginName || "Admin"}</strong><small className="block truncate">{adminRoleLabel(role)}</small></div><CircleHelp size={16} aria-hidden="true" /></div>
+          <div className="admin-account-row"><span className="admin-account-avatar">{(loginName || "A").slice(0, 1).toUpperCase()}</span><div className="min-w-0"><strong className="block truncate">{loginName || "Admin"}</strong><small className="block truncate">{adminRoleLabel(role)}</small></div></div>
           <form action="/auth/signout" method="post"><button className="admin-signout focus-ring"><LogOut size={14}/>Sign out</button></form>
         </div>
       </aside>
       <div className="admin-workspace">
-        <header className="admin-topbar">
-          <div className="admin-mobile-brand"><span className="admin-brand-mark"><Image src="/planta-logo.png" alt="" width={34} height={34} /></span><strong>Planta Admin</strong></div>
-          <div className="admin-search" aria-label="Workspace search"><Search size={17} aria-hidden="true"/><span>Search this workspace</span><kbd>⌘ K</kbd></div>
-          <div className="admin-topbar-actions"><span className="admin-health"><span className="admin-status-dot" aria-hidden="true"/>Authenticated workspace</span>{(role === "owner" || role === "admin") && <Link href="/notifications" className="admin-icon-button focus-ring" aria-label="Notifications"><Bell size={18}/><span className="admin-notification-dot" aria-hidden="true"/></Link>}<div className="admin-topbar-user"><span className="admin-account-avatar">{(loginName || "A").slice(0, 1).toUpperCase()}</span><span className="hidden sm:block"><strong className="block text-sm">{loginName || "Admin"}</strong><small className="block text-xs">{adminRoleLabel(role)}</small></span><ChevronDown size={15} aria-hidden="true" /></div></div>
-        </header>
         <main className="admin-main min-w-0">{children}</main>
       </div>
     </div>

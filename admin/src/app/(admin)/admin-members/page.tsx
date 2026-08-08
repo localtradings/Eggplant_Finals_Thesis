@@ -49,14 +49,14 @@ export default async function AdminMembersPage({
   return <div className="admin-page admin-members-page fade-up mx-auto max-w-5xl">
       <header>
         <h1 className="text-3xl font-bold tracking-[-.03em]">Admin access</h1>
-        <p className="mt-1 max-w-2xl text-sm leading-6 text-[#647166]">Create dashboard users with a username and password. Supabase keeps the password secure; the internal Auth identity is never shown in this interface.</p>
       </header>
 
       {message && <p role="alert" className="mt-5 rounded-xl bg-[#fff0f2] p-3 text-sm font-semibold text-[#a92f40]">{message}</p>}
       {created && <p role="status" className="status-banner mt-5 rounded-xl border border-[#bfe4c5] bg-[#f1fbf2] p-3 text-sm font-semibold text-[#247936]">The admin account is ready. They can sign in with the username and password you entered.</p>}
       {claimed && <p role="status" className="status-banner mt-5 rounded-xl border border-[#bfe4c5] bg-[#f1fbf2] p-3 text-sm font-semibold text-[#247936]">Your owner account now has a username login.</p>}
 
-      <section className="admin-member-form surface mt-6 p-6">
+      <div className="admin-access-grid mt-6">
+      <section className="admin-member-form surface p-6">
         <div className="flex items-start gap-4">
           <span className="rounded-full bg-[#e7f2e6] p-3 text-[#1f6b3a]"><UserPlus size={22} aria-hidden="true" /></span>
           <div>
@@ -83,7 +83,8 @@ export default async function AdminMembersPage({
         </form>
       </section>
 
-      {!currentMember?.login_name && <section className="surface mt-5 p-6">
+      <div className="admin-access-side">
+      {!currentMember?.login_name && <section className="surface p-6">
         <div className="flex items-start gap-4">
           <span className="rounded-full bg-[#e9f6eb] p-3 text-[#278b3d]"><ShieldCheck size={22} aria-hidden="true" /></span>
           <div>
@@ -99,7 +100,7 @@ export default async function AdminMembersPage({
         </form>
       </section>}
 
-      <section className="admin-member-list surface mt-5 overflow-hidden">
+      <section className="admin-member-list surface overflow-hidden">
         <div className="border-b border-[#e5ece2] p-6"><h2 className="text-lg font-bold">Current admin accounts</h2><p className="mt-1 text-sm text-[#5e6d61]">Membership is required in addition to a valid Supabase Auth session.</p></div>
         <div className="overflow-x-auto">
           <table className="data-table w-full min-w-[38rem] text-left text-sm">
@@ -110,5 +111,7 @@ export default async function AdminMembersPage({
           </table>
         </div>
       </section>
+      </div>
+      </div>
     </div>;
 }

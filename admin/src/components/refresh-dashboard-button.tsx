@@ -4,7 +4,7 @@ import { RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 
-export function RefreshDashboardButton() {
+export function RefreshDashboardButton({ label = "Refresh overview", pendingLabel = "Refreshing overview" }: { label?: string; pendingLabel?: string }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -17,7 +17,7 @@ export function RefreshDashboardButton() {
       aria-busy={isPending}
     >
       <RefreshCw size={16} className={isPending ? "animate-spin" : undefined} aria-hidden="true" />
-      {isPending ? "Refreshing overview" : "Refresh overview"}
+      {isPending ? pendingLabel : label}
     </button>
   );
 }

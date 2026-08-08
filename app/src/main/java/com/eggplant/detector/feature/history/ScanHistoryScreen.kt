@@ -33,7 +33,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.outlined.Public
-import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -68,6 +67,7 @@ import com.eggplant.detector.R
 import com.eggplant.detector.app.CloudActionState
 import com.eggplant.detector.app.EggplantAppViewModel
 import com.eggplant.detector.core.ui.components.DiseaseArtwork
+import com.eggplant.detector.core.ui.components.AnimatedRefreshIcon
 import com.eggplant.detector.core.ui.components.FilterChips
 import com.eggplant.detector.core.ui.components.HistoryCard
 import com.eggplant.detector.core.ui.components.ResponsiveContent
@@ -98,7 +98,6 @@ fun ScanHistoryScreen(
         Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
             Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 10.dp)) {
                 Text(stringResource(R.string.history_title), style = MaterialTheme.typography.headlineMedium)
-                Text(stringResource(R.string.history_subtitle), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             PrimaryTabRow(selectedTabIndex = pagerState.currentPage) {
                 tabs.forEachIndexed { index, title ->
@@ -281,7 +280,14 @@ private fun GlobalScansPage(viewModel: EggplantAppViewModel, onGlobalClick: (Glo
             item {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.global_scans), style = MaterialTheme.typography.titleLarge)
-                    TextButton(onClick = viewModel::refreshGlobalScans) { Icon(Icons.Outlined.Refresh, null); Text(stringResource(R.string.refresh)) }
+                    TextButton(onClick = viewModel::refreshGlobalScans) {
+                        AnimatedRefreshIcon(
+                            isRefreshing = feedState.isLoading,
+                            contentDescription = stringResource(R.string.refresh),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                        Text(stringResource(R.string.refresh))
+                    }
                 }
             }
             when {

@@ -1,6 +1,9 @@
 package com.eggplant.detector.feature.result
 
+import android.content.Context
 import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.view.View
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -16,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -66,9 +70,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.zIndex
-import com.airbnb.lottie.compose.LottieAnimation
-import com.airbnb.lottie.compose.LottieCompositionSpec
-import com.airbnb.lottie.compose.rememberLottieComposition
+import androidx.compose.ui.viewinterop.AndroidView
+import com.airbnb.lottie.LottieCompositionFactory
+import com.airbnb.lottie.LottieDrawable
+import com.airbnb.lottie.LottieProperty
+import com.airbnb.lottie.model.KeyPath
+import com.airbnb.lottie.value.LottieValueCallback
 import com.eggplant.detector.app.EggplantAppViewModel
 import com.eggplant.detector.R
 import com.eggplant.detector.app.SaveState
@@ -81,6 +88,8 @@ import com.eggplant.detector.domain.model.SyncOutboxState
 import com.eggplant.detector.core.ui.components.ConfidenceDisplay
 import com.eggplant.detector.core.ui.components.ResultArtwork
 import com.eggplant.detector.core.ui.components.ResponsiveContent
+import com.eggplant.detector.core.ui.components.ReportArtworkKind
+import com.eggplant.detector.core.ui.components.ReportSectionArtwork
 import com.eggplant.detector.domain.model.ScanOutcome
 import com.eggplant.detector.domain.model.ScanResult
 import com.eggplant.detector.domain.model.ScanCategory
@@ -263,12 +272,15 @@ fun DetectionResultScreen(
             },
         )
         if (showShareCelebration) {
-            ShareSuccessCelebration(
-                Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 72.dp)
-                    .zIndex(1f),
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.18f))
+                    .zIndex(10f),
+                contentAlignment = Alignment.Center,
+            ) {
+                ShareSuccessCelebration(Modifier.padding(horizontal = 24.dp))
+            }
         }
     }
     if (showShareDialog) {
@@ -386,23 +398,19 @@ private fun SyncOutboxEvent?.isSubmitted(): Boolean = this?.state in setOf(
 
 @Composable
 private fun ShareSuccessCelebration(modifier: Modifier) {
-    val composition by rememberLottieComposition(
-        LottieCompositionSpec.RawRes(R.raw.global_share_success),
-    )
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)),
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            LottieAnimation(
-                composition = composition,
-                iterations = 1,
-                modifier = Modifier.height(88.dp).aspectRatio(1f),
+            AndroidView(
+                factory = ::ShareSuccessLottieView,
+                modifier = Modifier.size(220.dp),
             )
             Text(
                 localized(
@@ -413,6 +421,46 @@ private fun ShareSuccessCelebration(modifier: Modifier) {
                 fontWeight = FontWeight.SemiBold,
             )
         }
+    }
+}
+
+private class ShareSuccessLottieView(context: Context) : View(context) {
+    private val drawable = LottieDrawable()
+
+    init {
+        setLayerType(LAYER_TYPE_SOFTWARE, null)
+        drawable.callback = this
+        drawable.composition = LottieCompositionFactory
+            .fromRawResSync(context, R.raw.global_share_success)
+            .value
+        drawable.addValueCallback(
+            KeyPath("**", "White Solid 1"),
+            LottieProperty.OPACITY,
+            LottieValueCallback(0),
+        )
+        drawable.repeatCount = 0
+    }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        drawable.callback = this
+        drawable.playAnimation()
+    }
+
+    override fun onDetachedFromWindow() {
+        drawable.cancelAnimation()
+        drawable.callback = null
+        super.onDetachedFromWindow()
+    }
+
+    override fun onSizeChanged(width: Int, height: Int, oldWidth: Int, oldHeight: Int) {
+        super.onSizeChanged(width, height, oldWidth, oldHeight)
+        drawable.setBounds(0, 0, width, height)
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        drawable.setBounds(0, 0, width, height)
+        drawable.draw(canvas)
     }
 }
 
@@ -512,9 +560,9 @@ fun ResultReport(
             }
             when (result.outcome) {
                 ScanOutcome.DISEASE -> {
-                    ReportSection(stringResource(R.string.description), disease?.description.orEmpty())
-                    ReportSection(stringResource(R.string.symptoms), disease?.symptomPreview.orEmpty())
-                    ReportSection(stringResource(R.string.signs_detected), (disease?.signs ?: result.signs).joinToString("\n") { "• $it" })
+                    ReportSection(stringResource(R.string.description), disease?.description.orEmpty(), ReportArtworkKind.DESCRIPTION)
+                    ReportSection(stringResource(R.string.symptoms), disease?.symptomPreview.orEmpty(), ReportArtworkKind.SYMPTOMS)
+                    ReportSection(stringResource(R.string.signs_detected), (disease?.signs ?: result.signs).joinToString("\n") { "• $it" }, ReportArtworkKind.SIGNS)
                     val additional = result.detections
                         .filter { it.diseaseId != result.diseaseId }
                         .groupBy { it.diseaseId }
@@ -526,20 +574,22 @@ fun ResultReport(
                             additional.joinToString("\n") { "• ${it.name} — ${it.confidence}%" },
                         )
                     }
-                    ReportSection(stringResource(R.string.causes), disease?.causes.orEmpty())
-                    ReportSection(stringResource(R.string.recommended_action), disease?.treatment ?: result.treatment)
-                    ReportSection(stringResource(R.string.prevention), disease?.prevention.orEmpty())
-                    ReportSection(stringResource(R.string.guidance), disease?.guidance.orEmpty())
-                    ReportSection(stringResource(R.string.when_to_act), disease?.whenToAct.orEmpty())
+                    ReportSection(stringResource(R.string.causes), disease?.causes.orEmpty(), ReportArtworkKind.CAUSES)
+                    ReportSection(stringResource(R.string.recommended_action), disease?.treatment ?: result.treatment, ReportArtworkKind.ACTIONS)
+                    ReportSection(stringResource(R.string.prevention), disease?.prevention.orEmpty(), ReportArtworkKind.PREVENTION)
+                    ReportSection(stringResource(R.string.guidance), disease?.guidance.orEmpty(), ReportArtworkKind.GUIDANCE)
+                    ReportSection(stringResource(R.string.when_to_act), disease?.whenToAct.orEmpty(), ReportArtworkKind.WHEN_TO_ACT)
                     ReportSection(
                         stringResource(R.string.disclaimer),
                         disease?.disclaimer.orEmpty(),
+                        ReportArtworkKind.DISCLAIMER,
                     )
                     ReportSection(
                         stringResource(R.string.references),
                         disease?.references.orEmpty().joinToString("\n") { reference ->
                             "${reference.publisher}: ${reference.title}\n${reference.url}"
                         },
+                        ReportArtworkKind.REFERENCES,
                     )
                 }
                 ScanOutcome.HEALTHY_CONFIRMED -> {
@@ -757,16 +807,23 @@ private fun localized(english: String, filipino: String): String {
 }
 
 @Composable
-private fun ReportSection(title: String, body: String) {
+private fun ReportSection(title: String, body: String, artwork: ReportArtworkKind? = null) {
     if (body.isBlank()) return
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
-        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(title, style = MaterialTheme.typography.titleLarge)
-            Text(body, style = MaterialTheme.typography.bodyLarge)
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(18.dp),
+            verticalAlignment = Alignment.Top,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(title, style = MaterialTheme.typography.titleLarge)
+                Text(body, style = MaterialTheme.typography.bodyLarge)
+            }
+            artwork?.let { ReportSectionArtwork(it, Modifier.size(86.dp)) }
         }
     }
 }

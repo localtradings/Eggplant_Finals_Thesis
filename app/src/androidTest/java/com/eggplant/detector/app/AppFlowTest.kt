@@ -164,7 +164,7 @@ class AppFlowTest {
 
         composeRule.onNodeWithContentDescription("Home content").performScrollToIndex(3)
         composeRule.onNodeWithText("View All", substring = true).performClick()
-        composeRule.onNodeWithText("Your saved scans and anonymous community findings").assertIsDisplayed()
+        composeRule.onNodeWithText("My Scans").assertIsDisplayed()
     }
 
     @Test

@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import { ArrowUpRight, ClipboardCheck, Globe2, Leaf, UsersRound } from "lucide-react";
 import type { ReactNode } from "react";
 import type { DashboardData } from "@/lib/dashboard-data";
@@ -17,7 +16,6 @@ function Metric({ label, value, icon: Icon, href }: { label: string; value: numb
         </div>
         <span className="metric-card-icon" aria-hidden="true"><Icon size={18} /></span>
       </div>
-      <span className="metric-sparkline" aria-hidden="true" />
     </div>
   );
   return href ? <Link href={href} className="focus-ring block rounded-[13px]">{content}</Link> : content;
@@ -29,29 +27,34 @@ export function Dashboard({ data }: { data: DashboardData }) {
     <div className="admin-page fade-up mx-auto max-w-[1240px]">
       <header className="page-header flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="page-kicker">Planta workspace</p>
-          <h1 className="page-title mt-2">Overview</h1>
-          <p className="page-description mt-2">Shared scans, requests, and reports in one place.</p>
+          <h1 className="page-title">Overview</h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <RefreshDashboardButton />
         </div>
       </header>
-      <section className="metric-grid mt-8" aria-label="Operational metrics">
+      <section className="metric-grid mt-5" aria-label="Operational metrics">
         <Metric label="Reports received" value={data.reportsReceived} icon={ClipboardCheck} href="/reports" />
         <Metric label="Shared scans" value={data.sharedScans} icon={Globe2} />
         <Metric label="Contributing installs" value={data.installations} icon={UsersRound} />
         <Metric label="Open requests" value={data.openRequests} icon={Leaf} />
       </section>
-      <div className="workspace-status mt-8">
+      <div className="workspace-status mt-5">
         <section className="status-panel" aria-label="System status">
           <Ops label="Mobile submissions" value={data.cloudWritesEnabled ? "On" : "Paused"} hint="Global scans and disease requests" />
           <Ops label="Photo storage" value={formatBytes(data.storageBytes)} hint="Private review images" />
           <Ops label="Last app activity" value={<LiveActivityTimestamp timestamp={data.lastInstallationSeenAt} />} hint="Most recent cloud activity · auto-refreshes" />
         </section>
-        <div className="visual-anchor" aria-hidden="true"><Image src="/design-references/botanical-texture.png" alt="" fill sizes="(min-width: 800px) 30vw, 100vw" className="object-cover" /><div className="visual-anchor-copy"><strong>Keep the catalog current.</strong><span>Review the latest field activity from one workspace.</span></div></div>
+        <section className="attention-panel surface" aria-labelledby="attention-heading">
+          <div className="attention-panel-header"><h2 id="attention-heading">Needs attention</h2><Link href="/settings">Settings <ArrowUpRight className="ml-1 inline" size={15} /></Link></div>
+          <div className="attention-list">
+            <AttentionRow label="Reports received" value={data.reportsReceived} href="/reports" />
+            <AttentionRow label="Open disease requests" value={data.openRequests} href="/disease-requests" />
+            <AttentionRow label="Mobile submissions" value={data.cloudWritesEnabled ? "On" : "Paused"} href="/settings" />
+          </div>
+        </section>
       </div>
-      <div className="workspace-layout mt-3">
+      <div className="workspace-layout mt-5">
         <section className="workspace-panel">
           <div className="workspace-panel-header"><h2>Recent shared scans</h2><Link href="/global-scans">View all <ArrowUpRight className="ml-1 inline" size={15} /></Link></div>
           {data.recent.length === 0 ? <Empty text="No community photos have been shared yet." /> : <div className="overflow-x-auto"><table className="data-table"><thead><tr><th>Scan</th><th>Confidence</th><th>Status</th><th><span className="sr-only">Open</span></th></tr></thead><tbody>{data.recent.map((scan) => <tr key={scan.id}><td><span className="block font-semibold text-[#274e35]">{scan.disease}</span><span className="mt-1 block text-[11px] text-[#879084]">Community contribution</span></td><td className="font-mono font-semibold text-[#3e7849]">{scan.confidence}%</td><td><span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${scanStatusTone(scan.status)}`}>{scanStatusLabel(scan.status)}</span></td><td><Link href={`/global-scans/${scan.id}`} aria-label={`Review ${scan.disease}`} className="text-[#2f6b3c]"><ArrowUpRight size={17} aria-hidden="true" /></Link></td></tr>)}</tbody></table></div>}
@@ -67,4 +70,5 @@ export function Dashboard({ data }: { data: DashboardData }) {
 
 function Empty({ text }: { text: string }) { return <div className="m-5 rounded-xl border border-dashed border-[#d6dec9] bg-[#fafbf4] p-8 text-center text-sm text-[#6b7469]">{text}</div>; }
 function Ops({ label, value, hint }: { label: string; value: ReactNode; hint: string }) { return <div className="status-cell"><p className="status-cell-label">{label}</p><p className="status-cell-value truncate">{value}</p><p className="status-cell-hint truncate">{hint}</p></div>; }
+function AttentionRow({ label, value, href }: { label: string; value: number | string; href: string }) { return <Link href={href} className="attention-row focus-ring"><span className="attention-row-label">{label}</span><span className="attention-row-value">{typeof value === "number" ? value.toLocaleString() : value}</span></Link>; }
 function formatBytes(bytes: number) { if (bytes < 1024) return `${bytes} B`; if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`; return `${(bytes / 1024 / 1024).toFixed(1)} MB`; }

@@ -279,7 +279,8 @@ private fun HeroCard(onScan: () -> Unit) {
                         onClick = onScan,
                         modifier = Modifier
                             .widthIn(min = 145.dp, max = 172.dp)
-                        .heightIn(min = 46.dp),
+                            .heightIn(min = 46.dp)
+                            .offset(y = 4.dp),
                         shape = RoundedCornerShape(18.dp),
                         contentPadding = PaddingValues(horizontal = if (compact) 11.dp else 15.dp),
                         colors = ButtonDefaults.buttonColors(
@@ -360,7 +361,7 @@ private fun QuickAccessItem(item: QuickActionItem, modifier: Modifier = Modifier
             contentDescription = null,
             modifier = Modifier
                 .size(58.dp)
-                .offset(x = if (item.iconRes == R.drawable.home_quick_offline) (-7).dp else 0.dp),
+                .offset(x = if (item.iconRes == R.drawable.home_quick_offline) (-14).dp else 0.dp),
             contentScale = ContentScale.Fit,
         )
         Text(

@@ -53,6 +53,7 @@ private val notices = listOf(
 fun NotificationsScreen(viewModel: EggplantAppViewModel, onBack: () -> Unit) {
     val readKeys by viewModel.readNotificationKeys.collectAsState()
     val remoteNotifications by viewModel.remoteNotifications.collectAsState()
+    val diseaseRequests by viewModel.diseaseRequests.collectAsState()
     val languageTag by viewModel.languagePreference.collectAsState()
     LaunchedEffect(Unit) {
         viewModel.refreshCloudData()
@@ -71,6 +72,8 @@ fun NotificationsScreen(viewModel: EggplantAppViewModel, onBack: () -> Unit) {
             body = notice.body(languageTag.languageTag),
             category = notice.category,
         )
+    } + diseaseRequests.mapNotNull { request ->
+        diseaseRequestNotice(request, languageTag.languageTag)
     } + localItems
     ResponsiveContent {
         LazyColumn(
@@ -110,5 +113,58 @@ fun NotificationsScreen(viewModel: EggplantAppViewModel, onBack: () -> Unit) {
             }
         }
         }
+    }
+}
+
+private fun diseaseRequestNotice(
+    request: com.eggplant.detector.domain.model.DiseaseRequest,
+    languageTag: String,
+): DisplayNotice? {
+    val name = request.requestedName?.trim()?.takeIf { it.isNotEmpty() } ?: "the requested disease"
+    val status = request.status.uppercase()
+    val noticeKey = "disease-request:${request.id}:${status.lowercase()}"
+    val filipino = languageTag in setOf("fil", "tl")
+    return when (status) {
+        "QUEUED", "UPLOADING", "RETRY" -> DisplayNotice(
+            key = noticeKey,
+            title = if (filipino) "Natanggap ang disease request" else "Disease request received",
+            body = if (filipino) {
+                "Naka-save ang request para sa $name at ipapadala kapag may internet. Susuriin ito pagkatapos ma-upload."
+            } else {
+                "Your request for $name is saved and will be reviewed after it uploads."
+            },
+            category = "disease request",
+        )
+        "SUBMITTED", "UNDER_REVIEW" -> DisplayNotice(
+            key = noticeKey,
+            title = if (filipino) "Sinusuri ang disease request" else "Disease request under review",
+            body = if (filipino) {
+                "Sinusuri na ng admin ang request para sa $name."
+            } else {
+                "An admin is reviewing your request for $name."
+            },
+            category = "disease request",
+        )
+        "PLANNED" -> DisplayNotice(
+            key = noticeKey,
+            title = if (filipino) "Tapos na ang disease request" else "Disease request completed",
+            body = request.adminNote?.takeIf { it.isNotBlank() } ?: if (filipino) {
+                "Nakumpleto na ang review para sa $name."
+            } else {
+                "The review for $name is complete."
+            },
+            category = "disease request",
+        )
+        "NOT_SUPPORTED", "CLOSED" -> DisplayNotice(
+            key = noticeKey,
+            title = if (filipino) "Update sa disease request" else "Disease request update",
+            body = request.adminNote?.takeIf { it.isNotBlank() } ?: if (filipino) {
+                "May update sa request para sa $name. Buksan ang My Scans para sa status."
+            } else {
+                "There is an update for your request for $name. Open My Scans to see its status."
+            },
+            category = "disease request",
+        )
+        else -> null
     }
 }

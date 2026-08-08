@@ -8,12 +8,12 @@ data class DetectionGateDecision(
 )
 
 object DetectionGate {
-    const val LIVE_CONFIDENCE_THRESHOLD = 0.12f
+    const val LIVE_CONFIDENCE_THRESHOLD = 0.15f
     // Keep still-image acceptance aligned with the model's native floor. The
     // temporal stability tracker remains the separate live-preview guard.
-    const val CAPTURE_CONFIDENCE_THRESHOLD = 0.12f
-    const val GALLERY_CONFIDENCE_THRESHOLD = 0.12f
-    const val FRUIT_BORER_CONFIDENCE_THRESHOLD = 0.25f
+    const val CAPTURE_CONFIDENCE_THRESHOLD = 0.15f
+    const val GALLERY_CONFIDENCE_THRESHOLD = 0.15f
+    const val FRUIT_BORER_CONFIDENCE_THRESHOLD = 0.15f
     const val HEALTHY_CONFIDENCE_THRESHOLD = 0.25f
     const val LIVE_MIN_BOX_AREA = 0.0025f
     const val LIVE_MAX_BOX_AREA = 1.0f
