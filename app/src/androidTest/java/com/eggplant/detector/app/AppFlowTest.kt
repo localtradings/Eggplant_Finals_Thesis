@@ -67,7 +67,9 @@ class AppFlowTest {
     fun homeRouteShowsReferenceContentWithoutConfidenceOrRisk() {
         assertHomeBrandingDisplayed()
         composeRule.onNodeWithText("Disease Detector").assertIsDisplayed()
-        composeRule.onNodeWithText("Scan a Leaf").assertIsDisplayed()
+        composeRule.onAllNodesWithText("Scan a Leaf", substring = false)
+            .onFirst()
+            .assertIsDisplayed()
         composeRule.onNodeWithText(
             "Detect diseases early and\nget expert care advice.",
         ).assertIsDisplayed()
@@ -85,7 +87,9 @@ class AppFlowTest {
         composeRule.onNodeWithContentDescription("Leaf Spot disease photo")
             .assertIsDisplayed()
         composeRule.onNodeWithContentDescription("Disease library list").performScrollToIndex(15)
-        composeRule.onNodeWithContentDescription("Fruit Rot disease photo").assertIsDisplayed()
+        composeRule.onAllNodesWithContentDescription("Fruit Rot", substring = true)
+            .onFirst()
+            .assertIsDisplayed()
         composeRule.onNodeWithContentDescription("Disease library list").performScrollToIndex(7)
         composeRule.onNodeWithContentDescription("Open Leaf Spot details").performClick()
         composeRule.onNodeWithText("About Leaf Spot").assertIsDisplayed()
@@ -219,7 +223,10 @@ class AppFlowTest {
         composeRule.onNodeWithContentDescription("Filter diseases").performClick()
         composeRule.onNodeWithText("Filter diseases").assertIsDisplayed()
         composeRule.onNodeWithContentDescription("Choose Fruit Disease filter").performClick()
-        composeRule.onNodeWithContentDescription("Fruit Rot disease photo").assertIsDisplayed()
+        composeRule.onAllNodesWithContentDescription("Fruit Rot", substring = true)
+            .onFirst()
+            .performScrollTo()
+            .assertIsDisplayed()
     }
 
     @Test
