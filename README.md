@@ -19,7 +19,7 @@ Basic scanning, the disease guide, and My Scans work offline. Global Scans, dise
 
 [Download the latest demo APK from GitHub Releases](https://github.com/localtradings/Eggplant_Finals_Thesis/releases/latest)
 
-The current demo release is **v1.5.30**.
+The current demo release is **v1.5.31**.
 
 This version keeps the calm green Planta design, shows the latest saved scan on Home, and keeps the disease guide synchronized with the admin catalog. Scan results are saved to My Scans automatically, can be favorited, and old non-favorite history is cleaned up after 30 days. Global Scan sharing and private disease requests are protected from duplicate submissions, and a successful Global Scan upload shows a one-time confirmation animation. Admin-published notifications and catalog changes are downloaded by the app when it refreshes its online data.
 
