@@ -30,6 +30,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.Refresh
@@ -122,10 +123,20 @@ private fun MyScansPage(viewModel: EggplantAppViewModel, onResultClick: (ScanRes
     val allLabel = stringResource(R.string.all)
     val leafLabel = stringResource(R.string.leaf_disease)
     val fruitLabel = stringResource(R.string.fruit_disease)
+    val favoritesLabel = stringResource(R.string.favorites)
     var query by rememberSaveable { mutableStateOf("") }
     var selectedFilter by rememberSaveable { mutableStateOf(allLabel) }
-    val category = when (selectedFilter) { leafLabel -> ScanCategory.LEAF_DISEASE; fruitLabel -> ScanCategory.FRUIT_DISEASE; else -> null }
-    val results = history.filter { result -> (category == null || result.category == category) && (query.isBlank() || result.name.contains(query.trim(), true)) }
+    val category = when (selectedFilter) {
+        leafLabel -> ScanCategory.LEAF_DISEASE
+        fruitLabel -> ScanCategory.FRUIT_DISEASE
+        else -> null
+    }
+    val favoritesOnly = selectedFilter == favoritesLabel
+    val results = history.filter { result ->
+        (!favoritesOnly || result.isFavorite) &&
+            (category == null || result.category == category) &&
+            (query.isBlank() || result.name.contains(query.trim(), true))
+    }
     LazyVerticalGrid(
         state = rememberLazyGridState(),
         columns = GridCells.Fixed(2),
@@ -138,7 +149,7 @@ private fun MyScansPage(viewModel: EggplantAppViewModel, onResultClick: (ScanRes
             SearchBar(query, { query = it }, stringResource(R.string.history_search))
         }
         item(span = { GridItemSpan(maxLineSpan) }) {
-            FilterChips(listOf(allLabel, leafLabel, fruitLabel), selectedFilter, { selectedFilter = it })
+            FilterChips(listOf(allLabel, leafLabel, fruitLabel, favoritesLabel), selectedFilter, { selectedFilter = it })
         }
         if (results.isNotEmpty()) {
             gridItems(
@@ -151,7 +162,10 @@ private fun MyScansPage(viewModel: EggplantAppViewModel, onResultClick: (ScanRes
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Column(Modifier.fillMaxWidth().padding(vertical = 48.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     DiseaseArtwork("empty-history", Modifier.fillMaxWidth(.46f))
-                    Text(stringResource(R.string.no_history), style = MaterialTheme.typography.titleLarge)
+                    Text(
+                        stringResource(if (favoritesOnly) R.string.no_favorites else R.string.no_history),
+                        style = MaterialTheme.typography.titleLarge,
+                    )
                 }
             }
         }

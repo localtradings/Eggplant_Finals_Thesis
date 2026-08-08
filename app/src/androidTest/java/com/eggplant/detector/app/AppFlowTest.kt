@@ -307,7 +307,6 @@ class AppFlowTest {
         )
 
         viewModel.openDetectionScene(scene, detection)
-        assertTrue(viewModel.saveCurrentResult())
         assertEquals(1, viewModel.history.value.size)
 
         viewModel.openHistoryResult(viewModel.history.value.single())
@@ -377,7 +376,6 @@ class AppFlowTest {
             initialHistory = emptyList(),
             scanSaver = { error("Test database failure") },
         )
-        var completed: Boolean? = null
         val detection = DetectionBox(
             ModelMetadata.EGGPLANT_YOLO26M.classFor(5)!!,
             .87f,
@@ -391,11 +389,9 @@ class AppFlowTest {
         )
 
         viewModel.openDetectionScene(scene, detection)
-        viewModel.saveCurrentResult { success -> completed = success }
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()
 
-        composeRule.waitUntil(5_000) { completed != null }
-        assertFalse(completed ?: true)
+        composeRule.waitUntil(5_000) { viewModel.saveState.value == SaveState.FAILED }
         assertEquals(SaveState.FAILED, viewModel.saveState.value)
         assertEquals(emptyList<com.eggplant.detector.domain.model.ScanResult>(), viewModel.history.value)
     }

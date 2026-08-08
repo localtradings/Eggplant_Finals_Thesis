@@ -11,6 +11,10 @@ import com.eggplant.detector.data.database.migration.MIGRATION_2_TO_3
 import com.eggplant.detector.data.database.migration.MIGRATION_3_TO_4
 import com.eggplant.detector.data.database.migration.MIGRATION_4_TO_5
 import com.eggplant.detector.data.database.migration.MIGRATION_5_TO_6
+import com.eggplant.detector.data.database.migration.MIGRATION_6_TO_7
+import com.eggplant.detector.data.database.migration.MIGRATION_7_TO_8
+import com.eggplant.detector.data.database.migration.MIGRATION_8_TO_9
+import com.eggplant.detector.data.history.HistoryCleanupScheduler
 import com.eggplant.detector.detection.ncnn.NcnnDetectionEngine
 import com.eggplant.detector.data.cloud.CloudApiClient
 import com.eggplant.detector.data.cloud.CloudSyncScheduler
@@ -38,7 +42,16 @@ class EggplantApplication : Application() {
             applicationContext,
             EggplantDatabase::class.java,
             "eggplant_detector.db",
-        ).addMigrations(MIGRATION_1_TO_2, MIGRATION_2_TO_3, MIGRATION_3_TO_4, MIGRATION_4_TO_5, MIGRATION_5_TO_6).build()
+        ).addMigrations(
+            MIGRATION_1_TO_2,
+            MIGRATION_2_TO_3,
+            MIGRATION_3_TO_4,
+            MIGRATION_4_TO_5,
+            MIGRATION_5_TO_6,
+            MIGRATION_6_TO_7,
+            MIGRATION_7_TO_8,
+            MIGRATION_8_TO_9,
+        ).build()
     }
 
     val repository: EggplantRepository by lazy {
@@ -57,6 +70,7 @@ class EggplantApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         CloudSyncScheduler.schedule(this)
+        HistoryCleanupScheduler.schedule(this)
         applicationScope.launch {
             runCatching {
                 // These are the same local reads the first screen already

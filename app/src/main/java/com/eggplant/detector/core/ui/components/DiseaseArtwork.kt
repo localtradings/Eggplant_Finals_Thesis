@@ -1,5 +1,6 @@
 package com.eggplant.detector.core.ui.components
 
+import android.graphics.Bitmap
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -7,26 +8,46 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.eggplant.detector.R
+import com.eggplant.detector.data.cloud.SafeJpeg
 import com.eggplant.detector.domain.model.ScanCategory
 import com.eggplant.detector.core.ui.theme.PrimaryGreenSoft
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.io.File
 
 @Composable
 fun DiseaseArtwork(
     artworkKey: String,
     modifier: Modifier = Modifier,
+    localArtworkPath: String? = null,
+    contentDescriptionOverride: String? = null,
 ) {
     val resource = diseaseDrawable(artworkKey)
-    val description = diseaseDescription(artworkKey)
+    val description = contentDescriptionOverride ?: diseaseDescription(artworkKey)
+    val localBitmap = produceState<Bitmap?>(initialValue = null, localArtworkPath) {
+        value = withContext(Dispatchers.IO) {
+            localArtworkPath?.let(::File)?.takeIf(File::isFile)?.let { SafeJpeg.decodeSampled(it, 1_280) }
+        }
+    }.value
 
-    if (resource != null) {
+    if (localBitmap != null) {
+        Image(
+            bitmap = localBitmap.asImageBitmap(),
+            contentDescription = description,
+            modifier = modifier.clip(RoundedCornerShape(12.dp)),
+            contentScale = ContentScale.Crop,
+        )
+    } else if (resource != null) {
         Image(
             painter = painterResource(resource),
             contentDescription = description,

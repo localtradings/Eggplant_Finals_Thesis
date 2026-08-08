@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -99,6 +100,14 @@ fun HistoryCard(result: ScanResult, onClick: () -> Unit, modifier: Modifier = Mo
                         DateFormatter.format(result.scannedAt),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                if (result.isFavorite) {
+                    Icon(
+                        Icons.Filled.Favorite,
+                        contentDescription = stringResource(R.string.favorite_scan),
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(end = 4.dp),
                     )
                 }
                 Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, null)

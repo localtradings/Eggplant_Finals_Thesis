@@ -71,7 +71,12 @@ fun DiseaseDetailsScreen(disease: Disease?, onBack: () -> Unit, showTopBar: Bool
                     Text(stringResource(R.string.disease_detail), style = MaterialTheme.typography.titleLarge)
                 }
             }
-            DiseaseArtwork(disease.id, Modifier.fillMaxWidth().height(240.dp))
+            DiseaseArtwork(
+                artworkKey = disease.id,
+                modifier = Modifier.fillMaxWidth().height(240.dp),
+                localArtworkPath = disease.artworkPath,
+                contentDescriptionOverride = disease.name,
+            )
             Text(disease.name, style = MaterialTheme.typography.headlineMedium)
             Surface(
                 shape = RoundedCornerShape(50),

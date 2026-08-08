@@ -124,6 +124,8 @@
     <string name="save_history_succeeded">Saved to History. You can find this scan in My Scans.</string>
     <string name="save_history_already_saved">This scan is already in My Scans.</string>
     <string name="save_history_failed">Could not save this scan. Your existing history is unchanged. Check available device storage and try again.</string>
+    <string name="saving_scan_automatically">Saving this scan to My Scans…</string>
+    <string name="saved_scan_automatically">Saved automatically to My Scans.</string>
     <string name="scan_again">Scan Again</string>
     <string name="signs_detected">Signs Detected</string>
     <string name="recommended_action">Recommended Action</string>
@@ -146,6 +148,13 @@
     <string name="history_search">Search scan history…</string>
     <string name="no_history">No scan history found</string>
     <string name="history_detail">History Detail</string>
+    <string name="favorites">Favorites</string>
+    <string name="no_favorites">No favorite scans yet</string>
+    <string name="favorite_scan">Favorite scan</string>
+    <string name="add_to_favorites">Add to favorites</string>
+    <string name="remove_from_favorites">Remove from favorites</string>
+    <string name="delete_history_scan">Delete scan</string>
+    <string name="delete_history_scan_confirmation">Delete this scan from My Scans? A scan already shared to Global Scans will remain there.</string>
     <string name="your_scans">Your scans</string>
     <string name="my_scans">My Scans</string>
     <string name="global_scans">Global Scans</string>
@@ -171,6 +180,7 @@
     <string name="when_to_act">When to act</string>
     <string name="disclaimer">Disclaimer</string>
     <string name="references">References</string>
+    <string name="description">Description</string>
     <string name="report_incorrect_scan">Report this scan</string>
     <string name="report_scan_title">Report this scan?</string>
     <string name="report_scan_message">Your anonymous report helps us check this shared scan. You cannot report a scan that you shared yourself. If several people report another user’s scan, we may hide it while we review it.</string>

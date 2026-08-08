@@ -34,6 +34,7 @@ data class ScanResult(
     val imagePath: String? = null,
     val detections: List<ScanDetectionResult> = emptyList(),
     val saveMode: String = "MANUAL",
+    val isFavorite: Boolean = false,
 ) {
     init {
         require(confidence in 0..100) { "Confidence must be between 0 and 100." }

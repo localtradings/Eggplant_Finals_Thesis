@@ -1,6 +1,7 @@
 package com.eggplant.detector.feature.result
 
 import android.graphics.BitmapFactory
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -22,8 +23,10 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.DeleteOutline
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -39,6 +42,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -52,6 +57,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -59,16 +65,20 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.zIndex
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.rememberLottieComposition
 import com.eggplant.detector.app.EggplantAppViewModel
 import com.eggplant.detector.R
 import com.eggplant.detector.app.SaveState
 import com.eggplant.detector.app.ResultWarning
 import com.eggplant.detector.app.SnapshotState
 import com.eggplant.detector.app.CloudActionState
+import com.eggplant.detector.app.diseaseRequestClientId
 import com.eggplant.detector.domain.model.SyncOutboxEvent
 import com.eggplant.detector.domain.model.SyncOutboxState
 import com.eggplant.detector.core.ui.components.ConfidenceDisplay
-import com.eggplant.detector.core.ui.components.PrimaryButton
 import com.eggplant.detector.core.ui.components.ResultArtwork
 import com.eggplant.detector.core.ui.components.ResponsiveContent
 import com.eggplant.detector.domain.model.ScanOutcome
@@ -82,17 +92,19 @@ import com.eggplant.detector.feature.camera.DetectionOverlay
 import com.eggplant.detector.feature.camera.OverlayContentScale
 import java.io.File
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import com.eggplant.detector.domain.model.Disease
 
 @Composable
 fun DetectionResultScreen(
     viewModel: EggplantAppViewModel,
     title: String,
     onBack: () -> Unit,
-    onSave: () -> Unit,
     onScanAgain: () -> Unit,
 ) {
     val result by viewModel.currentResult.collectAsState()
+    val catalog by viewModel.catalog.collectAsState()
     val saveState by viewModel.saveState.collectAsState()
     val resultWarning by viewModel.resultWarning.collectAsState()
     val snapshotState by viewModel.snapshotState.collectAsState()
@@ -108,11 +120,32 @@ fun DetectionResultScreen(
     val shareEvent = result?.let { current ->
         outboxEvents.firstOrNull { it.idempotencyKey == "global:${current.id}" }
     }
-    ResultReport(
-        result = result,
-        title = title,
-        onBack = onBack,
-        actions = {
+    val requestEvent = result?.let { current ->
+        outboxEvents.firstOrNull { it.idempotencyKey == "request:${diseaseRequestClientId(current.id)}" }
+    }
+    var showShareCelebration by remember(result?.id) { mutableStateOf(false) }
+    DisposableEffect(result?.id) {
+        val resultId = result?.id
+        onDispose { resultId?.let(viewModel::abandonShareSuccessAnimation) }
+    }
+    LaunchedEffect(result?.id, shareEvent?.id, shareEvent?.state) {
+        val currentResult = result
+        if (currentResult != null && shareEvent?.state == SyncOutboxState.COMPLETED &&
+            viewModel.consumeShareSuccessAnimation(currentResult.id)
+        ) {
+            showShareCelebration = true
+            delay(1_500)
+            showShareCelebration = false
+        }
+    }
+    Box(Modifier.fillMaxSize()) {
+        ResultReport(
+            result = result,
+            disease = result?.let { current -> catalog.firstOrNull { it.id == current.diseaseId } },
+            title = title,
+            onBack = onBack,
+            onToggleFavorite = { result?.let { current -> viewModel.toggleHistoryFavorite(current.id) } },
+            actions = {
             if (snapshotState == SnapshotState.PREPARING) {
                 Text(
                     localized("Preparing photo…", "Inihahanda ang larawan…"),
@@ -127,22 +160,29 @@ fun DetectionResultScreen(
                     style = MaterialTheme.typography.bodyMedium,
                 )
             }
-            if (saveState == SaveState.FAILED && result?.outcome == ScanOutcome.DISEASE) {
+            if (saveState == SaveState.SAVING) {
+                Text(
+                    stringResource(R.string.saving_scan_automatically),
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+            if (saveState == SaveState.FAILED) {
                 Text(
                     stringResource(R.string.save_history_failed),
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodyMedium,
                 )
             }
-            if (saveState == SaveState.SAVED && result?.outcome == ScanOutcome.DISEASE) {
+            if (saveState == SaveState.SAVED) {
                 Text(
-                    stringResource(R.string.save_history_succeeded),
+                    stringResource(R.string.saved_scan_automatically),
                     color = MaterialTheme.colorScheme.primary,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                 )
             }
-            if (saveState == SaveState.ALREADY_SAVED && result?.outcome == ScanOutcome.DISEASE) {
+            if (saveState == SaveState.ALREADY_SAVED) {
                 Text(
                     stringResource(R.string.save_history_already_saved),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -150,16 +190,6 @@ fun DetectionResultScreen(
                 )
             }
             if (result?.outcome == ScanOutcome.DISEASE) {
-                PrimaryButton(
-                    text = when (saveState) {
-                        SaveState.SAVING -> stringResource(R.string.saving_history)
-                        SaveState.SAVED, SaveState.ALREADY_SAVED -> stringResource(R.string.saved_to_history)
-                        else -> stringResource(R.string.save_history)
-                    },
-                    onClick = onSave,
-                    icon = Icons.Outlined.CheckCircle,
-                    enabled = saveState !in setOf(SaveState.SAVING, SaveState.SAVED, SaveState.ALREADY_SAVED) && snapshotState != SnapshotState.PREPARING,
-                )
                 if (!cloudConfigured) {
                     Text(
                         stringResource(R.string.cloud_unavailable_build),
@@ -171,7 +201,7 @@ fun DetectionResultScreen(
                     onClick = { showShareDialog = true },
                     modifier = Modifier.fillMaxWidth().height(54.dp),
                     shape = RoundedCornerShape(18.dp),
-                    enabled = cloudConfigured && snapshotState == SnapshotState.READY && cloudAction != CloudActionState.Working && !shareEvent.isInFlight(),
+                    enabled = cloudConfigured && snapshotState == SnapshotState.READY && cloudAction != CloudActionState.Working && !shareEvent.isSubmitted(),
                 ) { Text(stringResource(R.string.share_to_global)) }
                 shareEvent?.let { event ->
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -188,15 +218,26 @@ fun DetectionResultScreen(
             }
             if (result?.outcome == ScanOutcome.NO_MATCH) {
                 if (result?.source in setOf("live", "capture", "gallery")) {
-                    OutlinedButton(
-                        onClick = {
-                            viewModel.beginDiseaseRequest()
-                            showRequestDialog = true
-                        },
-                        modifier = Modifier.fillMaxWidth().height(54.dp),
-                        shape = RoundedCornerShape(18.dp),
-                        enabled = cloudConfigured && snapshotState == SnapshotState.READY && cloudAction != CloudActionState.Working,
-                    ) { Text(stringResource(R.string.request_this_disease)) }
+                    if (requestEvent == null) {
+                        OutlinedButton(
+                            onClick = {
+                                viewModel.beginDiseaseRequest()
+                                showRequestDialog = true
+                            },
+                            modifier = Modifier.fillMaxWidth().height(54.dp),
+                            shape = RoundedCornerShape(18.dp),
+                            enabled = cloudConfigured && snapshotState == SnapshotState.READY && cloudAction != CloudActionState.Working,
+                        ) { Text(stringResource(R.string.request_this_disease)) }
+                    } else {
+                        Text(
+                            localized(
+                                "This disease request has already been submitted for this scan.",
+                                "Naipasa na ang disease request para sa scan na ito.",
+                            ),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
                 } else {
                     Text(
                         stringResource(R.string.request_camera_only_photo),
@@ -219,8 +260,17 @@ fun DetectionResultScreen(
                 Icon(Icons.Outlined.Refresh, contentDescription = null)
                 Text("  ${stringResource(R.string.scan_again)}")
             }
-        },
-    )
+            },
+        )
+        if (showShareCelebration) {
+            ShareSuccessCelebration(
+                Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 72.dp)
+                    .zIndex(1f),
+            )
+        }
+    }
     if (showShareDialog) {
         AlertDialog(
             onDismissRequest = { showShareDialog = false },
@@ -232,10 +282,13 @@ fun DetectionResultScreen(
                 }
             },
             confirmButton = {
-                TextButton(onClick = {
+                TextButton(
+                    enabled = !shareEvent.isSubmitted(),
+                    onClick = {
                     viewModel.shareCurrentResult(allowSharingConsent = true)
                     showShareDialog = false
-                }) { Text(stringResource(R.string.share_to_global)) }
+                    },
+                ) { Text(stringResource(R.string.share_to_global)) }
             },
             dismissButton = { TextButton(onClick = { showShareDialog = false }) { Text(stringResource(R.string.cancel)) } },
         )
@@ -283,7 +336,7 @@ fun DetectionResultScreen(
             },
             confirmButton = {
                 TextButton(
-                    enabled = rightsConsent && requestDraft.photoPaths.isNotEmpty() &&
+                    enabled = requestEvent == null && rightsConsent && requestDraft.photoPaths.isNotEmpty() &&
                         cloudAction != CloudActionState.Working,
                     onClick = {
                         viewModel.submitDiseaseRequest(
@@ -324,17 +377,53 @@ private fun shareStatusLabel(event: SyncOutboxEvent): String = when (event.state
     SyncOutboxState.CANCELLED -> stringResource(R.string.share_status_cancelled)
 }
 
-private fun SyncOutboxEvent?.isInFlight(): Boolean = this?.state in setOf(
+private fun SyncOutboxEvent?.isSubmitted(): Boolean = this?.state in setOf(
     SyncOutboxState.PENDING,
     SyncOutboxState.UPLOADING,
     SyncOutboxState.RETRY,
+    SyncOutboxState.COMPLETED,
 )
+
+@Composable
+private fun ShareSuccessCelebration(modifier: Modifier) {
+    val composition by rememberLottieComposition(
+        LottieCompositionSpec.RawRes(R.raw.global_share_success),
+    )
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            LottieAnimation(
+                composition = composition,
+                iterations = 1,
+                modifier = Modifier.height(88.dp).aspectRatio(1f),
+            )
+            Text(
+                localized(
+                    "Uploaded to Global Scans successfully.",
+                    "Matagumpay na na-upload sa Global Scans.",
+                ),
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+    }
+}
 
 @Composable
 fun ResultReport(
     result: ScanResult?,
+    disease: Disease? = null,
     title: String,
     onBack: () -> Unit,
+    onToggleFavorite: (() -> Unit)? = null,
+    onDelete: (() -> Unit)? = null,
     actions: @Composable () -> Unit = {},
 ) {
     if (result == null) {
@@ -351,6 +440,7 @@ fun ResultReport(
         return
     }
 
+    var showDeleteConfirmation by remember(result.id) { mutableStateOf(false) }
     ResponsiveContent {
         Column(
             modifier = Modifier
@@ -364,7 +454,33 @@ fun ResultReport(
                 IconButton(onClick = onBack) {
                     Icon(Icons.Outlined.Close, contentDescription = stringResource(R.string.close_detection_result))
                 }
-                Text(title, style = MaterialTheme.typography.titleLarge)
+                Text(title, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                if (onToggleFavorite != null) {
+                    val heartScale by animateFloatAsState(
+                        targetValue = if (result.isFavorite) 1.16f else 1f,
+                        label = "favorite-heart-scale",
+                    )
+                    IconButton(
+                        onClick = onToggleFavorite,
+                        modifier = Modifier.scale(heartScale),
+                    ) {
+                        Icon(
+                            imageVector = if (result.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                            contentDescription = stringResource(
+                                if (result.isFavorite) R.string.remove_from_favorites else R.string.add_to_favorites,
+                            ),
+                            tint = if (result.isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                if (onDelete != null) {
+                    IconButton(onClick = { showDeleteConfirmation = true }) {
+                        Icon(
+                            Icons.Outlined.DeleteOutline,
+                            contentDescription = stringResource(R.string.delete_history_scan),
+                        )
+                    }
+                }
             }
             SnapshotPreview(result, Modifier.fillMaxWidth().aspectRatio(1.35f).heightIn(min = 180.dp, max = 320.dp))
             Card(
@@ -396,7 +512,9 @@ fun ResultReport(
             }
             when (result.outcome) {
                 ScanOutcome.DISEASE -> {
-                    ReportSection(stringResource(R.string.signs_detected), result.signs.joinToString("\n") { "• $it" })
+                    ReportSection(stringResource(R.string.description), disease?.description.orEmpty())
+                    ReportSection(stringResource(R.string.symptoms), disease?.symptomPreview.orEmpty())
+                    ReportSection(stringResource(R.string.signs_detected), (disease?.signs ?: result.signs).joinToString("\n") { "• $it" })
                     val additional = result.detections
                         .filter { it.diseaseId != result.diseaseId }
                         .groupBy { it.diseaseId }
@@ -408,14 +526,28 @@ fun ResultReport(
                             additional.joinToString("\n") { "• ${it.name} — ${it.confidence}%" },
                         )
                     }
-                    ReportSection(stringResource(R.string.recommended_action), result.treatment)
+                    ReportSection(stringResource(R.string.causes), disease?.causes.orEmpty())
+                    ReportSection(stringResource(R.string.recommended_action), disease?.treatment ?: result.treatment)
+                    ReportSection(stringResource(R.string.prevention), disease?.prevention.orEmpty())
+                    ReportSection(stringResource(R.string.guidance), disease?.guidance.orEmpty())
+                    ReportSection(stringResource(R.string.when_to_act), disease?.whenToAct.orEmpty())
+                    ReportSection(
+                        stringResource(R.string.disclaimer),
+                        disease?.disclaimer.orEmpty(),
+                    )
+                    ReportSection(
+                        stringResource(R.string.references),
+                        disease?.references.orEmpty().joinToString("\n") { reference ->
+                            "${reference.publisher}: ${reference.title}\n${reference.url}"
+                        },
+                    )
                 }
                 ScanOutcome.HEALTHY_CONFIRMED -> {
                     ReportSection(
                         localized("Healthy result", "Malusog na resulta"),
                         localized(
-                            "No supported disease was detected in this confirmed healthy area. Healthy-only results are not saved to History.",
-                            "Walang suportadong sakit na nakita sa kumpirmadong malusog na bahaging ito. Hindi sine-save sa Kasaysayan ang healthy-only na resulta.",
+                            "No supported disease was detected in this confirmed healthy area. This result is saved in My Scans automatically.",
+                            "Walang suportadong sakit na nakita sa kumpirmadong malusog na bahaging ito. Awtomatikong sine-save ang resultang ito sa My Scans.",
                         ),
                     )
                 }
@@ -435,6 +567,23 @@ fun ResultReport(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             actions()
+        }
+        if (onDelete != null && showDeleteConfirmation) {
+            AlertDialog(
+                onDismissRequest = { showDeleteConfirmation = false },
+                title = { Text(stringResource(R.string.delete_history_scan)) },
+                text = { Text(stringResource(R.string.delete_history_scan_confirmation)) },
+                confirmButton = {
+                    TextButton(onClick = { showDeleteConfirmation = false; onDelete() }) {
+                        Text(stringResource(R.string.delete))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDeleteConfirmation = false }) {
+                        Text(stringResource(R.string.cancel))
+                    }
+                },
+            )
         }
     }
 }
@@ -609,6 +758,7 @@ private fun localized(english: String, filipino: String): String {
 
 @Composable
 private fun ReportSection(title: String, body: String) {
+    if (body.isBlank()) return
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),

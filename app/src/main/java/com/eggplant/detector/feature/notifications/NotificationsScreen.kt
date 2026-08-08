@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -19,6 +20,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -33,6 +35,13 @@ import com.eggplant.detector.core.ui.components.ResponsiveContent
 
 private data class LocalNotice(val key: String, @param:StringRes val title: Int, @param:StringRes val body: Int)
 
+private data class DisplayNotice(
+    val key: String,
+    val title: String,
+    val body: String,
+    val category: String? = null,
+)
+
 private val notices = listOf(
     LocalNotice("welcome", R.string.notice_ready_title, R.string.notice_ready_body),
     LocalNotice("model", R.string.notice_model_title, R.string.notice_model_body),
@@ -43,6 +52,26 @@ private val notices = listOf(
 @Composable
 fun NotificationsScreen(viewModel: EggplantAppViewModel, onBack: () -> Unit) {
     val readKeys by viewModel.readNotificationKeys.collectAsState()
+    val remoteNotifications by viewModel.remoteNotifications.collectAsState()
+    val languageTag by viewModel.languagePreference.collectAsState()
+    LaunchedEffect(Unit) {
+        viewModel.refreshCloudData()
+    }
+    val localItems = notices.map { notice ->
+        DisplayNotice(
+            key = notice.key,
+            title = stringResource(notice.title),
+            body = stringResource(notice.body),
+        )
+    }
+    val notificationItems = remoteNotifications.map { notice ->
+        DisplayNotice(
+            key = notice.key,
+            title = notice.title(languageTag.languageTag),
+            body = notice.body(languageTag.languageTag),
+            category = notice.category,
+        )
+    } + localItems
     ResponsiveContent {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -55,13 +84,12 @@ fun NotificationsScreen(viewModel: EggplantAppViewModel, onBack: () -> Unit) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                 }
                 Text(stringResource(R.string.notifications), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
-                TextButton(onClick = { viewModel.markAllNotificationsRead(notices.map { it.key }) }) {
+                TextButton(onClick = { viewModel.markAllNotificationsRead(notificationItems.map(DisplayNotice::key)) }) {
                     Text(stringResource(R.string.mark_all_read))
                 }
             }
         }
-        items(notices.size, key = { notices[it].key }) { index ->
-            val notice = notices[index]
+        items(notificationItems, key = DisplayNotice::key) { notice ->
             val isRead = notice.key in readKeys
             Card(
                 onClick = { viewModel.markNotificationRead(notice.key) },
@@ -72,8 +100,11 @@ fun NotificationsScreen(viewModel: EggplantAppViewModel, onBack: () -> Unit) {
                 ),
             ) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                    Text(stringResource(notice.title), fontWeight = FontWeight.SemiBold)
-                    Text(stringResource(notice.body), style = MaterialTheme.typography.bodyMedium)
+                    notice.category?.let { category ->
+                        Text(category.replaceFirstChar(Char::uppercase), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                    }
+                    Text(notice.title, fontWeight = FontWeight.SemiBold)
+                    Text(notice.body, style = MaterialTheme.typography.bodyMedium)
                     Text(stringResource(if (isRead) R.string.read else R.string.new_notice), color = MaterialTheme.colorScheme.primary)
                 }
             }

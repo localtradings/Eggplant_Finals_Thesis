@@ -112,6 +112,9 @@ class EggplantRepositoryCloudTest {
             annotatedOutboxPhoto = payload.getValue("annotatedPhotoPath").jsonPrimitive.content
             assertTrue(java.io.File(requireNotNull(outboxPhoto)).isFile)
             assertTrue(java.io.File(requireNotNull(annotatedOutboxPhoto)).isFile)
+
+            repository.enqueueGlobalShare(result, sharingEnabled = true)
+            assertEquals(share.id, database.cloudDao().outboxByIdempotencyKey("global:${result.id}")?.id)
         } finally {
             snapshotStore.discard(stagedPath)
             snapshotStore.removeOutboxPhoto(outboxPhoto)
@@ -148,6 +151,7 @@ class EggplantRepositoryCloudTest {
                 photoPaths = listOf(stagedPath),
                 photoSources = listOf("gallery"),
                 rightsConsent = true,
+                clientRequestId = "01890f3d-00d8-7b65-9a77-a79bfe3f8483",
             )
 
             val request = requireNotNull(database.cloudDao().diseaseRequestByClientId(clientRequestId))
@@ -163,6 +167,19 @@ class EggplantRepositoryCloudTest {
                 listOf("gallery"),
                 payload.getValue("photoSources").jsonArray.map { it.jsonPrimitive.content },
             )
+
+            assertEquals(
+                clientRequestId,
+                repository.enqueueDiseaseRequest(
+                    requestedName = "Unknown disease",
+                    notes = "Please review this gallery photo.",
+                    photoPaths = listOf(stagedPath),
+                    photoSources = listOf("gallery"),
+                    rightsConsent = true,
+                    clientRequestId = clientRequestId,
+                ),
+            )
+            assertEquals(event.id, database.cloudDao().outboxByIdempotencyKey("request:$clientRequestId")?.id)
         } finally {
             snapshotStore.discard(stagedPath)
             snapshotStore.removeOutboxPhoto(outboxPhoto)

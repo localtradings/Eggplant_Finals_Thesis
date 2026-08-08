@@ -22,14 +22,25 @@ interface ScanSessionDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertDetections(detections: List<ScanDetectionEntity>)
 
+    @Query("SELECT * FROM scan_sessions WHERE id = :id LIMIT 1")
+    suspend fun sessionById(id: String): ScanSessionEntity?
+
+    @Query("SELECT * FROM scan_sessions WHERE savedAt < :cutoff AND isFavorite = 0")
+    suspend fun expiredSessions(cutoff: String): List<ScanSessionEntity>
+
+    @Query("UPDATE scan_sessions SET isFavorite = :favorite WHERE id = :id")
+    suspend fun setFavorite(id: String, favorite: Boolean)
+
+    @Query("DELETE FROM scan_sessions WHERE id = :id")
+    suspend fun deleteSession(id: String)
+
     @Transaction
     suspend fun insertSessionWithDetections(
         session: ScanSessionEntity,
         detections: List<ScanDetectionEntity>,
     ) {
-        require(detections.isNotEmpty()) { "Saved disease sessions require at least one detection." }
         require(detections.all { it.sessionId == session.id }) { "Every detection must belong to the session." }
         insertSession(session)
-        insertDetections(detections)
+        if (detections.isNotEmpty()) insertDetections(detections)
     }
 }

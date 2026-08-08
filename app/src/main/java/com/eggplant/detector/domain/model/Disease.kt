@@ -5,6 +5,7 @@ data class Disease(
     val name: String,
     val type: DiseaseType,
     val symptomPreview: String,
+    val description: String = symptomPreview,
     val signs: List<String>,
     val treatment: String,
     val prevention: String,
@@ -13,6 +14,8 @@ data class Disease(
     val whenToAct: String = "",
     val disclaimer: String = "This result is a screening aid, not a definitive diagnosis. Consult a qualified local agricultural specialist before applying treatment.",
     val references: List<DiseaseReference> = emptyList(),
+    val isDetectorSupported: Boolean = true,
+    val artworkPath: String? = null,
 )
 
 data class DiseaseReference(

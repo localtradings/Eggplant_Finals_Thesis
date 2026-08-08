@@ -9,7 +9,7 @@ import androidx.room.Relation
 @Entity(
     tableName = "scan_sessions",
     primaryKeys = ["id"],
-    indices = [Index("savedAt")],
+    indices = [Index("savedAt"), Index(value = ["savedAt", "isFavorite"])],
 )
 data class ScanSessionEntity(
     val id: String,
@@ -19,6 +19,12 @@ data class ScanSessionEntity(
     val imagePath: String?,
     val modelVersion: String,
     val saveMode: String,
+    @androidx.room.ColumnInfo(defaultValue = "0") val isFavorite: Boolean = false,
+    val resultName: String? = null,
+    val resultCategory: String? = null,
+    val resultOutcome: String? = null,
+    val resultConfidence: Int? = null,
+    val resultDiseaseId: String? = null,
 )
 
 @Entity(

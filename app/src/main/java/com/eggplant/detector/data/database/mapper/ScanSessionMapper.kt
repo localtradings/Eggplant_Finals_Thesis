@@ -37,30 +37,36 @@ object ScanSessionMapper {
         val primaryDisease = primaryDetection?.let { detection ->
             catalog.firstOrNull { it.id == detection.diseaseId } ?: DiseaseCatalog.byId(detection.diseaseId)
         }
-        val category = when (primaryDisease?.type) {
+        val derivedCategory = when (primaryDisease?.type) {
             DiseaseType.LEAF_DISEASE -> ScanCategory.LEAF_DISEASE
             DiseaseType.FRUIT_DISEASE -> ScanCategory.FRUIT_DISEASE
             null -> ScanCategory.NO_DISEASE_DETECTED
         }
+        val category = row.session.resultCategory
+            ?.let { value -> runCatching { ScanCategory.valueOf(value) }.getOrNull() }
+            ?: derivedCategory
+        val outcome = row.session.resultOutcome
+            ?.let { value -> runCatching { ScanOutcome.valueOf(value) }.getOrNull() }
+            ?: if (category == ScanCategory.NO_DISEASE_DETECTED) ScanOutcome.HEALTHY_CONFIRMED else ScanOutcome.DISEASE
+        val diseaseId = row.session.resultDiseaseId ?: primaryDisease?.id ?: primaryDetection?.diseaseId ?: "unknown"
         return ScanResult(
             id = row.session.id,
-            name = primaryDisease?.name ?: "Healthy",
+            name = row.session.resultName?.takeIf(String::isNotBlank)
+                ?: primaryDisease?.name
+                ?: if (outcome == ScanOutcome.NO_MATCH) "No supported disease detected" else "Healthy",
             category = category,
-            outcome = if (category == ScanCategory.NO_DISEASE_DETECTED) {
-                ScanOutcome.HEALTHY_CONFIRMED
-            } else {
-                ScanOutcome.DISEASE
-            },
-            confidence = primaryDetection?.confidence ?: 0,
+            outcome = outcome,
+            confidence = row.session.resultConfidence ?: primaryDetection?.confidence ?: 0,
             scannedAt = LocalDateTime.parse(row.session.savedAt),
             signs = primaryDisease?.signs.orEmpty(),
             treatment = primaryDisease?.treatment.orEmpty(),
-            diseaseId = primaryDisease?.id ?: "healthy",
+            diseaseId = diseaseId,
             source = row.session.source.lowercase(),
             modelVersion = row.session.modelVersion,
             imagePath = row.session.imagePath,
             detections = mappedDetections,
             saveMode = row.session.saveMode,
+            isFavorite = row.session.isFavorite,
         )
     }
 
@@ -94,6 +100,12 @@ object ScanSessionMapper {
             imagePath = result.imagePath,
             modelVersion = result.modelVersion,
             saveMode = result.saveMode,
+            isFavorite = result.isFavorite,
+            resultName = result.name,
+            resultCategory = result.category.name,
+            resultOutcome = result.outcome.name,
+            resultConfidence = result.confidence,
+            resultDiseaseId = result.diseaseId,
         )
         val detections = persistedDetections.mapIndexed { index, detection ->
             ScanDetectionEntity(

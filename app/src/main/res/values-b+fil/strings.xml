@@ -124,6 +124,8 @@
     <string name="save_history_succeeded">Naka-save sa Kasaysayan. Makikita ang scan na ito sa Aking mga Scan.</string>
     <string name="save_history_already_saved">Nasa Aking mga Scan na ang scan na ito.</string>
     <string name="save_history_failed">Hindi ma-save ang scan na ito. Hindi nabago ang dati mong kasaysayan. Tingnan ang available na storage ng device at subukang muli.</string>
+    <string name="saving_scan_automatically">Sine-save ang scan na ito sa Aking mga Scan…</string>
+    <string name="saved_scan_automatically">Awtomatikong naka-save sa Aking mga Scan.</string>
     <string name="scan_again">Mag-scan Muli</string>
     <string name="signs_detected">Mga Palatandaang Natukoy</string>
     <string name="recommended_action">Inirerekomendang Gawin</string>
@@ -146,6 +148,13 @@
     <string name="history_search">Maghanap sa kasaysayan…</string>
     <string name="no_history">Walang kasaysayan ng scan</string>
     <string name="history_detail">Detalye ng Kasaysayan</string>
+    <string name="favorites">Mga Paborito</string>
+    <string name="no_favorites">Wala pang paboritong scan</string>
+    <string name="favorite_scan">Paboritong scan</string>
+    <string name="add_to_favorites">Idagdag sa mga paborito</string>
+    <string name="remove_from_favorites">Alisin sa mga paborito</string>
+    <string name="delete_history_scan">Burahin ang scan</string>
+    <string name="delete_history_scan_confirmation">Burahin ang scan na ito sa Aking mga Scan? Mananatili rito ang scan na naibahagi na sa Global Scans.</string>
     <string name="your_scans">Iyong mga scan</string>
     <string name="my_scans">Aking mga Scan</string>
     <string name="global_scans">Global Scans</string>
@@ -171,6 +180,7 @@
     <string name="when_to_act">Kailan dapat kumilos</string>
     <string name="disclaimer">Paalaala</string>
     <string name="references">Mga sanggunian</string>
+    <string name="description">Paglalarawan</string>
     <string name="report_incorrect_scan">I-report ang scan na ito</string>
     <string name="report_scan_title">I-report ang scan na ito?</string>
     <string name="report_scan_message">Makakatulong ang anonymous mong report para masuri namin ang shared scan. Hindi puwedeng i-report ang scan na ikaw mismo ang nag-share. Kapag maraming nag-report ng scan ng ibang user, maaari muna namin itong itago habang sinusuri.</string>

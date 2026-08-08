@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import com.eggplant.detector.R
 import com.eggplant.detector.domain.model.GlobalScan
 import com.eggplant.detector.domain.model.ScanResult
+import com.eggplant.detector.domain.model.Disease
 import com.eggplant.detector.data.cloud.SafeJpeg
 import java.io.File
 import kotlinx.coroutines.Dispatchers
@@ -52,8 +53,18 @@ import com.eggplant.detector.core.ui.components.ResponsiveContent
 import com.eggplant.detector.core.ui.stablePageForId
 
 @Composable
-fun MyScanDetailPager(results: List<ScanResult>, initialId: String?, onBack: () -> Unit) {
-    if (results.isEmpty()) { ScanHistoryDetailsScreen(null, onBack); return }
+fun MyScanDetailPager(
+    results: List<ScanResult>,
+    diseases: List<Disease>,
+    initialId: String?,
+    onBack: () -> Unit,
+    onToggleFavorite: (String) -> Unit,
+    onDelete: (String) -> Unit,
+) {
+    if (results.isEmpty()) {
+        ScanHistoryDetailsScreen(null, null, onBack)
+        return
+    }
     val ids = results.map(ScanResult::id)
     var selectedId by rememberSaveable(initialId) { mutableStateOf(initialId?.takeIf(ids::contains) ?: ids.first()) }
     val initial = stablePageForId(ids, selectedId, 0)
@@ -69,7 +80,16 @@ fun MyScanDetailPager(results: List<ScanResult>, initialId: String?, onBack: () 
     ResponsiveContent {
         Column(Modifier.fillMaxSize()) {
             Text(stringResource(R.string.item_position, state.currentPage + 1, results.size), Modifier.padding(horizontal = 20.dp, vertical = 8.dp), style = MaterialTheme.typography.labelLarge)
-            HorizontalPager(state, Modifier.weight(1f), key = { results[it].id }) { page -> ScanHistoryDetailsScreen(results[page], onBack) }
+            HorizontalPager(state, Modifier.weight(1f), key = { results[it].id }) { page ->
+                val result = results[page]
+                ScanHistoryDetailsScreen(
+                    result = result,
+                    disease = diseases.firstOrNull { it.id == result.diseaseId },
+                    onBack = onBack,
+                    onToggleFavorite = { onToggleFavorite(result.id) },
+                    onDelete = { onDelete(result.id) },
+                )
+            }
             DetailControls(
                 state.currentPage,
                 results.size,

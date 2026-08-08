@@ -60,6 +60,8 @@ fun DiseaseCard(
             ) {
                 DiseaseArtwork(
                     artworkKey = disease.id,
+                    localArtworkPath = disease.artworkPath,
+                    contentDescriptionOverride = "${disease.name} disease photo",
                     modifier = Modifier
                         .fillMaxWidth()
                         .aspectRatio(1.45f),
@@ -97,6 +99,8 @@ fun DiseaseCard(
             ) {
                 DiseaseArtwork(
                     artworkKey = disease.id,
+                    localArtworkPath = disease.artworkPath,
+                    contentDescriptionOverride = "${disease.name} disease photo",
                     modifier = Modifier
                         .size(width = 88.dp, height = 58.dp)
                         .aspectRatio(1.52f),

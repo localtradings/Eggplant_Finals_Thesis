@@ -23,6 +23,7 @@ import com.eggplant.detector.domain.model.MotionPreference
 import com.eggplant.detector.domain.model.ShareEligibility
 import com.eggplant.detector.domain.model.CloudDeletionState
 import com.eggplant.detector.domain.model.GlobalFeedState
+import com.eggplant.detector.domain.model.RemoteNotification
 import com.eggplant.detector.domain.model.SyncOutboxEvent
 import java.time.LocalDateTime
 import java.util.UUID
@@ -131,9 +132,6 @@ class EggplantAppViewModel(
     )
     val languagePreference: StateFlow<LanguagePreference> = _languagePreference.asStateFlow()
 
-    private val _autoSaveEnabled = MutableStateFlow(false)
-    val autoSaveEnabled: StateFlow<Boolean> = _autoSaveEnabled.asStateFlow()
-
     private val _detectHealthyLeafEnabled = MutableStateFlow(false)
     val detectHealthyLeafEnabled: StateFlow<Boolean> = _detectHealthyLeafEnabled.asStateFlow()
 
@@ -142,6 +140,9 @@ class EggplantAppViewModel(
 
     private val _readNotificationKeys = MutableStateFlow<Set<String>>(emptySet())
     val readNotificationKeys: StateFlow<Set<String>> = _readNotificationKeys.asStateFlow()
+
+    private val _remoteNotifications = MutableStateFlow<List<RemoteNotification>>(emptyList())
+    val remoteNotifications: StateFlow<List<RemoteNotification>> = _remoteNotifications.asStateFlow()
 
     private val _saveState = MutableStateFlow(SaveState.IDLE)
     val saveState: StateFlow<SaveState> = _saveState.asStateFlow()
@@ -186,8 +187,9 @@ class EggplantAppViewModel(
     val diseaseRequestDraft: StateFlow<DiseaseRequestDraftState> = _diseaseRequestDraft.asStateFlow()
 
     private var persistedSettings = AppSettingsEntity()
-    private val autoSaveDeduplicator = AutoSaveDeduplicator()
     private var liveFinalizationId: String? = null
+    private val shareCelebrationLock = Any()
+    private val armedShareCelebrations = mutableSetOf<String>()
 
     init {
         repository?.let { localRepository ->
@@ -210,7 +212,6 @@ class EggplantAppViewModel(
                     _languagePreference.value = LanguagePreference.entries.firstOrNull {
                         it.languageTag == settings.languageTag
                     } ?: LanguagePreference.ENGLISH
-                    _autoSaveEnabled.value = settings.autoSaveEnabled
                     _detectHealthyLeafEnabled.value = settings.detectHealthyLeafEnabled
                     _detectHealthyPlantEnabled.value = settings.detectHealthyPlantEnabled
                     _globalSharingEnabled.value = settings.globalSharingEnabled
@@ -219,6 +220,9 @@ class EggplantAppViewModel(
             }
             viewModelScope.launch {
                 localRepository.readNotificationKeys.collect { _readNotificationKeys.value = it }
+            }
+            viewModelScope.launch {
+                localRepository.remoteNotifications.collect { _remoteNotifications.value = it }
             }
             viewModelScope.launch {
                 _languagePreference.collectLatest { language ->
@@ -259,6 +263,7 @@ class EggplantAppViewModel(
         if (stageSnapshot == null) {
             _snapshotState.value = SnapshotState.UNAVAILABLE
             _resultWarning.value = ResultWarning.SNAPSHOT_UNAVAILABLE
+            persistCompletedResult(pendingResult, automaticSaveMode(scene.rgbFrame.source.name))
             onReady()
             return
         }
@@ -272,9 +277,7 @@ class EggplantAppViewModel(
                 val readyResult = pendingResult.copy(imagePath = imagePath)
                 _currentResult.value = readyResult
                 _snapshotState.value = if (imagePath == null) SnapshotState.UNAVAILABLE else SnapshotState.READY
-                if (imagePath != null) {
-                    autoSaveIfEligible(readyResult, scene.stability.saveEligible, scene.rgbFrame.sceneToken)
-                }
+                persistCompletedResult(readyResult, automaticSaveMode(scene.rgbFrame.source.name))
             }
         }
     }
@@ -314,9 +317,7 @@ class EggplantAppViewModel(
         // and JVM tests. Production always has a repository and follows the
         // asynchronous snapshot + Room transaction below.
         if (stageSnapshot == null && scanSaver == null) {
-            if (pendingResult.outcome == ScanOutcome.DISEASE) {
-                commitSavedResult(pendingResult.copy(scannedAt = nowProvider(), saveMode = "LIVE"), SaveState.SAVED)
-            }
+            persistCompletedResult(pendingResult, "LIVE")
             completeLiveFinalization(finalizationId)
             onReady()
             return
@@ -324,7 +325,7 @@ class EggplantAppViewModel(
 
         // Open the result immediately. JPEG staging and the Room transaction
         // continue below so a slow local save cannot block the live release.
-        _saveState.value = if (pendingResult.outcome == ScanOutcome.DISEASE) SaveState.SAVING else SaveState.IDLE
+        _saveState.value = SaveState.SAVING
         onReady()
         viewModelScope.launch {
             val imagePath = stageSnapshot?.let { stage ->
@@ -343,26 +344,8 @@ class EggplantAppViewModel(
             _currentResult.value = readyResult
             _snapshotState.value = if (imagePath == null) SnapshotState.UNAVAILABLE else SnapshotState.READY
 
-            // Healthy live findings can still reach their result screen, but
-            // never become a disease-history record.
-            if (readyResult.outcome != ScanOutcome.DISEASE) {
-                completeLiveFinalization(finalizationId)
-                return@launch
-            }
-
-            try {
-                val committed = scanSaver?.invoke(readyResult.copy(scannedAt = nowProvider(), saveMode = "LIVE"))
-                    ?: readyResult.copy(scannedAt = nowProvider(), saveMode = "LIVE")
-                if (liveFinalizationId == finalizationId) commitSavedResult(committed, SaveState.SAVED)
-            } catch (error: Exception) {
-                Log.e(LOG_TAG, "live_history_save_failed", error)
-                if (liveFinalizationId == finalizationId) {
-                    repository?.discardSnapshot(imagePath)
-                    _saveState.value = SaveState.FAILED
-                }
-            } finally {
-                completeLiveFinalization(finalizationId)
-            }
+            persistCompletedResult(readyResult, "LIVE")
+            completeLiveFinalization(finalizationId)
         }
     }
 
@@ -371,6 +354,38 @@ class EggplantAppViewModel(
         _resultWarning.value = null
         _snapshotState.value = if (result.imagePath == null) SnapshotState.UNAVAILABLE else SnapshotState.READY
         _currentResult.value = result
+    }
+
+    fun toggleHistoryFavorite(id: String) {
+        val result = _history.value.firstOrNull { it.id == id }
+            ?: _currentResult.value?.takeIf { it.id == id }
+            ?: return
+        val updated = result.copy(isFavorite = !result.isFavorite)
+        replaceHistoryResult(updated)
+        repository?.let { localRepository ->
+            viewModelScope.launch {
+                runCatching { localRepository.setHistoryFavorite(id, updated.isFavorite) }
+                    .onFailure { replaceHistoryResult(result) }
+            }
+        }
+    }
+
+    fun deleteHistory(id: String, onDeleted: () -> Unit = {}) {
+        val result = _history.value.firstOrNull { it.id == id } ?: return
+        val localRepository = repository
+        if (localRepository == null) {
+            removeHistoryResult(result)
+            onDeleted()
+            return
+        }
+        viewModelScope.launch {
+            runCatching { localRepository.deleteHistory(id) }
+                .onSuccess {
+                    removeHistoryResult(result)
+                    onDeleted()
+                }
+                .onFailure { error -> Log.e(LOG_TAG, "history_delete_failed", error) }
+        }
     }
 
     fun openNoMatchScene(
@@ -393,6 +408,7 @@ class EggplantAppViewModel(
         if (stageSnapshot == null) {
             _snapshotState.value = SnapshotState.UNAVAILABLE
             _resultWarning.value = ResultWarning.SNAPSHOT_UNAVAILABLE
+            persistCompletedResult(pendingResult, automaticSaveMode(scene.rgbFrame.source.name))
             onReady()
             return
         }
@@ -403,50 +419,43 @@ class EggplantAppViewModel(
                 .onFailure { _resultWarning.value = ResultWarning.SNAPSHOT_UNAVAILABLE }
                 .getOrNull()
             if (_currentResult.value?.id == pendingResult.id) {
-                _currentResult.value = pendingResult.copy(imagePath = imagePath)
+                val readyResult = pendingResult.copy(imagePath = imagePath)
+                _currentResult.value = readyResult
                 _snapshotState.value = if (imagePath == null) SnapshotState.UNAVAILABLE else SnapshotState.READY
+                persistCompletedResult(readyResult, automaticSaveMode(scene.rgbFrame.source.name))
             }
         }
     }
 
-    fun saveCurrentResult(onComplete: (Boolean) -> Unit = {}): Boolean {
-        val result = _currentResult.value
-        if (
-            result == null ||
-            result.category == ScanCategory.NO_DISEASE_DETECTED ||
-            _saveState.value == SaveState.SAVING ||
-            _snapshotState.value == SnapshotState.PREPARING ||
-            _history.value.any { it.id == result.id }
-        ) {
-            _saveState.value = when {
-                result == null -> SaveState.FAILED
-                _history.value.any { it.id == result.id } -> SaveState.ALREADY_SAVED
-                else -> SaveState.FAILED
-            }
-            onComplete(false)
-            return false
+    private fun persistCompletedResult(result: ScanResult, saveMode: String) {
+        if (_history.value.any { it.id == result.id }) {
+            _saveState.value = SaveState.ALREADY_SAVED
+            return
         }
-
-        val savedResult = result.copy(scannedAt = nowProvider())
+        val savedResult = result.copy(scannedAt = nowProvider(), saveMode = saveMode)
+        _saveState.value = SaveState.SAVING
         val persist = scanSaver
         if (persist == null) {
             commitSavedResult(savedResult, SaveState.SAVED)
-            onComplete(true)
-            return true
+            return
         }
-
-        _saveState.value = SaveState.SAVING
         viewModelScope.launch {
             try {
-                commitSavedResult(persist(savedResult), SaveState.SAVED)
-                onComplete(true)
+                val committed = persist(savedResult)
+                val favoriteOverride = _currentResult.value
+                    ?.takeIf { it.id == savedResult.id }
+                    ?.isFavorite
+                    ?: committed.isFavorite
+                if (favoriteOverride != committed.isFavorite) {
+                    repository?.setHistoryFavorite(committed.id, favoriteOverride)
+                }
+                commitSavedResult(committed.copy(isFavorite = favoriteOverride), SaveState.SAVED)
             } catch (error: Exception) {
                 Log.e(LOG_TAG, "history_save_failed", error)
+                repository?.discardSnapshot(savedResult.imagePath)
                 _saveState.value = SaveState.FAILED
-                onComplete(false)
             }
         }
-        return true
     }
 
     private fun commitSavedResult(result: ScanResult, completedState: SaveState = SaveState.SAVED) {
@@ -465,19 +474,16 @@ class EggplantAppViewModel(
         _saveState.value = completedState
     }
 
-    private suspend fun autoSaveIfEligible(result: ScanResult, stable: Boolean, sceneToken: Long) {
-        if (!autoSaveDeduplicator.shouldSave(_autoSaveEnabled.value, stable, result, sceneToken)) return
-        if (_history.value.any { it.id == result.id }) return
-        val autoResult = result.copy(scannedAt = nowProvider(), saveMode = "AUTO")
-        _saveState.value = SaveState.SAVING
-        try {
-            val committed = scanSaver?.invoke(autoResult) ?: autoResult
-            autoSaveDeduplicator.record(committed, sceneToken)
-            commitSavedResult(committed, SaveState.SAVED)
-        } catch (error: Exception) {
-            Log.e(LOG_TAG, "auto_history_save_failed", error)
-            _saveState.value = SaveState.FAILED
-        }
+    private fun replaceHistoryResult(result: ScanResult) {
+        _history.value = _history.value.map { if (it.id == result.id) result else it }
+        if (_currentResult.value?.id == result.id) _currentResult.value = result
+        _lastScan.value = _history.value.firstOrNull()
+    }
+
+    private fun removeHistoryResult(result: ScanResult) {
+        _history.value = _history.value.filterNot { it.id == result.id }
+        if (_currentResult.value?.id == result.id) _currentResult.value = null
+        _lastScan.value = _history.value.firstOrNull()
     }
 
     fun setTheme(preference: ThemePreference) {
@@ -495,11 +501,6 @@ class EggplantAppViewModel(
                 localRepository.refreshCloud()
             }
         }
-    }
-
-    fun setAutoSave(enabled: Boolean) {
-        _autoSaveEnabled.value = enabled
-        persistSettings()
     }
 
     fun setDetectHealthyLeaf(enabled: Boolean) {
@@ -591,7 +592,16 @@ class EggplantAppViewModel(
             _cloudActionState.value = CloudActionState.Error(cloudMessage("No result is available to share.", "Walang resultang maaaring i-share."))
             return
         }
+        val existingShare = _syncOutboxEvents.value.firstOrNull { it.idempotencyKey == "global:${result.id}" }
+        if (existingShare?.state in setOf(
+                com.eggplant.detector.domain.model.SyncOutboxState.PENDING,
+                com.eggplant.detector.domain.model.SyncOutboxState.UPLOADING,
+                com.eggplant.detector.domain.model.SyncOutboxState.RETRY,
+                com.eggplant.detector.domain.model.SyncOutboxState.COMPLETED,
+            )
+        ) return
         _cloudActionState.value = CloudActionState.Working
+        armShareSuccessAnimation(result.id)
         val sharingWasEnabled = _globalSharingEnabled.value
         val sharingEnabledForShare = sharingWasEnabled || allowSharingConsent
         val previousSettings = persistedSettings
@@ -617,6 +627,18 @@ class EggplantAppViewModel(
 
     fun beginDiseaseRequest() {
         val result = _currentResult.value
+        val existingRequest = result?.let { current ->
+            _syncOutboxEvents.value.firstOrNull { it.idempotencyKey == "request:${diseaseRequestClientId(current.id)}" }
+        }
+        if (existingRequest != null) {
+            _diseaseRequestDraft.value = DiseaseRequestDraftState(
+                error = cloudMessage(
+                    "This disease request has already been submitted for this scan.",
+                    "Naipasa na ang disease request para sa scan na ito.",
+                ),
+            )
+            return
+        }
         val photoPath = result?.imagePath
         val source = result?.source
         _diseaseRequestDraft.value = if (
@@ -666,9 +688,32 @@ class EggplantAppViewModel(
             onComplete(false)
             return
         }
+        val result = _currentResult.value
+        val existingRequest = result?.let { current ->
+            _syncOutboxEvents.value.firstOrNull { it.idempotencyKey == "request:${diseaseRequestClientId(current.id)}" }
+        }
+        if (existingRequest != null) {
+            _cloudActionState.value = CloudActionState.Error(
+                cloudMessage(
+                    "This disease request has already been submitted for this scan.",
+                    "Naipasa na ang disease request para sa scan na ito.",
+                ),
+            )
+            onComplete(false)
+            return
+        }
         _cloudActionState.value = CloudActionState.Working
         viewModelScope.launch {
-            runCatching { localRepository.enqueueDiseaseRequest(requestedName, notes, draft.photoPaths, draft.photoSources, rightsConsent) }
+            runCatching {
+                localRepository.enqueueDiseaseRequest(
+                    requestedName,
+                    notes,
+                    draft.photoPaths,
+                    draft.photoSources,
+                    rightsConsent,
+                    clientRequestId = result?.let { diseaseRequestClientId(it.id) },
+                )
+            }
                 .onSuccess {
                     _diseaseRequestDraft.value = DiseaseRequestDraftState()
                     _cloudActionState.value = CloudActionState.Queued("Disease request queued")
@@ -714,6 +759,18 @@ class EggplantAppViewModel(
     }
 
     fun clearCloudActionState() { _cloudActionState.value = CloudActionState.Idle }
+
+    fun consumeShareSuccessAnimation(resultId: String): Boolean = synchronized(shareCelebrationLock) {
+        armedShareCelebrations.remove(resultId)
+    }
+
+    fun abandonShareSuccessAnimation(resultId: String) = synchronized(shareCelebrationLock) {
+        armedShareCelebrations.remove(resultId)
+    }
+
+    private fun armShareSuccessAnimation(resultId: String) = synchronized(shareCelebrationLock) {
+        armedShareCelebrations += resultId
+    }
 
     fun reportGlobalScan(scanId: String) {
         val localRepository = repository ?: run {
@@ -791,7 +848,6 @@ class EggplantAppViewModel(
         languageTag = _languagePreference.value.languageTag,
         theme = _themePreference.value.name,
         unitSystem = legacyUnitSystem,
-        autoSaveEnabled = _autoSaveEnabled.value,
         detectHealthyLeafEnabled = _detectHealthyLeafEnabled.value,
         detectHealthyPlantEnabled = _detectHealthyPlantEnabled.value,
         globalSharingEnabled = _globalSharingEnabled.value,
@@ -811,6 +867,19 @@ class EggplantAppViewModel(
 private const val LOG_TAG = "EggplantDetection"
 private const val DISEASE_REQUEST_NOTES_MAX_LENGTH = 200
 private val CAMERA_REQUEST_SOURCES = setOf("live", "capture", "gallery")
+
+internal fun diseaseRequestClientId(scanId: String): String = runCatching {
+    UUID.fromString(scanId).toString()
+}.getOrElse {
+    UUID.nameUUIDFromBytes("disease-request:$scanId".toByteArray(Charsets.UTF_8)).toString()
+}
+
+private fun automaticSaveMode(source: String): String = when (source.lowercase()) {
+    "live" -> "LIVE"
+    "capture" -> "CAPTURE"
+    "gallery" -> "GALLERY"
+    else -> source.uppercase()
+}
 
 private fun CameraScene.toScanResult(
     primary: DetectionBox,

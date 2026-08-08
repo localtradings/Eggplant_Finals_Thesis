@@ -189,16 +189,6 @@ fun EggplantNavigation(viewModel: EggplantAppViewModel) {
                     viewModel = viewModel,
                     title = stringResource(R.string.scan_result),
                     onBack = navController::popBackStack,
-                    onSave = {
-                        viewModel.saveCurrentResult { saved ->
-                            if (saved) {
-                                navController.navigate(Routes.HISTORY) {
-                                    popUpTo(Routes.HOME)
-                                    launchSingleTop = true
-                                }
-                            }
-                        }
-                    },
                     onScanAgain = {
                         navController.navigate(Routes.CAMERA) {
                             popUpTo(Routes.CAMERA) { inclusive = true }
@@ -219,7 +209,16 @@ fun EggplantNavigation(viewModel: EggplantAppViewModel) {
             composable(Routes.HISTORY_DETAIL) { entry ->
                 val id = entry.arguments?.getString("resultId")
                 val result = history.firstOrNull { it.id == id } ?: currentResult?.takeIf { it.id == id }
-                MyScanDetailPager(results = history, initialId = result?.id ?: id, onBack = navController::popBackStack)
+                MyScanDetailPager(
+                    results = history,
+                    diseases = catalog,
+                    initialId = result?.id ?: id,
+                    onBack = navController::popBackStack,
+                    onToggleFavorite = viewModel::toggleHistoryFavorite,
+                    onDelete = { resultId ->
+                        viewModel.deleteHistory(resultId) { navController.popBackStack() }
+                    },
+                )
             }
             composable(Routes.GLOBAL_SCAN_DETAIL) { entry ->
                 val id = entry.arguments?.getString("scanId")
